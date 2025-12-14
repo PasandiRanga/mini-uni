@@ -1,0 +1,242 @@
+import { useState, useEffect } from "react";
+import { useSearchParams, useNavigate, Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { GraduationCap, Mail, Lock, User, ArrowRight, Eye, EyeOff, BookOpen, Users } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+
+type AuthMode = "login" | "signup";
+type UserRole = "student" | "teacher";
+
+const Auth = () => {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  
+  const [mode, setMode] = useState<AuthMode>((searchParams.get("mode") as AuthMode) || "login");
+  const [role, setRole] = useState<UserRole>((searchParams.get("role") as UserRole) || "student");
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  const [formData, setFormData] = useState({
+    fullName: "",
+    email: "",
+    password: "",
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    toast({
+      title: mode === "login" ? "Welcome back!" : "Account created!",
+      description: mode === "login" 
+        ? "Redirecting to your dashboard..." 
+        : "Please check your email to verify your account.",
+    });
+    
+    setIsLoading(false);
+    
+    // Navigate based on role
+    if (mode === "login" || mode === "signup") {
+      navigate(role === "teacher" ? "/teacher/dashboard" : "/student/dashboard");
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-background flex">
+      {/* Left Panel - Form */}
+      <div className="flex-1 flex flex-col justify-center px-6 py-12 lg:px-12">
+        <div className="mx-auto w-full max-w-md">
+          {/* Logo */}
+          <Link to="/" className="flex items-center gap-2 mb-10">
+            <div className="w-10 h-10 rounded-xl gradient-hero flex items-center justify-center shadow-soft">
+              <GraduationCap className="w-5 h-5 text-primary-foreground" />
+            </div>
+            <span className="text-xl font-bold">ClassConnect</span>
+          </Link>
+
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold mb-2">
+              {mode === "login" ? "Welcome back" : "Create your account"}
+            </h1>
+            <p className="text-muted-foreground">
+              {mode === "login" 
+                ? "Enter your credentials to access your account" 
+                : "Start your journey with ClassConnect today"}
+            </p>
+          </div>
+
+          {/* Role Selection (only for signup) */}
+          {mode === "signup" && (
+            <div className="grid grid-cols-2 gap-3 mb-8">
+              <button
+                type="button"
+                onClick={() => setRole("student")}
+                className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                  role === "student" 
+                    ? "border-primary bg-primary/5" 
+                    : "border-border hover:border-muted-foreground/30"
+                }`}
+              >
+                <BookOpen className={`w-6 h-6 ${role === "student" ? "text-primary" : "text-muted-foreground"}`} />
+                <span className={`font-medium ${role === "student" ? "text-primary" : "text-muted-foreground"}`}>
+                  I want to learn
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setRole("teacher")}
+                className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                  role === "teacher" 
+                    ? "border-secondary bg-secondary/5" 
+                    : "border-border hover:border-muted-foreground/30"
+                }`}
+              >
+                <Users className={`w-6 h-6 ${role === "teacher" ? "text-secondary" : "text-muted-foreground"}`} />
+                <span className={`font-medium ${role === "teacher" ? "text-secondary" : "text-muted-foreground"}`}>
+                  I want to teach
+                </span>
+              </button>
+            </div>
+          )}
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {mode === "signup" && (
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Full Name</Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Input
+                    id="fullName"
+                    type="text"
+                    placeholder="John Doe"
+                    className="pl-10 h-12"
+                    value={formData.fullName}
+                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  className="pl-10 h-12"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  className="pl-10 pr-10 h-12"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+            </div>
+
+            {mode === "login" && (
+              <div className="flex justify-end">
+                <Link to="/forgot-password" className="text-sm text-primary hover:underline">
+                  Forgot password?
+                </Link>
+              </div>
+            )}
+
+            <Button 
+              type="submit" 
+              variant={role === "teacher" ? "warm" : "hero"}
+              size="lg" 
+              className="w-full"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <span className="animate-pulse">Please wait...</span>
+              ) : (
+                <>
+                  {mode === "login" ? "Sign in" : "Create account"}
+                  <ArrowRight className="w-5 h-5 ml-1" />
+                </>
+              )}
+            </Button>
+          </form>
+
+          {/* Toggle mode */}
+          <p className="mt-8 text-center text-muted-foreground">
+            {mode === "login" ? "Don't have an account?" : "Already have an account?"}{" "}
+            <button
+              type="button"
+              onClick={() => setMode(mode === "login" ? "signup" : "login")}
+              className="text-primary font-medium hover:underline"
+            >
+              {mode === "login" ? "Sign up" : "Sign in"}
+            </button>
+          </p>
+        </div>
+      </div>
+
+      {/* Right Panel - Visual */}
+      <div className="hidden lg:flex flex-1 gradient-hero items-center justify-center p-12">
+        <div className="max-w-lg text-primary-foreground text-center">
+          <h2 className="text-3xl font-bold mb-4">
+            {role === "teacher" 
+              ? "Share your knowledge with the world" 
+              : "Find your perfect teacher today"}
+          </h2>
+          <p className="text-primary-foreground/80 text-lg leading-relaxed">
+            {role === "teacher"
+              ? "Join our community of verified educators. Set your own schedule, rates, and reach students who are eager to learn from you."
+              : "Access a network of verified teachers across dozens of subjects. Learn at your own pace with personalized one-on-one sessions."}
+          </p>
+          
+          <div className="grid grid-cols-3 gap-6 mt-12">
+            <div className="bg-primary-foreground/10 rounded-2xl p-4 backdrop-blur-sm">
+              <p className="text-3xl font-bold">2.5K+</p>
+              <p className="text-sm text-primary-foreground/80">Active Students</p>
+            </div>
+            <div className="bg-primary-foreground/10 rounded-2xl p-4 backdrop-blur-sm">
+              <p className="text-3xl font-bold">500+</p>
+              <p className="text-sm text-primary-foreground/80">Verified Teachers</p>
+            </div>
+            <div className="bg-primary-foreground/10 rounded-2xl p-4 backdrop-blur-sm">
+              <p className="text-3xl font-bold">50+</p>
+              <p className="text-sm text-primary-foreground/80">Subjects</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Auth;
