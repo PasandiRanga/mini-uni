@@ -12,7 +12,7 @@ const Footer = () => {
               <div className="w-9 h-9 rounded-xl gradient-hero flex items-center justify-center">
                 <GraduationCap className="w-5 h-5 text-primary-foreground" />
               </div>
-              <span className="text-xl font-bold text-background">ClassConnect</span>
+              <span className="text-xl font-bold text-background">mini uni</span>
             </Link>
             <p className="text-background/70 text-sm leading-relaxed">
               Connecting passionate teachers with eager students. Learn anything, anytime, anywhere.
@@ -65,7 +65,7 @@ const Footer = () => {
         </div>
 
         <div className="border-t border-background/10 mt-12 pt-8 text-center text-sm text-background/60">
-          <p>© 2024 ClassConnect. All rights reserved.</p>
+          <p>© 2024 mini uni. All rights reserved.</p>
         </div>
       </div>
     </footer>
