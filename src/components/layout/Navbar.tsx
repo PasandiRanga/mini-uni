@@ -17,7 +17,7 @@ const Navbar = () => {
             <div className="w-9 h-9 rounded-xl gradient-hero flex items-center justify-center shadow-soft group-hover:shadow-card transition-shadow">
               <GraduationCap className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold text-foreground">ClassConnect</span>
+            <span className="text-xl font-bold text-foreground">mini uni</span>
           </Link>
 
           {/* Desktop Navigation */}
