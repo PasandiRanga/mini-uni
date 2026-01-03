@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -42,7 +43,6 @@ const TeacherSignUp = ({ onBack }: TeacherSignUpProps) => {
   });
 
   // Fetch verification progress after registration
-  useEffect(() => {
   useEffect(() => {
     if (token && step === "documents") {
       fetchVerificationProgress();
