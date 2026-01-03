@@ -1,7 +1,10 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import {
   GraduationCap,
   Home,
@@ -52,6 +55,36 @@ const recentTeachers = [
 
 const StudentDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
+  const [user, setUser] = useState<any>(null);
+  const { user: authUser, logout: authLogout } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    try {
+      const u = localStorage.getItem("user");
+      if (u) setUser(JSON.parse(u));
+    } catch (e) {
+      setUser(null);
+    }
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await authLogout();
+      toast({
+        title: "Logged out successfully",
+        description: "You have been logged out. Redirecting to home...",
+      });
+      navigate("/", { replace: true });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to logout",
+        variant: "destructive",
+      });
+    }
+  };
 
   const navItems = [
     { id: "overview", label: "Overview", icon: Home },
@@ -98,13 +131,17 @@ const StudentDashboard = () => {
         <div className="p-4 border-t border-border">
           <div className="flex items-center gap-3 px-4 py-3">
             <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center text-accent-foreground font-semibold">
-              AJ
+              {user ? `${(user.firstName || "").charAt(0)}${(user.lastName || "").charAt(0)}` : "SJ"}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-medium truncate">Alex Johnson</p>
+              <p className="font-medium truncate">{user ? `${user.firstName} ${user.lastName}` : "Student"}</p>
               <p className="text-sm text-muted-foreground">Student</p>
             </div>
-            <button className="text-muted-foreground hover:text-foreground transition-colors">
+            <button 
+              onClick={handleLogout}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+              title="Logout"
+            >
               <LogOut className="w-5 h-5" />
             </button>
           </div>
@@ -117,7 +154,7 @@ const StudentDashboard = () => {
         <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-xl border-b border-border">
           <div className="flex items-center justify-between px-6 py-4">
             <div>
-              <h1 className="text-2xl font-bold">Welcome back, Alex!</h1>
+              <h1 className="text-2xl font-bold">Welcome back, {user ? user.firstName : 'Student'}!</h1>
               <p className="text-muted-foreground">Here's what's happening with your classes.</p>
             </div>
             <div className="flex items-center gap-3">

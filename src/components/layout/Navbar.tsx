@@ -1,12 +1,15 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X, GraduationCap, BookOpen } from "lucide-react";
 import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const isHome = location.pathname === "/";
+  const navigate = useNavigate();
+  const { isAuthenticated, logout, user } = useAuth();
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-xl border-b border-border">
@@ -44,12 +47,25 @@ const Navbar = () => {
 
           {/* Desktop Auth Buttons */}
           <div className="hidden md:flex items-center gap-3">
-            <Button variant="ghost" asChild>
-              <Link to="/auth">Log in</Link>
-            </Button>
-            <Button variant="hero" asChild>
-              <Link to="/auth?mode=signup">Get Started</Link>
-            </Button>
+            {isAuthenticated ? (
+              <>
+                <Button variant="ghost" onClick={async () => { await logout(); navigate('/'); }}>
+                  Logout
+                </Button>
+                <Button variant="hero" asChild>
+                  <Link to={user?.role === 'TEACHER' ? '/teacher/dashboard' : '/student/dashboard'}>Dashboard</Link>
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="ghost" asChild>
+                  <Link to="/auth">Log in</Link>
+                </Button>
+                <Button variant="hero" asChild>
+                  <Link to="/signup">Get Started</Link>
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -88,12 +104,25 @@ const Navbar = () => {
               For Teachers
             </Link>
             <div className="pt-3 flex flex-col gap-2">
-              <Button variant="outline" className="w-full" asChild>
-                <Link to="/auth" onClick={() => setIsOpen(false)}>Log in</Link>
-              </Button>
-              <Button variant="hero" className="w-full" asChild>
-                <Link to="/auth?mode=signup" onClick={() => setIsOpen(false)}>Get Started</Link>
-              </Button>
+              {isAuthenticated ? (
+                <>
+                  <Button variant="outline" className="w-full" onClick={async () => { await logout(); setIsOpen(false); navigate('/'); }}>
+                    Logout
+                  </Button>
+                  <Button variant="hero" className="w-full" asChild>
+                    <Link to={user?.role === 'TEACHER' ? '/teacher/dashboard' : '/student/dashboard'} onClick={() => setIsOpen(false)}>Dashboard</Link>
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="outline" className="w-full" asChild>
+                    <Link to="/auth" onClick={() => setIsOpen(false)}>Log in</Link>
+                  </Button>
+                  <Button variant="hero" className="w-full" asChild>
+                    <Link to="/signup" onClick={() => setIsOpen(false)}>Get Started</Link>
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>

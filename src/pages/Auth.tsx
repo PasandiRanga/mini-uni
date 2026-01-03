@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { GraduationCap, Mail, Lock, User, ArrowRight, Eye, EyeOff, BookOpen, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 type AuthMode = "login" | "signup";
 type UserRole = "student" | "teacher";
@@ -25,25 +26,37 @@ const Auth = () => {
     password: "",
   });
 
+  const { login, register } = useAuth();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    toast({
-      title: mode === "login" ? "Welcome back!" : "Account created!",
-      description: mode === "login" 
-        ? "Redirecting to your dashboard..." 
-        : "Please check your email to verify your account.",
-    });
-    
-    setIsLoading(false);
-    
-    // Navigate based on role
-    if (mode === "login" || mode === "signup") {
-      navigate(role === "teacher" ? "/teacher/dashboard" : "/student/dashboard");
+
+    try {
+      if (mode === "login") {
+        // Attempt real login via Auth context
+        await login(formData.email, formData.password, role.toUpperCase());
+        toast({ title: "Welcome back!", description: "Redirecting to your dashboard..." });
+        navigate(role === "teacher" ? "/teacher/dashboard" : "/student/dashboard");
+      } else {
+        // Signup: for students use register and redirect; teachers use separate flow
+        if (role === "student") {
+          // split fullName into first/last
+          const names = formData.fullName.trim().split(/\s+/);
+          const firstName = names.shift() || "";
+          const lastName = names.join(" ") || "";
+          await register(formData.email, formData.password, firstName, lastName, "", 'STUDENT');
+          toast({ title: "Account created!", description: "Redirecting to your dashboard..." });
+          navigate('/student/dashboard');
+        } else {
+          // For teachers, redirect to the full signup flow
+          navigate('/signup');
+        }
+      }
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message || 'Authentication failed', variant: 'destructive' });
+    } finally {
+      setIsLoading(false);
     }
   };
 

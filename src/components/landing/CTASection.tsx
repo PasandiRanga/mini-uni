@@ -26,7 +26,7 @@ const CTASection = () => {
               </p>
               
               <Button variant="hero" size="lg" asChild>
-                <Link to="/auth?mode=signup&role=student">
+                <Link to="/signup">
                   Find a Teacher
                   <ArrowRight className="w-5 h-5 ml-1" />
                 </Link>
@@ -53,7 +53,7 @@ const CTASection = () => {
               </p>
               
               <Button variant="warm" size="lg" asChild>
-                <Link to="/auth?mode=signup&role=teacher">
+                <Link to="/signup">
                   Start Teaching
                   <ArrowRight className="w-5 h-5 ml-1" />
                 </Link>

@@ -1,0 +1,371 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum PostType {
+  STUDENT_REQUEST
+  TEACHER_OFFERING
+}
+
+enum InquiryStatus {
+  PENDING
+  RESPONDED
+  ACCEPTED
+  REJECTED
+  CANCELLED
+}
+
+enum TimeSlotStatus {
+  AVAILABLE
+  SELECTED
+  CONFIRMED
+  BOOKED
+  CANCELLED
+}
+
+enum BookingStatus {
+  PENDING_PAYMENT
+  PAYMENT_COMPLETED
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  DISPUTED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum WalletTransactionType {
+  DEPOSIT
+  WITHDRAWAL
+  RELEASE
+  REFUND
+}
+
+enum NotificationType {
+  INQUIRY_RECEIVED
+  SLOT_CONFIRMED
+  PAYMENT_SUCCESS
+  MEETING_LINK_CREATED
+  CLASS_COMPLETION
+  VERIFICATION_STATUS
+  BOOKING_CONFIRMED
+  BOOKING_CANCELLED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String
+  firstName     String
+  lastName      String
+  phone         String?
+  role          UserRole  @default(STUDENT)
+  isActive      Boolean   @default(true)
+  emailVerified Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  teacherProfile TeacherProfile?
+  studentProfile StudentProfile?
+  posts          Post[]
+  inquiriesSent  Inquiry[] @relation("InquirySender")
+  inquiriesReceived Inquiry[] @relation("InquiryReceiver")
+  bookingsAsStudent Booking[] @relation("StudentBooking")
+  bookingsAsTeacher Booking[] @relation("TeacherBooking")
+  wallet         Wallet?
+  notifications  Notification[]
+  postLikes      PostLike[]
+  comments       Comment[]
+
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+model TeacherProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  bio         String?
+  experience  Int?     // years of experience
+  subjects    String[] // array of subjects taught
+  hourlyRate Decimal? @db.Decimal(10, 2)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user                User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verificationDocs    VerificationDocument[]
+  verificationStatus  VerificationStatus    @default(PENDING)
+
+  @@map("teacher_profiles")
+}
+
+model StudentProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  grade     String?
+  interests String[] // array of subjects interested in
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("student_profiles")
+}
+
+model VerificationDocument {
+  id          String             @id @default(cuid())
+  teacherId   String
+  documentType String            // e.g., "ID", "QUALIFICATION", "CERTIFICATE"
+  documentUrl String             // URL to stored document
+  status      VerificationStatus @default(PENDING)
+  reviewedBy  String?           // Admin user ID
+  reviewedAt  DateTime?
+  rejectionReason String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  teacher TeacherProfile @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@index([teacherId])
+  @@index([status])
+  @@map("verification_documents")
+}
+
+model Post {
+  id          String   @id @default(cuid())
+  userId      String
+  type        PostType
+  title       String
+  description String   @db.Text
+  subject     String
+  grade       String?  // for student requests
+  syllabus    String?  // for student requests
+  fee         Decimal? @db.Decimal(10, 2) // for teacher offerings
+  experience  Int?     // for teacher offerings
+  locationLat Float?   // latitude
+  locationLng Float?   // longitude
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  inquiries Inquiry[]
+  timeSlots TimeSlot[]
+  likes     PostLike[]
+  comments  Comment[]
+
+  @@index([userId])
+  @@index([type])
+  @@index([subject])
+  @@index([isActive])
+  @@index([locationLat, locationLng]) // For location-based queries
+  @@map("posts")
+}
+
+model PostLike {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([postId])
+  @@index([userId])
+  @@map("post_likes")
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@index([userId])
+  @@map("comments")
+}
+
+model Inquiry {
+  id          String        @id @default(cuid())
+  postId      String
+  senderId    String
+  receiverId  String
+  message     String        @db.Text
+  status      InquiryStatus @default(PENDING)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  post     Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  sender   User   @relation("InquirySender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User   @relation("InquiryReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  timeSlots TimeSlot[]
+  booking  Booking?
+
+  @@index([postId])
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([status])
+  @@map("inquiries")
+}
+
+model TimeSlot {
+  id          String          @id @default(cuid())
+  postId      String?
+  inquiryId   String?
+  startTime   DateTime
+  endTime     DateTime
+  status      TimeSlotStatus  @default(AVAILABLE)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  post    Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  inquiry Inquiry? @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  booking Booking?
+
+  @@index([postId])
+  @@index([inquiryId])
+  @@index([startTime, endTime])
+  @@index([status])
+  @@map("time_slots")
+}
+
+model Booking {
+  id                String        @id @default(cuid())
+  inquiryId         String        @unique
+  studentId         String
+  teacherId         String
+  timeSlotId        String        @unique
+  status            BookingStatus @default(PENDING_PAYMENT)
+  fee               Decimal       @db.Decimal(10, 2)
+  googleMeetLink    String?
+  studentConfirmed  Boolean       @default(false)
+  teacherConfirmed  Boolean       @default(false)
+  completedAt       DateTime?
+  cancelledAt       DateTime?
+  cancellationReason String?      @db.Text
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  inquiry   Inquiry   @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  student   User      @relation("StudentBooking", fields: [studentId], references: [id], onDelete: Cascade)
+  teacher   User      @relation("TeacherBooking", fields: [teacherId], references: [id], onDelete: Cascade)
+  timeSlot  TimeSlot  @relation(fields: [timeSlotId], references: [id], onDelete: Cascade)
+  payment   Payment?
+  walletTransaction WalletTransaction?
+
+  @@index([studentId])
+  @@index([teacherId])
+  @@index([status])
+  @@index([timeSlotId])
+  @@map("bookings")
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  bookingId     String        @unique
+  stripePaymentId String?     @unique
+  amount        Decimal       @db.Decimal(10, 2)
+  status        PaymentStatus @default(PENDING)
+  currency      String        @default("USD")
+  metadata      Json?         // Additional payment metadata
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId])
+  @@index([stripePaymentId])
+  @@index([status])
+  @@map("payments")
+}
+
+model Wallet {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  pendingBalance  Decimal  @default(0) @db.Decimal(10, 2)
+  releasedBalance Decimal  @default(0) @db.Decimal(10, 2)
+  totalEarnings   Decimal  @default(0) @db.Decimal(10, 2)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions WalletTransaction[]
+
+  @@index([userId])
+  @@map("wallets")
+}
+
+model WalletTransaction {
+  id            String                @id @default(cuid())
+  walletId      String
+  bookingId     String?               @unique
+  type          WalletTransactionType
+  amount        Decimal               @db.Decimal(10, 2)
+  description   String?               @db.Text
+  status        String                @default("PENDING") // PENDING, COMPLETED, FAILED
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  wallet  Wallet   @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  booking Booking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+
+  @@index([walletId])
+  @@index([bookingId])
+  @@index([type])
+  @@index([status])
+  @@map("wallet_transactions")
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String           @db.Text
+  isRead    Boolean          @default(false)
+  metadata  Json?            // Additional notification data
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+

@@ -1,7 +1,9 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import {
   GraduationCap,
   Home,
@@ -59,6 +61,59 @@ const recentInquiries = [
 
 const TeacherDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
+  const [verification, setVerification] = useState<any>({ canStartClasses: false, progress: 0 });
+  const [user, setUser] = useState<any>(null);
+  const { user: authUser, logout: authLogout, token } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    try {
+      const u = localStorage.getItem("user");
+      if (u) setUser(JSON.parse(u));
+    } catch {
+      setUser(null);
+    }
+
+    if (!token) return;
+
+    const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3001";
+    fetch(`${apiUrl}/teachers/verification-progress`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then(async (res) => {
+        if (!res.ok) return;
+        const text = await res.text();
+        if (text && text.trim()) {
+          try {
+            const data = JSON.parse(text);
+            setVerification(data);
+          } catch (e) {
+            console.error("Failed to parse verification progress", e);
+          }
+        }
+      })
+      .catch((err) => console.error("Failed to fetch verification progress", err));
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await authLogout();
+      toast({
+        title: "Logged out successfully",
+        description: "You have been logged out. Redirecting to home...",
+      });
+      navigate("/", { replace: true });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to logout",
+        variant: "destructive",
+      });
+    }
+  };
 
   const navItems = [
     { id: "overview", label: "Overview", icon: Home },
@@ -71,6 +126,24 @@ const TeacherDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background flex">
+      {/* Verification Progress Panel */}
+      <aside className="hidden lg:block w-80 p-6">
+        <div className="bg-card rounded-2xl p-4 shadow-card mb-6">
+          <h3 className="text-lg font-semibold mb-2">Verification Progress</h3>
+          <p className="text-sm text-muted-foreground mb-3">Complete verification to start accepting classes. You can still view this dashboard while verification is pending.</p>
+          <div className="w-full bg-muted rounded-full h-3 overflow-hidden mb-3">
+            <div className="h-3 bg-secondary" style={{ width: `${verification?.progress || 0}%` }} />
+          </div>
+          <div className="flex items-center justify-between text-sm mb-3">
+            <span>{verification?.progress || 0}% completed</span>
+            <span className="font-medium">{verification?.verificationStatus || 'PENDING'}</span>
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={() => navigate('/teacher/onboarding')}>Complete Verification</Button>
+            <Button variant="ghost" onClick={() => setActiveTab('settings')}>Settings</Button>
+          </div>
+        </div>
+      </aside>
       {/* Sidebar */}
       <aside className="hidden lg:flex flex-col w-64 bg-card border-r border-border">
         {/* Logo */}
@@ -85,10 +158,20 @@ const TeacherDashboard = () => {
 
         {/* Verification Status */}
         <div className="p-4 border-b border-border">
-          <div className="bg-success/10 rounded-xl p-3 flex items-center gap-2">
-            <CheckCircle className="w-5 h-5 text-success" />
-            <span className="text-sm font-medium text-success">Verified Teacher</span>
-          </div>
+          {verification?.canStartClasses ? (
+            <div className="bg-success/10 rounded-xl p-3 flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-success" />
+              <span className="text-sm font-medium text-success">Verified Teacher</span>
+            </div>
+          ) : (
+            <div className="bg-yellow-50 rounded-xl p-3 flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-yellow-600" />
+              <div className="text-sm">
+                <div className="font-medium">Verification Pending</div>
+                <div className="text-xs text-muted-foreground">Complete onboarding to get verified</div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Navigation */}
@@ -96,7 +179,13 @@ const TeacherDashboard = () => {
           {navItems.map((item) => (
             <button
               key={item.id}
-              onClick={() => setActiveTab(item.id)}
+              onClick={() => {
+                if (item.id === 'settings') {
+                  navigate('/teacher/onboarding');
+                } else {
+                  setActiveTab(item.id);
+                }
+              }}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
                 activeTab === item.id
                   ? "gradient-warm text-secondary-foreground shadow-soft"
@@ -145,7 +234,7 @@ const TeacherDashboard = () => {
                   5
                 </span>
               </Button>
-              <Button variant="warm" className="gap-2">
+              <Button variant="warm" className="gap-2" disabled={!verification?.canStartClasses}>
                 <Plus className="w-4 h-4" />
                 Create Offering
               </Button>
@@ -257,9 +346,9 @@ const TeacherDashboard = () => {
                           }`}>
                             {cls.status}
                           </Badge>
-                          <Button variant="warm" size="sm">
+                          <Button variant="warm" size="sm" disabled={!verification?.canStartClasses}>
                             <Video className="w-4 h-4 mr-1" />
-                            Start Class
+                            {verification?.canStartClasses ? 'Start Class' : 'Awaiting Verification'}
                           </Button>
                         </div>
                       </div>
