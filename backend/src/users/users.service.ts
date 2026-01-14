@@ -15,6 +15,12 @@ export class UsersService {
         lastName: true,
         role: true,
         createdAt: true,
+        studentProfile: {
+          select: { grade: true, interests: true },
+        },
+        teacherProfile: {
+          select: { bio: true, subjects: true, hourlyRate: true },
+        },
       },
     });
   }

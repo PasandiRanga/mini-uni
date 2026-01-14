@@ -47,7 +47,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const login = async (email: string, password: string, role: string) => {
     setIsLoading(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/auth/login`, {
+      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const response = await fetch(`${baseUrl}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -74,7 +75,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const register = async (email: string, password: string, firstName: string, lastName: string, phone: string, role: string) => {
     setIsLoading(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/auth/register`, {
+      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const response = await fetch(`${baseUrl}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, firstName, lastName, phone, role }),
@@ -103,7 +105,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       // Call backend logout endpoint
       if (token) {
-        await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/auth/logout`, {
+        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+        await fetch(`${baseUrl}/api/auth/logout`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

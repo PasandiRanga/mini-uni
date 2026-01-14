@@ -127,4 +127,22 @@ export class TeachersService {
       canStartClasses: profile.verificationStatus === VerificationStatus.APPROVED,
     };
   }
+
+  // Public listing of teachers for use by the frontend
+  async findPublicTeachers() {
+    return this.prisma.user.findMany({
+      where: { role: 'TEACHER', isActive: true },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        teacherProfile: {
+          select: { bio: true, subjects: true, hourlyRate: true, experience: true, verificationStatus: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+  }
 }

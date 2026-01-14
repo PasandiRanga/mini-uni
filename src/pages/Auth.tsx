@@ -10,13 +10,20 @@ import { useAuth } from "@/contexts/AuthContext";
 type AuthMode = "login" | "signup";
 type UserRole = "student" | "teacher";
 
+type Teacher = {
+  id: string;
+  firstName?: string;
+  lastName?: string;
+  verified?: boolean;
+};
+
 const Auth = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  const [mode, setMode] = useState<AuthMode>((searchParams.get("mode") as AuthMode) || "login");
-  const [role, setRole] = useState<UserRole>((searchParams.get("role") as UserRole) || "student");
+  const [mode] = useState<AuthMode>((searchParams.get("mode") as AuthMode) || "login");
+  const [role] = useState<UserRole>((searchParams.get("role") as UserRole) || "student");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
@@ -38,27 +45,35 @@ const Auth = () => {
         await login(formData.email, formData.password, role.toUpperCase());
         toast({ title: "Welcome back!", description: "Redirecting to your dashboard..." });
         navigate(role === "teacher" ? "/teacher/dashboard" : "/student/dashboard");
-      } else {
-        // Signup: for students use register and redirect; teachers use separate flow
-        if (role === "student") {
-          // split fullName into first/last
-          const names = formData.fullName.trim().split(/\s+/);
-          const firstName = names.shift() || "";
-          const lastName = names.join(" ") || "";
-          await register(formData.email, formData.password, firstName, lastName, "", 'STUDENT');
-          toast({ title: "Account created!", description: "Redirecting to your dashboard..." });
-          navigate('/student/dashboard');
-        } else {
-          // For teachers, redirect to the full signup flow
-          navigate('/signup');
-        }
       }
-    } catch (err: any) {
-      toast({ title: 'Error', description: err.message || 'Authentication failed', variant: 'destructive' });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast({ title: 'Error', description: message || 'Authentication failed', variant: 'destructive' });
     } finally {
       setIsLoading(false);
     }
   };
+
+  // Teachers list for informational display on the auth page
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  useEffect(() => {
+    const fetchTeachers = async () => {
+      try {
+        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+        const res = await fetch(`${baseUrl}/api/teachers`);
+        if (res.ok) {
+          const data = await res.json();
+          setTeachers(data || []);
+        }
+      } catch (e) {
+        // non-fatal for auth page
+        console.error('Failed to fetch teachers', e);
+      }
+    };
+    fetchTeachers();
+  }, []);
+
+  const verifiedCount = teachers.filter((t) => t.verified).length;
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -70,7 +85,7 @@ const Auth = () => {
             <div className="w-10 h-10 rounded-xl gradient-hero flex items-center justify-center shadow-soft">
               <GraduationCap className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold">ClassConnect</span>
+            <span className="text-xl font-bold">MiniUni</span>
           </Link>
 
           {/* Header */}
@@ -81,63 +96,15 @@ const Auth = () => {
             <p className="text-muted-foreground">
               {mode === "login" 
                 ? "Enter your credentials to access your account" 
-                : "Start your journey with ClassConnect today"}
+                : "Start your journey with MiniUni today"}
             </p>
           </div>
 
-          {/* Role Selection (only for signup) */}
-          {mode === "signup" && (
-            <div className="grid grid-cols-2 gap-3 mb-8">
-              <button
-                type="button"
-                onClick={() => setRole("student")}
-                className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
-                  role === "student" 
-                    ? "border-primary bg-primary/5" 
-                    : "border-border hover:border-muted-foreground/30"
-                }`}
-              >
-                <BookOpen className={`w-6 h-6 ${role === "student" ? "text-primary" : "text-muted-foreground"}`} />
-                <span className={`font-medium ${role === "student" ? "text-primary" : "text-muted-foreground"}`}>
-                  I want to learn
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setRole("teacher")}
-                className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
-                  role === "teacher" 
-                    ? "border-secondary bg-secondary/5" 
-                    : "border-border hover:border-muted-foreground/30"
-                }`}
-              >
-                <Users className={`w-6 h-6 ${role === "teacher" ? "text-secondary" : "text-muted-foreground"}`} />
-                <span className={`font-medium ${role === "teacher" ? "text-secondary" : "text-muted-foreground"}`}>
-                  I want to teach
-                </span>
-              </button>
-            </div>
-          )}
+          {/* Signup role selection removed - all signups handled on the /signup page */}
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
-            {mode === "signup" && (
-              <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                  <Input
-                    id="fullName"
-                    type="text"
-                    placeholder="John Doe"
-                    className="pl-10 h-12"
-                    value={formData.fullName}
-                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                    required
-                  />
-                </div>
-              </div>
-            )}
+            {/* Inline signup name field removed. Use /signup for new accounts. */}
 
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -204,15 +171,15 @@ const Auth = () => {
             </Button>
           </form>
 
-          {/* Toggle mode */}
+          {/* Signup handled on dedicated /signup page */}
           <p className="mt-8 text-center text-muted-foreground">
-            {mode === "login" ? "Don't have an account?" : "Already have an account?"}{" "}
+            Don't have an account?{' '}
             <button
               type="button"
-              onClick={() => setMode(mode === "login" ? "signup" : "login")}
+              onClick={() => navigate('/signup')}
               className="text-primary font-medium hover:underline"
             >
-              {mode === "login" ? "Sign up" : "Sign in"}
+              Sign up
             </button>
           </p>
         </div>
@@ -238,7 +205,7 @@ const Auth = () => {
               <p className="text-sm text-primary-foreground/80">Active Students</p>
             </div>
             <div className="bg-primary-foreground/10 rounded-2xl p-4 backdrop-blur-sm">
-              <p className="text-3xl font-bold">500+</p>
+              <p className="text-3xl font-bold">{verifiedCount > 0 ? verifiedCount : '—'}</p>
               <p className="text-sm text-primary-foreground/80">Verified Teachers</p>
             </div>
             <div className="bg-primary-foreground/10 rounded-2xl p-4 backdrop-blur-sm">

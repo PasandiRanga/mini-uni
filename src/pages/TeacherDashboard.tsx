@@ -25,44 +25,17 @@ import {
   AlertCircle,
   FileText
 } from "lucide-react";
+import MyClasses from '@/components/classes/MyClasses';
 
-const upcomingClasses = [
-  {
-    id: 1,
-    student: "Alex Johnson",
-    avatar: "AJ",
-    subject: "Calculus",
-    topic: "Integration Techniques",
-    date: "Today",
-    time: "4:00 PM",
-    duration: "1 hour",
-    status: "confirmed",
-    amount: 45
-  },
-  {
-    id: 2,
-    student: "Emma Wilson",
-    avatar: "EW",
-    subject: "Algebra",
-    topic: "Linear Equations",
-    date: "Tomorrow",
-    time: "10:00 AM",
-    duration: "1 hour",
-    status: "pending",
-    amount: 45
-  }
-];
-
-const recentInquiries = [
-  { id: 1, name: "Michael Brown", subject: "SAT Math Prep", time: "2 hours ago", status: "new" },
-  { id: 2, name: "Sarah Lee", subject: "Calculus Tutoring", time: "5 hours ago", status: "read" },
-  { id: 3, name: "David Kim", subject: "Algebra Help", time: "1 day ago", status: "replied" },
-];
+// data-driven state will be loaded from API
 
 const TeacherDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [verification, setVerification] = useState<any>({ canStartClasses: false, progress: 0 });
   const [user, setUser] = useState<any>(null);
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [inquiries, setInquiries] = useState<any[]>([]);
+  const [wallet, setWallet] = useState<any>(null);
   const { user: authUser, logout: authLogout, token } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -77,25 +50,40 @@ const TeacherDashboard = () => {
 
     if (!token) return;
 
-    const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3001";
-    fetch(`${apiUrl}/teachers/verification-progress`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-      .then(async (res) => {
-        if (!res.ok) return;
-        const text = await res.text();
-        if (text && text.trim()) {
-          try {
-            const data = JSON.parse(text);
-            setVerification(data);
-          } catch (e) {
-            console.error("Failed to parse verification progress", e);
+    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+    const headers: any = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+
+    const fetchAll = async () => {
+      try {
+        // verification progress
+        const vRes = await fetch(`${baseUrl}/api/teachers/verification-progress`, { headers });
+        if (vRes.ok) setVerification(await vRes.json());
+
+        // bookings for teacher
+        if (authUser?.id) {
+          const bRes = await fetch(`${baseUrl}/api/bookings/teacher/${authUser.id}`);
+          if (bRes.ok) {
+            const data = await bRes.json();
+            setBookings(data);
+          }
+
+          // inquiries
+          const iRes = await fetch(`${baseUrl}/api/inquiries/teacher/${authUser.id}`);
+          if (iRes.ok) {
+            const data = await iRes.json();
+            setInquiries(data);
           }
         }
-      })
-      .catch((err) => console.error("Failed to fetch verification progress", err));
+
+        // wallet for current user
+        const wRes = await fetch(`${baseUrl}/api/wallets/me`, { headers });
+        if (wRes.ok) setWallet(await wRes.json());
+      } catch (err) {
+        console.error('Failed to fetch teacher dashboard data', err);
+      }
+    };
+
+    fetchAll();
   }, []);
 
   const handleLogout = async () => {
@@ -126,24 +114,7 @@ const TeacherDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background flex">
-      {/* Verification Progress Panel */}
-      <aside className="hidden lg:block w-80 p-6">
-        <div className="bg-card rounded-2xl p-4 shadow-card mb-6">
-          <h3 className="text-lg font-semibold mb-2">Verification Progress</h3>
-          <p className="text-sm text-muted-foreground mb-3">Complete verification to start accepting classes. You can still view this dashboard while verification is pending.</p>
-          <div className="w-full bg-muted rounded-full h-3 overflow-hidden mb-3">
-            <div className="h-3 bg-secondary" style={{ width: `${verification?.progress || 0}%` }} />
-          </div>
-          <div className="flex items-center justify-between text-sm mb-3">
-            <span>{verification?.progress || 0}% completed</span>
-            <span className="font-medium">{verification?.verificationStatus || 'PENDING'}</span>
-          </div>
-          <div className="flex gap-2">
-            <Button onClick={() => navigate('/teacher/onboarding')}>Complete Verification</Button>
-            <Button variant="ghost" onClick={() => setActiveTab('settings')}>Settings</Button>
-          </div>
-        </div>
-      </aside>
+      {/* left-side verification card removed per layout update (progress bar moved under topbar) */}
       {/* Sidebar */}
       <aside className="hidden lg:flex flex-col w-64 bg-card border-r border-border">
         {/* Logo */}
@@ -152,27 +123,11 @@ const TeacherDashboard = () => {
             <div className="w-9 h-9 rounded-xl gradient-warm flex items-center justify-center">
               <GraduationCap className="w-5 h-5 text-secondary-foreground" />
             </div>
-            <span className="text-lg font-bold">ClassConnect</span>
+            <span className="text-lg font-bold">MiniUni</span>
           </Link>
         </div>
 
-        {/* Verification Status */}
-        <div className="p-4 border-b border-border">
-          {verification?.canStartClasses ? (
-            <div className="bg-success/10 rounded-xl p-3 flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-success" />
-              <span className="text-sm font-medium text-success">Verified Teacher</span>
-            </div>
-          ) : (
-            <div className="bg-yellow-50 rounded-xl p-3 flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-yellow-600" />
-              <div className="text-sm">
-                <div className="font-medium">Verification Pending</div>
-                <div className="text-xs text-muted-foreground">Complete onboarding to get verified</div>
-              </div>
-            </div>
-          )}
-        </div>
+        {/* verification sidebar status removed to avoid duplication; progress bar is under topbar */}
 
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-1">
@@ -242,7 +197,31 @@ const TeacherDashboard = () => {
           </div>
         </header>
 
-        {/* Dashboard Content */}
+        {/* Onboarding / Verification horizontal progress bar (clickable) */}
+        <div className="bg-muted/20 border-b border-border">
+          <div className="container mx-auto px-6 py-3">
+            <button
+              onClick={() => navigate('/teacher/onboarding')}
+              className="w-full text-left focus:outline-none"
+              aria-label="Open onboarding and verification"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex-1 mr-4">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-medium">{verification?.progress ?? 0}% completed — {verification?.verificationStatus || 'Verification Pending'}</div>
+                    <div className="text-xs text-muted-foreground">Classes cannot be started until verification is complete</div>
+                  </div>
+                  <div className="w-full bg-muted rounded-full h-3 mt-2 overflow-hidden">
+                    <div className="h-3 bg-secondary" style={{ width: `${verification?.progress ?? 0}%` }} />
+                  </div>
+                </div>
+                <div className="ml-4 text-sm text-primary font-medium">Complete onboarding</div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+          {/* Dashboard Content */}
         <div className="p-6">
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -299,7 +278,7 @@ const TeacherDashboard = () => {
           </div>
 
           <div className="grid lg:grid-cols-3 gap-6">
-            {/* Upcoming Classes */}
+            {/* Upcoming Classes (or Schedule) */}
             <div className="lg:col-span-2">
               <div className="bg-card rounded-2xl shadow-card overflow-hidden">
                 <div className="flex items-center justify-between p-5 border-b border-border">
@@ -309,51 +288,10 @@ const TeacherDashboard = () => {
                     <ChevronRight className="w-4 h-4 ml-1" />
                   </Button>
                 </div>
-                <div className="divide-y divide-border">
-                  {upcomingClasses.map((cls) => (
-                    <div key={cls.id} className="p-5 hover:bg-muted/50 transition-colors">
-                      <div className="flex items-start justify-between">
-                        <div className="flex gap-4">
-                          <div className="w-12 h-12 rounded-xl bg-accent flex items-center justify-center text-accent-foreground font-semibold">
-                            {cls.avatar}
-                          </div>
-                          <div>
-                            <h3 className="font-medium">{cls.topic}</h3>
-                            <p className="text-sm text-muted-foreground mb-2">
-                              with {cls.student} • {cls.subject}
-                            </p>
-                            <div className="flex items-center gap-3 text-sm">
-                              <span className="flex items-center gap-1 text-muted-foreground">
-                                <Calendar className="w-4 h-4" />
-                                {cls.date}
-                              </span>
-                              <span className="flex items-center gap-1 text-muted-foreground">
-                                <Clock className="w-4 h-4" />
-                                {cls.time}
-                              </span>
-                              <span className="flex items-center gap-1 text-success font-medium">
-                                <DollarSign className="w-4 h-4" />
-                                ${cls.amount}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex flex-col items-end gap-2">
-                          <Badge className={`border-0 ${
-                            cls.status === "confirmed" 
-                              ? "bg-success/10 text-success" 
-                              : "bg-warning/10 text-warning"
-                          }`}>
-                            {cls.status}
-                          </Badge>
-                          <Button variant="warm" size="sm" disabled={!verification?.canStartClasses}>
-                            <Video className="w-4 h-4 mr-1" />
-                            {verification?.canStartClasses ? 'Start Class' : 'Awaiting Verification'}
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                {/* Replace with unified MyClasses component for schedule */}
+                <div className="p-5">
+                  {/* Render MyClasses inside teacher dashboard schedule area */}
+                  <MyClasses />
                 </div>
               </div>
             </div>
@@ -362,18 +300,17 @@ const TeacherDashboard = () => {
             <div className="bg-card rounded-2xl shadow-card overflow-hidden">
               <div className="flex items-center justify-between p-5 border-b border-border">
                 <h2 className="font-semibold text-lg">Recent Inquiries</h2>
-                <Badge className="bg-secondary text-secondary-foreground">3 new</Badge>
+                <Badge className="bg-secondary text-secondary-foreground">{inquiries.filter(i=>!i.read).length || 'New'}</Badge>
               </div>
               <div className="p-5 space-y-4">
-                {recentInquiries.map((inquiry) => (
-                  <div key={inquiry.id} className="flex items-start gap-3">
-                    <div className={`w-2 h-2 rounded-full mt-2 ${
-                      inquiry.status === "new" ? "bg-secondary" : "bg-muted"
-                    }`} />
+                {inquiries.length === 0 && <div className="text-sm text-muted-foreground">No inquiries yet</div>}
+                {inquiries.map((inq) => (
+                  <div key={inq.id} className="flex items-start gap-3">
+                    <div className={`w-2 h-2 rounded-full mt-2 ${!inq.read ? 'bg-secondary' : 'bg-muted'}`} />
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{inquiry.name}</p>
-                      <p className="text-sm text-muted-foreground truncate">{inquiry.subject}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{inquiry.time}</p>
+                      <p className="font-medium truncate">{inq.sender ? `${inq.sender.firstName} ${inq.sender.lastName}` : 'Student'}</p>
+                      <p className="text-sm text-muted-foreground truncate">{inq.post?.title || inq.post?.subject || ''}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{new Date(inq.createdAt).toLocaleString()}</p>
                     </div>
                     <Button variant="ghost" size="sm">Reply</Button>
                   </div>
@@ -395,22 +332,34 @@ const TeacherDashboard = () => {
                 <p className="text-background/70 text-sm mb-4">Secure escrow-based payments</p>
                 <div className="grid grid-cols-3 gap-8">
                   <div>
-                    <p className="text-3xl font-bold">$2,130</p>
+                    <p className="text-3xl font-bold">{wallet?.releasedBalance ? `$${wallet.releasedBalance}` : '$0'}</p>
                     <p className="text-sm text-background/70">Available</p>
                   </div>
                   <div>
-                    <p className="text-3xl font-bold">$320</p>
+                    <p className="text-3xl font-bold">{wallet?.pendingBalance ? `$${wallet.pendingBalance}` : '$0'}</p>
                     <p className="text-sm text-background/70">Pending</p>
                   </div>
                   <div>
-                    <p className="text-3xl font-bold">$8,540</p>
+                    <p className="text-3xl font-bold">{wallet?.totalEarnings ? `$${wallet.totalEarnings}` : '$0'}</p>
                     <p className="text-sm text-background/70">All Time</p>
                   </div>
                 </div>
               </div>
-              <Button className="bg-background text-foreground hover:bg-background/90">
-                Withdraw Funds
-              </Button>
+              <div className="flex flex-col gap-2">
+                <Button className="bg-background text-foreground hover:bg-background/90">Withdraw Funds</Button>
+                <div className="bg-background/10 rounded-md p-3 text-sm text-background/90">
+                  <div className="font-medium">Recent Transactions</div>
+                  <div className="mt-2 space-y-2">
+                    {(wallet?.transactions || []).slice(0,3).map((t:any)=> (
+                      <div key={t.id} className="flex items-center justify-between text-sm">
+                        <div>{t.type}</div>
+                        <div className="font-medium">${t.amount}</div>
+                      </div>
+                    ))}
+                    {(wallet?.transactions || []).length === 0 && <div className="text-xs text-background/70">No recent transactions</div>}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

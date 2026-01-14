@@ -28,7 +28,7 @@ const SignUp = () => {
             <div className="w-10 h-10 rounded-xl gradient-hero flex items-center justify-center shadow-soft">
               <GraduationCap className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold">ClassConnect</span>
+            <span className="text-xl font-bold">MiniUni</span>
           </Link>
           <h1 className="text-3xl font-bold mb-2">Get Started</h1>
           <p className="text-muted-foreground">Choose your role to continue</p>

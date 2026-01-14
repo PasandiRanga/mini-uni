@@ -184,7 +184,13 @@
 
   .text-gradient {
     @apply bg-clip-text text-transparent;
+    -webkit-background-clip: text;
     background: var(--gradient-hero);
+    -webkit-text-fill-color: transparent;
+    display: inline-block;
+    background-clip: text;
+    -moz-background-clip: text;
+    color: transparent;
   }
 
   .animate-float {

@@ -33,7 +33,7 @@ const HowItWorksSection = () => {
       <div className="container mx-auto px-4">
         <div className="text-center max-w-3xl mx-auto mb-16">
           <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-            How ClassConnect 
+            How MiniUni 
             <span className="font-serif italic text-gradient"> works</span>
           </h2>
           <p className="text-lg text-muted-foreground">
