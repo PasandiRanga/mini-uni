@@ -14,6 +14,7 @@ import HowItWorks from "./pages/HowItWorks";
 import FindTeacher from "./pages/FindTeacher";
 import TeacherProfile from "./pages/TeacherProfile";
 import CreatePost from "./pages/CreatePost";
+import MyPosts from "./pages/MyPosts";
 import StudentDashboard from "./pages/StudentDashboard";
 import TeacherDashboard from "./pages/TeacherDashboard";
 import TeacherOnboarding from "./pages/TeacherOnboarding";
@@ -74,6 +75,14 @@ const App = () => (
                   <CreatePost />
                 </ProtectedRoute>
               } 
+            />
+            <Route
+              path="/post/mine"
+              element={
+                <ProtectedRoute>
+                  <MyPosts />
+                </ProtectedRoute>
+              }
             />
             
             {/* Catch-all: 404 Not Found */}

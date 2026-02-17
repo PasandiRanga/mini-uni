@@ -61,12 +61,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       const data = await response.json();
       
-      // Store token and user
+      // Normalize role casing from backend and store token and user
+      const normalizedUser = data.user && typeof data.user.role === 'string'
+        ? { ...data.user, role: data.user.role.toUpperCase() }
+        : data.user;
+
       localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-      
+      localStorage.setItem('user', JSON.stringify(normalizedUser));
+
       setToken(data.token);
-      setUser(data.user);
+      setUser(normalizedUser);
+      // Wait a tick so consumers (routes) receive the updated auth state
+      await new Promise((res) => setTimeout(res, 0));
     } finally {
       setIsLoading(false);
     }
@@ -89,12 +95,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       const data = await response.json();
       
-      // Store token and user
+      // Normalize role casing from backend and store token and user
+      const normalizedUser = data.user && typeof data.user.role === 'string'
+        ? { ...data.user, role: data.user.role.toUpperCase() }
+        : data.user;
+
       localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-      
+      localStorage.setItem('user', JSON.stringify(normalizedUser));
+
       setToken(data.token);
-      setUser(data.user);
+      setUser(normalizedUser);
+      // Wait a tick so consumers (routes) receive the updated auth state
+      await new Promise((res) => setTimeout(res, 0));
     } finally {
       setIsLoading(false);
     }

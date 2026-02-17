@@ -23,6 +23,18 @@ export class PostsService {
     });
   }
 
+  async findByUser(userId: string) {
+    return this.prisma.post.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      include: { timeSlots: true },
+    });
+  }
+
+  async findById(id: string) {
+    return this.prisma.post.findUnique({ where: { id }, include: { timeSlots: true, user: true } });
+  }
+
   async create(userId: string, data: any) {
     // data should include type, title, description, subject, grade, fee, mode, location, availabilitySlots
     const payload: any = {

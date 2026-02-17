@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,6 @@ import {
   GraduationCap,
   Home,
   Calendar,
-  MessageSquare,
   Wallet,
   Settings,
   Bell,
@@ -27,7 +27,6 @@ import {
 } from "lucide-react";
 import MyClasses from '@/components/classes/MyClasses';
 
-// data-driven state will be loaded from API
 
 const TeacherDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -84,7 +83,7 @@ const TeacherDashboard = () => {
     };
 
     fetchAll();
-  }, []);
+  }, [token, authUser?.id]);
 
   const handleLogout = async () => {
     try {
@@ -107,7 +106,6 @@ const TeacherDashboard = () => {
     { id: "overview", label: "Overview", icon: Home },
     { id: "schedule", label: "Schedule", icon: Calendar },
     { id: "students", label: "Students", icon: Users },
-    { id: "messages", label: "Messages", icon: MessageSquare },
     { id: "wallet", label: "Wallet", icon: Wallet },
     { id: "settings", label: "Settings", icon: Settings },
   ];
@@ -149,9 +147,6 @@ const TeacherDashboard = () => {
             >
               <item.icon className="w-5 h-5" />
               <span className="font-medium">{item.label}</span>
-              {item.id === "messages" && (
-                <Badge className="ml-auto bg-secondary text-secondary-foreground text-xs">3</Badge>
-              )}
             </button>
           ))}
         </nav>

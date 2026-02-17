@@ -5,8 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { useNavigate, Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Search, MapPin, DollarSign, Star, Filter } from "lucide-react";
 
 type Teacher = {
@@ -99,8 +99,8 @@ const FindTeacher: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
-      <main className="container mx-auto px-4 py-8">
+      <DashboardLayout>
+        <main className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto text-center mb-6">
           <h1 className="text-3xl font-bold">Find Teachers</h1>
           <p className="text-muted-foreground">Browse verified teachers, compare prices and book classes.</p>
@@ -201,7 +201,8 @@ const FindTeacher: React.FC = () => {
             ))}
           </div>
         </div>
-      </main>
+        </main>
+      </DashboardLayout>
       <Footer />
     </div>
   );

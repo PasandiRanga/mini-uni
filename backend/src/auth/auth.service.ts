@@ -67,8 +67,8 @@ export class AuthService {
       },
     });
 
-    // Generate JWT token
-    const token = this.generateToken(user.id, user.email, user.role);
+    // Generate JWT token (only include minimal non-sensitive claims)
+    const token = this.generateToken(user.id, user.role);
 
     return {
       user,
@@ -95,8 +95,8 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Generate JWT token
-    const token = this.generateToken(user.id, user.email, user.role);
+    // Generate JWT token (only include minimal non-sensitive claims)
+    const token = this.generateToken(user.id, user.role);
 
     return {
       user: {
@@ -110,8 +110,8 @@ export class AuthService {
     };
   }
 
-  private generateToken(userId: string, email: string, role: UserRole) {
-    const payload = { sub: userId, email, role };
+  private generateToken(userId: string, role: UserRole) {
+    const payload = { sub: userId, role };
     return this.jwtService.sign(payload);
   }
 
