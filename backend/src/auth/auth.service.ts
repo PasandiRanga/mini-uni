@@ -14,7 +14,7 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
-  ) {}
+  ) { }
 
   async register(registerDto: RegisterDto) {
     const { email, password, firstName, lastName, phone, role } = registerDto;
@@ -40,8 +40,8 @@ export class AuthService {
         lastName,
         phone,
         role,
-        // Students are active immediately, teachers need verification
-        isActive: role === UserRole.STUDENT,
+        // All users are active by default so they can log in
+        isActive: true,
         ...(role === UserRole.TEACHER && {
           teacherProfile: {
             create: {
@@ -67,12 +67,10 @@ export class AuthService {
       },
     });
 
-    // Generate JWT token (only include minimal non-sensitive claims)
-    const token = this.generateToken(user.id, user.role);
-
+    // Do not generate token on register. User must login.
+    // This allows the login flow to enforce isActive/verification checks.
     return {
       user,
-      token,
     };
   }
 

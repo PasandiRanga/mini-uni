@@ -112,7 +112,6 @@ const TeacherDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background flex">
-      {/* left-side verification card removed per layout update (progress bar moved under topbar) */}
       {/* Sidebar */}
       <aside className="hidden lg:flex flex-col w-64 bg-card border-r border-border">
         {/* Logo */}
@@ -124,8 +123,6 @@ const TeacherDashboard = () => {
             <span className="text-lg font-bold">MiniUni</span>
           </Link>
         </div>
-
-        {/* verification sidebar status removed to avoid duplication; progress bar is under topbar */}
 
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-1">
@@ -139,11 +136,10 @@ const TeacherDashboard = () => {
                   setActiveTab(item.id);
                 }
               }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                activeTab === item.id
-                  ? "gradient-warm text-secondary-foreground shadow-soft"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
-              }`}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === item.id
+                ? "gradient-warm text-secondary-foreground shadow-soft"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
             >
               <item.icon className="w-5 h-5" />
               <span className="font-medium">{item.label}</span>
@@ -155,13 +151,13 @@ const TeacherDashboard = () => {
         <div className="p-4 border-t border-border">
           <div className="flex items-center gap-3 px-4 py-3">
             <div className="w-10 h-10 rounded-xl gradient-hero flex items-center justify-center text-primary-foreground font-semibold">
-              SM
+              {authUser?.firstName?.charAt(0)}{authUser?.lastName?.charAt(0)}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-medium truncate">Dr. Sarah Mitchell</p>
-              <p className="text-sm text-muted-foreground">Mathematics</p>
+              <p className="font-medium truncate">{authUser?.firstName} {authUser?.lastName}</p>
+              <p className="text-sm text-muted-foreground truncate">{authUser?.role}</p>
             </div>
-            <button className="text-muted-foreground hover:text-foreground transition-colors">
+            <button onClick={handleLogout} className="text-muted-foreground hover:text-foreground transition-colors">
               <LogOut className="w-5 h-5" />
             </button>
           </div>
@@ -181,10 +177,10 @@ const TeacherDashboard = () => {
               <Button variant="ghost" size="icon" className="relative">
                 <Bell className="w-5 h-5" />
                 <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-secondary text-secondary-foreground text-xs flex items-center justify-center">
-                  5
+                  {inquiries.filter(i => !i.read).length}
                 </span>
               </Button>
-              <Button variant="warm" className="gap-2" disabled={!verification?.canStartClasses}>
+              <Button variant="warm" className="gap-2" disabled={verification?.verificationStatus !== 'APPROVED'}>
                 <Plus className="w-4 h-4" />
                 Create Offering
               </Button>
@@ -216,7 +212,7 @@ const TeacherDashboard = () => {
           </div>
         </div>
 
-          {/* Dashboard Content */}
+        {/* Dashboard Content */}
         <div className="p-6">
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -230,7 +226,7 @@ const TeacherDashboard = () => {
                   +18%
                 </Badge>
               </div>
-              <p className="text-2xl font-bold">$2,450</p>
+              <p className="text-2xl font-bold">${wallet?.totalEarnings || 0}</p>
               <p className="text-sm text-muted-foreground">Total Earnings</p>
             </div>
 
@@ -240,7 +236,7 @@ const TeacherDashboard = () => {
                   <Clock className="w-5 h-5 text-warning" />
                 </div>
               </div>
-              <p className="text-2xl font-bold">$320</p>
+              <p className="text-2xl font-bold">${wallet?.pendingBalance || 0}</p>
               <p className="text-sm text-muted-foreground">Pending Balance</p>
             </div>
 
@@ -250,8 +246,8 @@ const TeacherDashboard = () => {
                   <Users className="w-5 h-5 text-primary" />
                 </div>
               </div>
-              <p className="text-2xl font-bold">45</p>
-              <p className="text-sm text-muted-foreground">Total Students</p>
+              <p className="text-2xl font-bold">{bookings.length}</p>
+              <p className="text-sm text-muted-foreground">Total Bookings</p>
             </div>
 
             <div className="bg-card rounded-2xl p-5 shadow-card">
@@ -273,7 +269,7 @@ const TeacherDashboard = () => {
           </div>
 
           <div className="grid lg:grid-cols-3 gap-6">
-            {/* Upcoming Classes (or Schedule) */}
+            {/* Upcoming Classes */}
             <div className="lg:col-span-2">
               <div className="bg-card rounded-2xl shadow-card overflow-hidden">
                 <div className="flex items-center justify-between p-5 border-b border-border">
@@ -283,9 +279,7 @@ const TeacherDashboard = () => {
                     <ChevronRight className="w-4 h-4 ml-1" />
                   </Button>
                 </div>
-                {/* Replace with unified MyClasses component for schedule */}
                 <div className="p-5">
-                  {/* Render MyClasses inside teacher dashboard schedule area */}
                   <MyClasses />
                 </div>
               </div>
@@ -295,7 +289,7 @@ const TeacherDashboard = () => {
             <div className="bg-card rounded-2xl shadow-card overflow-hidden">
               <div className="flex items-center justify-between p-5 border-b border-border">
                 <h2 className="font-semibold text-lg">Recent Inquiries</h2>
-                <Badge className="bg-secondary text-secondary-foreground">{inquiries.filter(i=>!i.read).length || 'New'}</Badge>
+                <Badge className="bg-secondary text-secondary-foreground">{inquiries.filter(i => !i.read).length || 'New'}</Badge>
               </div>
               <div className="p-5 space-y-4">
                 {inquiries.length === 0 && <div className="text-sm text-muted-foreground">No inquiries yet</div>}
@@ -345,7 +339,7 @@ const TeacherDashboard = () => {
                 <div className="bg-background/10 rounded-md p-3 text-sm text-background/90">
                   <div className="font-medium">Recent Transactions</div>
                   <div className="mt-2 space-y-2">
-                    {(wallet?.transactions || []).slice(0,3).map((t:any)=> (
+                    {(wallet?.transactions || []).slice(0, 3).map((t: any) => (
                       <div key={t.id} className="flex items-center justify-between text-sm">
                         <div>{t.type}</div>
                         <div className="font-medium">${t.amount}</div>

@@ -12,6 +12,7 @@ import { WalletsModule } from './wallets/wallets.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { TeachersModule } from './teachers/teachers.module';
 import { GoogleMeetModule } from './google-meet/google-meet.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -37,7 +38,8 @@ import { GoogleMeetModule } from './google-meet/google-meet.module';
     NotificationsModule,
     TeachersModule,
     GoogleMeetModule,
+    AdminModule,
   ],
 })
-export class AppModule {}
+export class AppModule { }
 

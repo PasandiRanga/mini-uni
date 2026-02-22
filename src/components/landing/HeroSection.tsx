@@ -9,7 +9,7 @@ const HeroSection = () => {
       <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
       <div className="absolute top-20 right-0 w-[600px] h-[600px] bg-primary/10 rounded-full blur-3xl -z-10" />
       <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-accent/10 rounded-full blur-3xl -z-10" />
-      
+
       <div className="container mx-auto px-4 py-20">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Left content */}
@@ -18,28 +18,30 @@ const HeroSection = () => {
               <Sparkles className="w-4 h-4" />
               <span>The future of personalized learning</span>
             </div>
-            
+
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight">
-              Connect with 
-              <span className="font-serif italic text-gradient"> verified teachers </span>
-              in your area
+              Teach. Learn.
+              <span className="font-serif italic text-gradient"> Connect </span>
+              Anywhere.
             </h1>
-            
+
             <p className="text-lg text-muted-foreground max-w-xl leading-relaxed">
-              Post what you want to learn, find the perfect teacher, and book classes instantly. 
-              Our secure platform handles payments, scheduling, and video calls.
+              A secure, verified platform for online learning. Students discover elite teachers and book live classes instantly.
+              Teachers create offerings, connect with students, and grow their teaching business securely.
             </p>
 
             <div className="flex flex-wrap gap-4">
               <Button variant="hero" size="xl" asChild>
                 <Link to="/signup">
-                  Start Learning
-                  <ArrowRight className="w-5 h-5 ml-1" />
+                  Find a Teacher
+                  <ArrowRight className="w-5 h-5 ml-2" />
                 </Link>
               </Button>
-              <Button variant="outline" size="xl" className="gap-2">
-                <Play className="w-5 h-5" />
-                Watch Demo
+              <Button variant="outline" size="xl" asChild>
+                <Link to="/signup">
+                  Start Teaching
+                  <Sparkles className="w-5 h-5 ml-2" />
+                </Link>
               </Button>
             </div>
 
@@ -47,7 +49,7 @@ const HeroSection = () => {
             <div className="flex items-center gap-8 pt-6">
               <div className="flex -space-x-3">
                 {[1, 2, 3, 4, 5].map((i) => (
-                  <div 
+                  <div
                     key={i}
                     className="w-10 h-10 rounded-full border-2 border-background bg-gradient-to-br from-primary/30 to-accent/30 flex items-center justify-center text-xs font-medium"
                   >
@@ -70,73 +72,60 @@ const HeroSection = () => {
 
           {/* Right content - Hero visual */}
           <div className="relative lg:pl-8" style={{ animationDelay: '0.2s' }}>
-            <div className="relative animate-fade-up" style={{ animationDelay: '0.3s' }}>
-              {/* Main card */}
-              <div className="bg-card rounded-3xl shadow-elevated p-6 space-y-6">
-                {/* Teacher profile preview */}
+            <div className="relative animate-fade-up space-y-6" style={{ animationDelay: '0.3s' }}>
+              {/* Teacher Card */}
+              <div className="bg-card rounded-3xl shadow-elevated p-6 border border-border/50 relative z-20">
                 <div className="flex items-start gap-4">
-                  <div className="w-16 h-16 rounded-2xl gradient-hero flex items-center justify-center text-2xl font-serif italic text-primary-foreground">
+                  <div className="w-14 h-14 rounded-2xl gradient-hero flex items-center justify-center text-xl font-serif italic text-primary-foreground">
                     S
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-lg">Sarah Mitchell</h3>
-                      <span className="px-2 py-0.5 rounded-full bg-success/10 text-success text-xs font-medium">Verified</span>
+                      <h3 className="font-semibold text-base">Sarah Mitchell</h3>
+                      <span className="px-2 py-0.5 rounded-full bg-success/10 text-success text-[10px] font-medium uppercase">Verified Teacher</span>
                     </div>
-                    <p className="text-muted-foreground text-sm">Mathematics & Physics Teacher</p>
+                    <p className="text-muted-foreground text-xs">Mathematics & Physics Specialist</p>
                     <div className="flex items-center gap-2 mt-1">
-                      <div className="flex">
+                      <div className="flex italic text-warning translate-y-[1px]">
                         {[1, 2, 3, 4, 5].map((i) => (
-                          <Star key={i} className="w-3.5 h-3.5 fill-warning text-warning" />
+                          <Star key={i} className="w-3 h-3 fill-current" />
                         ))}
                       </div>
-                      <span className="text-sm text-muted-foreground">4.9 (127 reviews)</span>
+                      <span className="text-[11px] text-muted-foreground">4.9 (127 reviews)</span>
                     </div>
                   </div>
                 </div>
-
-                {/* Quick stats */}
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="bg-muted rounded-xl p-3 text-center">
-                    <p className="text-2xl font-bold text-foreground">8+</p>
-                    <p className="text-xs text-muted-foreground">Years Exp.</p>
-                  </div>
-                  <div className="bg-muted rounded-xl p-3 text-center">
-                    <p className="text-2xl font-bold text-foreground">250+</p>
-                    <p className="text-xs text-muted-foreground">Classes</p>
-                  </div>
-                  <div className="bg-muted rounded-xl p-3 text-center">
-                    <p className="text-2xl font-bold text-foreground">$45</p>
-                    <p className="text-xs text-muted-foreground">/hour</p>
-                  </div>
-                </div>
-
-                <Button variant="hero" className="w-full" size="lg">
-                  Book a Class
-                </Button>
               </div>
 
-              {/* Floating elements */}
-              <div className="absolute -top-4 -right-4 bg-card rounded-2xl shadow-card p-4 animate-float">
-                <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center">
-                    <Users className="w-5 h-5 text-success" />
+              {/* Student Request Card (Overlapping) */}
+              <div className="bg-muted/80 backdrop-blur-sm rounded-3xl p-6 border border-border/50 relative z-10 -mt-8 ml-8 shadow-lg">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-secondary/10 flex items-center justify-center text-xl text-secondary">
+                    <BookOpen className="w-6 h-6" />
                   </div>
-                  <div>
-                    <p className="font-semibold text-sm">500+</p>
-                    <p className="text-xs text-muted-foreground">Active Teachers</p>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold text-base">Chemistry Help</h3>
+                      <span className="px-2 py-0.5 rounded-full bg-secondary/10 text-secondary text-[10px] font-medium uppercase">Student Request</span>
+                    </div>
+                    <p className="text-muted-foreground text-xs">Looking for Grade 11 Organic Chemistry tutor</p>
+                    <div className="mt-3 flex items-center justify-between">
+                      <div className="text-xs font-semibold text-foreground">$35-45/hr</div>
+                      <div className="text-[10px] text-muted-foreground">Posted 2h ago</div>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="absolute -bottom-4 -left-4 bg-card rounded-2xl shadow-card p-4 animate-float" style={{ animationDelay: '1s' }}>
-                <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center">
-                    <BookOpen className="w-5 h-5 text-secondary" />
+              {/* Trust Badge */}
+              <div className="absolute -bottom-6 right-0 bg-card rounded-2xl shadow-card p-4 border border-border animate-float z-30">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Users className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                    <p className="font-semibold text-sm">50+</p>
-                    <p className="text-xs text-muted-foreground">Subjects</p>
+                    <p className="font-semibold text-sm">Verified Community</p>
+                    <p className="text-[11px] text-muted-foreground">Secure Payments & Booking</p>
                   </div>
                 </div>
               </div>

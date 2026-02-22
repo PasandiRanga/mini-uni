@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Star, Mail } from "lucide-react";
+import { InquiryDialog } from "@/components/teachers/InquiryDialog";
 
 type TeacherDetail = {
   id: string;
@@ -21,17 +22,13 @@ type TeacherDetail = {
   qualifications?: string[];
 };
 
-type Post = {
-  id: string;
-  title: string;
-  excerpt?: string;
-};
-
 const TeacherProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [teacher, setTeacher] = useState<TeacherDetail | null>(null);
-  const [posts, setPosts] = useState<Post[]>([]);
-  const { isAuthenticated } = useAuth();
+  const [posts, setPosts] = useState<any[]>([]);
+  const [isInquiryOpen, setIsInquiryOpen] = useState(false);
+  const { user, isAuthenticated } = useAuth();
+  const isGuest = !isAuthenticated;
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -88,17 +85,27 @@ const TeacherProfile: React.FC = () => {
               </div>
               <div className="text-muted-foreground mt-1">{teacher.subjects?.join(', ')}</div>
               <div className="flex items-center gap-4 mt-3">
-                <div className="flex items-center gap-2"><Star className="w-4 h-4"/>{teacher.rating ?? '—'}</div>
+                <div className="flex items-center gap-2"><Star className="w-4 h-4" />{teacher.rating ?? '—'}</div>
                 <div className="text-muted-foreground">{teacher.city}</div>
                 <div className="text-muted-foreground">Starting at ${teacher.startingPrice ?? '—'}</div>
               </div>
               <p className="mt-4 text-sm text-muted-foreground">{teacher.bio}</p>
               <div className="flex gap-3 mt-4">
-                <Button onClick={() => {
-                  if (!isAuthenticated) { toast({ title: 'Sign in to message', description: 'Please sign in before sending inquiries.'}); navigate('/auth'); return; }
-                  navigate(`/teachers/${teacher.id}/inquiry`);
-                }}><Mail className="w-4 h-4 mr-2"/>Message</Button>
-                <Button onClick={() => { if (!isAuthenticated) { toast({ title: 'Sign in to book', description: 'Please sign in before booking.'}); navigate('/auth'); return; } navigate(`/teachers/${teacher.id}/book`); }}>Book</Button>
+                {user?.role === 'STUDENT' || isGuest ? (
+                  <>
+                    <Button onClick={() => {
+                      if (!isAuthenticated) {
+                        toast({ title: 'Sign in to message', description: 'Please sign in before sending inquiries.' });
+                        navigate('/auth');
+                        return;
+                      }
+                      setIsInquiryOpen(true);
+                    }}><Mail className="w-4 h-4 mr-2" />Message</Button>
+                    <Button onClick={() => { if (!isAuthenticated) { toast({ title: 'Sign in to book', description: 'Please sign in before booking.' }); navigate('/auth'); return; } navigate(`/teachers/${teacher.id}/book`); }}>Book</Button>
+                  </>
+                ) : (
+                  <p className="text-sm text-muted-foreground italic">You are viewing this as a teacher. Student interactions are disabled.</p>
+                )}
               </div>
             </div>
           </div>
@@ -116,7 +123,7 @@ const TeacherProfile: React.FC = () => {
               {posts.map(p => (
                 <div key={p.id} className="p-3 bg-muted rounded-lg">
                   <div className="font-semibold">{p.title}</div>
-                  <div className="text-sm text-muted-foreground">{p.excerpt}</div>
+                  <div className="text-sm text-muted-foreground">{p.excerpt || p.description?.substring(0, 100) + '...'}</div>
                 </div>
               ))}
               {posts.length === 0 && <div className="text-sm text-muted-foreground">No posts yet.</div>}
@@ -125,6 +132,13 @@ const TeacherProfile: React.FC = () => {
         </div>
       </main>
       <Footer />
+      <InquiryDialog
+        isOpen={isInquiryOpen}
+        onClose={() => setIsInquiryOpen(false)}
+        teacherId={teacher.id}
+        teacherName={`${teacher.firstName} ${teacher.lastName}`}
+        posts={posts}
+      />
     </div>
   );
 };

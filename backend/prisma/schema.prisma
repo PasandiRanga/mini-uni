@@ -169,8 +169,6 @@ model Post {
   syllabus    String?  // for student requests
   fee         Decimal? @db.Decimal(10, 2) // for teacher offerings
   experience  Int?     // for teacher offerings
-  locationLat Float?   // latitude
-  locationLng Float?   // longitude
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -185,7 +183,6 @@ model Post {
   @@index([type])
   @@index([subject])
   @@index([isActive])
-  @@index([locationLat, locationLng]) // For location-based queries
   @@map("posts")
 }
 

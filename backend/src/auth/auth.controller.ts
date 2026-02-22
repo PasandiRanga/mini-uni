@@ -10,7 +10,7 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService, private readonly configService: ConfigService) {}
+  constructor(private readonly authService: AuthService, private readonly configService: ConfigService) { }
 
   @Post('register')
   @ApiOperation({ summary: 'Register a new user' })
@@ -18,29 +18,6 @@ export class AuthController {
   @ApiResponse({ status: 409, description: 'User already exists' })
   async register(@Body() registerDto: RegisterDto, @Res({ passthrough: true }) res: Response) {
     const result = await this.authService.register(registerDto);
-
-    // Set token as HTTP-only cookie
-    const jwtExpires = this.configService.get<string>('JWT_EXPIRES_IN') || '7d';
-    let maxAge = 7 * 24 * 60 * 60 * 1000; // default 7 days
-    if (jwtExpires.endsWith('d')) {
-      const days = parseInt(jwtExpires.replace('d', ''), 10);
-      if (!isNaN(days)) maxAge = days * 24 * 60 * 60 * 1000;
-    } else if (jwtExpires.endsWith('h')) {
-      const hours = parseInt(jwtExpires.replace('h', ''), 10);
-      if (!isNaN(hours)) maxAge = hours * 60 * 60 * 1000;
-    }
-
-    const secure = this.configService.get<string>('NODE_ENV') === 'production';
-    const sameSite: any = secure ? 'none' : 'lax';
-
-    res.cookie('access_token', result.token, {
-      httpOnly: true,
-      secure,
-      sameSite,
-      maxAge,
-    });
-
-    // Return created user without token in body
     return { user: result.user };
   }
 
@@ -72,7 +49,10 @@ export class AuthController {
       maxAge,
     });
 
-    return { user: result.user };
+    return {
+      user: result.user,
+      token: result.token
+    };
   }
 
   @Post('logout')

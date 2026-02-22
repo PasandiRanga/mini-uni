@@ -15,7 +15,7 @@ interface Booking {
   teacher?: { firstName?: string; lastName?: string };
   student?: { firstName?: string; lastName?: string };
   googleMeetLink?: string | null;
-  mode?: 'ONLINE' | 'PHYSICAL' | string;
+  mode?: 'ONLINE' | string;
   fee?: number;
 }
 
@@ -57,12 +57,12 @@ const MyClasses: React.FC = () => {
   const upcoming = bookings.filter((b) => {
     const s = b.timeSlot?.startTime ? new Date(b.timeSlot.startTime) : null;
     return s ? s > now && b.status !== 'CANCELLED' : false;
-  }).sort((a,b) => (new Date(a.timeSlot?.startTime||'').getTime() - new Date(b.timeSlot?.startTime||'').getTime()));
+  }).sort((a, b) => (new Date(a.timeSlot?.startTime || '').getTime() - new Date(b.timeSlot?.startTime || '').getTime()));
 
   const past = bookings.filter((b) => {
     const e = b.timeSlot?.endTime ? new Date(b.timeSlot.endTime) : null;
     return e ? e <= now || b.status === 'COMPLETED' || b.status === 'CANCELLED' : b.status === 'COMPLETED' || b.status === 'CANCELLED';
-  }).sort((a,b) => (new Date(b.timeSlot?.startTime||'').getTime() - new Date(a.timeSlot?.startTime||'').getTime()));
+  }).sort((a, b) => (new Date(b.timeSlot?.startTime || '').getTime() - new Date(a.timeSlot?.startTime || '').getTime()));
 
   const handleJoin = (link?: string | null) => {
     if (!link) {
@@ -78,7 +78,7 @@ const MyClasses: React.FC = () => {
   };
 
   const getStatusClasses = (status: string) => {
-    switch ((status||'').toUpperCase()) {
+    switch ((status || '').toUpperCase()) {
       case 'COMPLETED': return 'bg-success/10 text-success';
       case 'CANCELLED': return 'bg-destructive/10 text-destructive';
       case 'IN_PROGRESS': return 'bg-accent/10 text-accent';
@@ -96,8 +96,8 @@ const MyClasses: React.FC = () => {
   const renderBookingCard = (b: Booking) => {
     const start = b.timeSlot?.startTime ? new Date(b.timeSlot.startTime) : null;
     const end = b.timeSlot?.endTime ? new Date(b.timeSlot.endTime) : null;
-    const duration = start && end ? `${Math.round(((end.getTime()-start.getTime())/60000))} mins` : '-';
-    const otherName = user?.role === 'STUDENT' ? `${b.teacher?.firstName||''} ${b.teacher?.lastName||''}` : `${b.student?.firstName||''} ${b.student?.lastName||''}`;
+    const duration = start && end ? `${Math.round(((end.getTime() - start.getTime()) / 60000))} mins` : '-';
+    const otherName = user?.role === 'STUDENT' ? `${b.teacher?.firstName || ''} ${b.teacher?.lastName || ''}` : `${b.student?.firstName || ''} ${b.student?.lastName || ''}`;
     const statusClasses = getStatusClasses(b.status || '');
     const title = b.inquiry?.post?.title || b.inquiry?.post?.subject || 'Class';
     const grade = (b.inquiry?.post as any)?.grade || (b.inquiry?.post as any)?.level || null;
@@ -107,22 +107,22 @@ const MyClasses: React.FC = () => {
         <div className="md:flex md:items-start md:justify-between">
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center text-primary font-semibold text-lg">
-              {(otherName || 'U').split(' ').map(n=>n.charAt(0)).slice(0,2).join('')}
+              {(otherName || 'U').split(' ').map(n => n.charAt(0)).slice(0, 2).join('')}
             </div>
             <div>
               <div className="flex items-center gap-3">
                 <div className="text-base font-semibold">{title}</div>
                 {grade && <div className="text-xs text-muted-foreground px-2 py-1 rounded-md border border-border">{grade}</div>}
-                <Badge className="ml-2">{(b.mode || 'ONLINE').replace('_',' ')}</Badge>
+                <Badge className="ml-2">ONLINE</Badge>
               </div>
-              <div className="text-sm text-muted-foreground mt-1">With <span className="font-medium text-foreground">{otherName || (user?.role==='STUDENT'?'Teacher':'Student')}</span></div>
+              <div className="text-sm text-muted-foreground mt-1">With <span className="font-medium text-foreground">{otherName || (user?.role === 'STUDENT' ? 'Teacher' : 'Student')}</span></div>
               <div className="mt-3 flex flex-wrap gap-3 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2"><Calendar className="w-4 h-4" />{start ? start.toLocaleDateString() : '-'}</div>
                 <div className="flex items-center gap-2"><Clock className="w-4 h-4" />{start ? start.toLocaleTimeString() : '-'} • {duration}</div>
                 {b.fee !== undefined && (
                   <div className="flex items-center gap-2"><DollarSign className="w-4 h-4" />${b.fee}</div>
                 )}
-                <div className="flex items-center gap-2"><MapPin className="w-4 h-4" />{b.mode === 'PHYSICAL' ? 'Physical' : 'Online'}</div>
+
               </div>
             </div>
           </div>

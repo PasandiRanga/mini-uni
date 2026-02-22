@@ -31,7 +31,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     const storedToken = localStorage.getItem('token');
-    
+
     if (storedUser && storedToken) {
       try {
         setUser(JSON.parse(storedUser));
@@ -60,7 +60,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
 
       const data = await response.json();
-      
+
       // Normalize role casing from backend and store token and user
       const normalizedUser = data.user && typeof data.user.role === 'string'
         ? { ...data.user, role: data.user.role.toUpperCase() }
@@ -93,20 +93,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         throw new Error(error.message || 'Registration failed');
       }
 
-      const data = await response.json();
-      
-      // Normalize role casing from backend and store token and user
-      const normalizedUser = data.user && typeof data.user.role === 'string'
-        ? { ...data.user, role: data.user.role.toUpperCase() }
-        : data.user;
-
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(normalizedUser));
-
-      setToken(data.token);
-      setUser(normalizedUser);
-      // Wait a tick so consumers (routes) receive the updated auth state
-      await new Promise((res) => setTimeout(res, 0));
+      // Registration successful - do not auto-login
+      // The user must now go to the login page
     } finally {
       setIsLoading(false);
     }
@@ -140,11 +128,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Clear localStorage
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    
+
     // Clear session storage if used
     sessionStorage.removeItem('token');
     sessionStorage.removeItem('user');
-    
+
     // Clear state
     setToken(null);
     setUser(null);

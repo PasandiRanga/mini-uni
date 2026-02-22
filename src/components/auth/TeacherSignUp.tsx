@@ -25,7 +25,7 @@ const TeacherSignUp = ({ onBack }: TeacherSignUpProps) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [verificationProgress, setVerificationProgress] = useState<any>(null);
-  
+
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -75,7 +75,7 @@ const TeacherSignUp = ({ onBack }: TeacherSignUpProps) => {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (formData.password !== formData.confirmPassword) {
       toast({
         title: "Password mismatch",
@@ -109,10 +109,10 @@ const TeacherSignUp = ({ onBack }: TeacherSignUpProps) => {
 
       toast({
         title: "Account created!",
-        description: "Account created — redirecting to your dashboard. Complete verification to start teaching.",
+        description: "Please log in to complete verification and start teaching.",
       });
 
-      navigate('/teacher/dashboard');
+      navigate("/auth");
     } catch (error: any) {
       toast({
         title: "Registration failed",
@@ -147,12 +147,12 @@ const TeacherSignUp = ({ onBack }: TeacherSignUpProps) => {
 
     try {
       const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3001";
-      
+
       // Upload each document
       for (const [docType, file] of Object.entries(documents)) {
         if (file) {
           const documentUrl = await uploadDocument(docType, file);
-          
+
           const response = await fetch(`${apiUrl}/teachers/upload-document`, {
             method: "POST",
             headers: {
@@ -189,13 +189,13 @@ const TeacherSignUp = ({ onBack }: TeacherSignUpProps) => {
       navigate("/teacher/dashboard");
     } catch (error: any) {
       let errorMessage = "Failed to upload documents. Please try again.";
-      
+
       if (error.message) {
         errorMessage = error.message;
       } else if (error instanceof TypeError && error.message.includes("fetch")) {
         errorMessage = "Cannot connect to server. Please make sure the backend is running.";
       }
-      
+
       toast({
         title: "Upload failed",
         description: errorMessage,

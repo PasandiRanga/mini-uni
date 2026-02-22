@@ -19,7 +19,7 @@ const StudentSignUp = ({ onBack }: StudentSignUpProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -30,7 +30,7 @@ const StudentSignUp = ({ onBack }: StudentSignUpProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (formData.password !== formData.confirmPassword) {
       toast({
         title: "Password mismatch",
@@ -63,19 +63,19 @@ const StudentSignUp = ({ onBack }: StudentSignUpProps) => {
 
       toast({
         title: "Account created successfully!",
-        description: "Welcome! Your student account is now active.",
+        description: "Please log in to continue.",
       });
 
-      navigate("/student/dashboard");
+      navigate("/auth");
     } catch (error: any) {
       let errorMessage = "Something went wrong. Please try again.";
-      
+
       if (error.message) {
         errorMessage = error.message;
       } else if (error instanceof TypeError && error.message.includes("fetch")) {
         errorMessage = "Cannot connect to server. Please make sure the backend is running.";
       }
-      
+
       toast({
         title: "Registration failed",
         description: errorMessage,
