@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookOpen, Users, ArrowRight, GraduationCap } from "lucide-react";
@@ -10,7 +11,7 @@ type UserRole = "student" | "teacher" | null;
 
 const SignUp = () => {
   const [selectedRole, setSelectedRole] = useState<UserRole>(null);
-  const navigate = useNavigate();
+  const router = useRouter();
 
   if (selectedRole === "student") {
     return <StudentSignUp onBack={() => setSelectedRole(null)} />;
@@ -24,7 +25,7 @@ const SignUp = () => {
     <div className="min-h-screen bg-background flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-4xl">
         <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2 mb-4">
+          <Link href="/" className="inline-flex items-center gap-2 mb-4">
             <div className="w-10 h-10 rounded-xl gradient-hero flex items-center justify-center shadow-soft">
               <GraduationCap className="w-5 h-5 text-primary-foreground" />
             </div>
@@ -106,7 +107,7 @@ const SignUp = () => {
           <p className="text-muted-foreground">
             Already have an account?{" "}
             <button
-              onClick={() => navigate("/auth")}
+              onClick={() => router.push("/auth")}
               className="text-primary font-medium hover:underline"
             >
               Sign in

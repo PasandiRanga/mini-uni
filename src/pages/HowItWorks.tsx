@@ -1,9 +1,11 @@
+'use client';
+
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Check, BookOpen, Users, ShieldCheck, CreditCard, Star } from "lucide-react";
-import { Link } from "react-router-dom";
+import Link from "next/link";
 
 const HowItWorks = () => {
   return (
@@ -86,8 +88,8 @@ const HowItWorks = () => {
 
           <div className="max-w-4xl mx-auto text-center mt-10">
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Button asChild variant="hero"><Link to="/signup">Get Started</Link></Button>
-              <Button asChild variant="outline"><Link to="/feed">Explore Posts</Link></Button>
+              <Button asChild variant="hero"><Link href="/signup">Get Started</Link></Button>
+              <Button asChild variant="outline"><Link href="/feed">Explore Posts</Link></Button>
             </div>
           </div>
         </div>

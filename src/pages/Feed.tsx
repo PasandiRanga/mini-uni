@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,7 @@ import {
   LayoutGrid,
   LayoutList
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import Link from "next/link";
 
 // Data fetched from backend (extend with commonly expected fields)
 type PostItem = {
@@ -52,7 +52,7 @@ const Feed = () => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const { user, token, isAuthenticated } = useAuth();
   const { toast } = useToast();
-  const navigate = useNavigate();
+  const router = useRouter();
   const isGuest = !isAuthenticated;
 
   useEffect(() => {
@@ -174,7 +174,7 @@ const Feed = () => {
             </div>
             {isGuest && (
               <div className="max-w-3xl mx-auto bg-yellow-50 border border-yellow-100 rounded-md p-3 text-sm text-yellow-900 mt-4">
-                You are browsing as a guest. Create an account to save posts, contact teachers, or create your own posts. <Button variant="link" asChild><Link to="/signup">Get started</Link></Button>
+                You are browsing as a guest. Create an account to save posts, contact teachers, or create your own posts. <Button variant="link" asChild><Link href="/signup">Get started</Link></Button>
               </div>
             )}
 
@@ -314,14 +314,14 @@ const Feed = () => {
                 <Button variant="hero" className="gap-2" onClick={() => {
                   if (isGuest) {
                     toast({ title: 'Create an account', description: 'Please register or log in to create posts.' });
-                    navigate('/auth');
+                    router.push('/auth');
                     return;
                   }
                   if (user?.role === 'TEACHER' && !user.isActive) {
                     toast({ title: 'Verification Required', description: 'Please complete your profile verification.', variant: 'destructive' });
                     return;
                   }
-                  navigate('/post/create');
+                  router.push('/post/create');
                 }}>
                   <Plus className="w-4 h-4" />
                   Create Post
@@ -382,12 +382,12 @@ const Feed = () => {
                             </div>
                             <div className="flex items-center justify-between pt-4 border-t border-border">
                               <div className="flex gap-2">
-                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => { if (isGuest) { toast({ title: 'Sign in' }); navigate('/auth'); } }}><Heart className="w-4 h-4" /></Button>
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => { if (isGuest) { toast({ title: 'Sign in' }); router.push('/auth'); } }}><Heart className="w-4 h-4" /></Button>
                                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0"><Share2 className="w-4 h-4" /></Button>
                               </div>
                               <Button size="sm" variant={post.type === 'TEACHER_OFFERING' ? 'hero' : 'secondary'} onClick={() => {
-                                if (isGuest) navigate('/auth');
-                                else if (post.type === 'TEACHER_OFFERING') navigate(`/teachers/${post.user?.id}`);
+                                if (isGuest) router.push('/auth');
+                                else if (post.type === 'TEACHER_OFFERING') router.push(`/teachers/${post.user?.id}`);
                                 else toast({ title: 'Responded' });
                               }}>
                                 {post.type === 'TEACHER_OFFERING' ? 'Contact Teacher' : 'Respond'}
@@ -445,7 +445,7 @@ const Feed = () => {
                     <div className="flex items-center justify-between pt-4 border-t border-border mt-auto">
                       <div className="flex gap-2">
                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => {
-                          if (isGuest) { toast({ title: 'Sign in to save' }); navigate('/auth'); return; }
+                          if (isGuest) { toast({ title: 'Sign in to save' }); router.push('/auth'); return; }
                         }}>
                           <Heart className="w-4 h-4" />
                         </Button>
@@ -461,14 +461,14 @@ const Feed = () => {
                         if (isGuest) return (
                           <Button size="sm" variant={post.type === 'TEACHER_OFFERING' ? 'hero' : 'secondary'} className="h-8 px-3 text-xs" onClick={() => {
                             toast({ title: 'Register to interact' });
-                            navigate('/auth');
+                            router.push('/auth');
                           }}>
                             {post.type === 'TEACHER_OFFERING' ? 'Contact' : 'Respond'}
                           </Button>
                         );
                         if (isOwner) return <span className="text-[10px] uppercase font-bold text-muted-foreground">My Post</span>;
                         if (userRole === 'STUDENT' && postType === 'TEACHER_OFFERING') return (
-                          <Button size="sm" variant="hero" className="h-8 px-3 text-xs" onClick={() => navigate(`/teachers/${post.user?.id}`)}>
+                          <Button size="sm" variant="hero" className="h-8 px-3 text-xs" onClick={() => router.push(`/teachers/${post.user?.id}`)}>
                             Contact
                           </Button>
                         );

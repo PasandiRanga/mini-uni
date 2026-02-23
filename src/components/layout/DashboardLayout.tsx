@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { createContext, useContext, useEffect, useState, PropsWithChildren } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -24,7 +25,7 @@ type DashboardContextType = {
 
 const DashboardContext = createContext<DashboardContextType>({
   activeTab: "overview",
-  setActiveTab: () => {},
+  setActiveTab: () => { },
 });
 
 export const useDashboard = () => useContext(DashboardContext);
@@ -33,8 +34,9 @@ const DashboardLayout: React.FC<PropsWithChildren> = ({ children }) => {
   const [activeTab, setActiveTab] = useState("overview");
   const { user, logout } = useAuth();
   const { toast } = useToast();
-  const navigate = useNavigate();
-  const location = useLocation();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
@@ -49,16 +51,15 @@ const DashboardLayout: React.FC<PropsWithChildren> = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const t = params.get("tab");
+    const t = searchParams.get("tab");
     if (t) setActiveTab(t);
-  }, [location.search]);
+  }, [searchParams]);
 
   const handleLogout = async () => {
     try {
       await logout();
       toast({ title: "Logged out successfully", description: "Redirecting..." });
-      navigate("/", { replace: true });
+      router.push("/", { scroll: false });
     } catch (err: any) {
       toast({ title: "Error", description: err?.message || "Logout failed", variant: "destructive" });
     }
@@ -77,7 +78,7 @@ const DashboardLayout: React.FC<PropsWithChildren> = ({ children }) => {
       <div className="min-h-screen bg-background flex">
         <aside className="hidden lg:flex flex-col w-64 bg-card border-r border-border">
           <div className="p-6 border-b border-border">
-            <Link to="/" className="flex items-center gap-2">
+            <Link href="/" className="flex items-center gap-2">
               <div className="w-9 h-9 rounded-xl gradient-hero flex items-center justify-center">
                 <GraduationCap className="w-5 h-5 text-primary-foreground" />
               </div>
@@ -91,13 +92,12 @@ const DashboardLayout: React.FC<PropsWithChildren> = ({ children }) => {
                 key={item.id}
                 onClick={() => {
                   setActiveTab(item.id);
-                  navigate(`/student/dashboard?tab=${item.id}`);
+                  router.push(`/student/dashboard?tab=${item.id}`);
                 }}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                  activeTab === item.id
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === item.id
                     ? "bg-primary text-primary-foreground shadow-soft"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
+                  }`}
               >
                 <item.icon className="w-5 h-5" />
                 <span className="font-medium">{item.label}</span>
@@ -139,7 +139,7 @@ const DashboardLayout: React.FC<PropsWithChildren> = ({ children }) => {
                   <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-secondary text-secondary-foreground text-xs flex items-center justify-center">3</span>
                 </Button>
                 <Button variant="hero" className="gap-2" asChild>
-                  <Link to="/teachers">
+                  <Link href="/teachers">
                     <Plus className="w-4 h-4" />
                     Find Teacher
                   </Link>
@@ -156,7 +156,7 @@ const DashboardLayout: React.FC<PropsWithChildren> = ({ children }) => {
             <div className="absolute inset-0 bg-black/40" onClick={() => setMobileOpen(false)} />
             <aside className="relative w-64 h-full bg-card border-r border-border">
               <div className="p-4 border-b border-border flex items-center justify-between">
-                <Link to="/" className="flex items-center gap-2">
+                <Link href="/" className="flex items-center gap-2">
                   <div className="w-9 h-9 rounded-xl gradient-hero flex items-center justify-center">
                     <GraduationCap className="w-5 h-5 text-primary-foreground" />
                   </div>
@@ -174,13 +174,12 @@ const DashboardLayout: React.FC<PropsWithChildren> = ({ children }) => {
                     onClick={() => {
                       setActiveTab(item.id);
                       setMobileOpen(false);
-                      navigate(`/student/dashboard?tab=${item.id}`);
+                      router.push(`/student/dashboard?tab=${item.id}`);
                     }}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                      activeTab === item.id
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === item.id
                         ? "bg-primary text-primary-foreground shadow-soft"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                    }`}
+                      }`}
                   >
                     <item.icon className="w-5 h-5" />
                     <span className="font-medium">{item.label}</span>

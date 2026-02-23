@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
@@ -41,7 +41,7 @@ const StudentDashboard = () => {
     wallet
   } = useStudentDashboard();
   const { logout: authLogout } = useAuth();
-  const navigate = useNavigate();
+  const router = useRouter();
   const { toast } = useToast();
 
   // Child component that consumes Dashboard context — rendered inside DashboardLayout
@@ -252,7 +252,7 @@ const StudentDashboard = () => {
         title: "Logged out successfully",
         description: "You have been logged out. Redirecting to home...",
       });
-      navigate("/", { replace: true });
+      router.push("/", { replace: true });
     } catch (error: any) {
       toast({
         title: "Error",

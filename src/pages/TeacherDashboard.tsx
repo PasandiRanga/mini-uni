@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
@@ -36,7 +37,7 @@ const TeacherDashboard = () => {
   const [inquiries, setInquiries] = useState<any[]>([]);
   const [wallet, setWallet] = useState<any>(null);
   const { user: authUser, logout: authLogout, token } = useAuth();
-  const navigate = useNavigate();
+  const router = useRouter();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -49,25 +50,24 @@ const TeacherDashboard = () => {
 
     if (!token) return;
 
-    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
     const headers: any = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
 
     const fetchAll = async () => {
       try {
         // verification progress
-        const vRes = await fetch(`${baseUrl}/api/teachers/verification-progress`, { headers });
+        const vRes = await fetch(`/api/teachers/verification-progress`, { headers });
         if (vRes.ok) setVerification(await vRes.json());
 
         // bookings for teacher
         if (authUser?.id) {
-          const bRes = await fetch(`${baseUrl}/api/bookings/teacher/${authUser.id}`);
+          const bRes = await fetch(`/api/bookings/teacher/${authUser.id}`);
           if (bRes.ok) {
             const data = await bRes.json();
             setBookings(data);
           }
 
           // inquiries
-          const iRes = await fetch(`${baseUrl}/api/inquiries/teacher/${authUser.id}`);
+          const iRes = await fetch(`/api/inquiries/teacher/${authUser.id}`);
           if (iRes.ok) {
             const data = await iRes.json();
             setInquiries(data);
@@ -75,7 +75,7 @@ const TeacherDashboard = () => {
         }
 
         // wallet for current user
-        const wRes = await fetch(`${baseUrl}/api/wallets/me`, { headers });
+        const wRes = await fetch(`/api/wallets/me`, { headers });
         if (wRes.ok) setWallet(await wRes.json());
       } catch (err) {
         console.error('Failed to fetch teacher dashboard data', err);
@@ -92,7 +92,7 @@ const TeacherDashboard = () => {
         title: "Logged out successfully",
         description: "You have been logged out. Redirecting to home...",
       });
-      navigate("/", { replace: true });
+      router.push("/", { replace: true });
     } catch (error: any) {
       toast({
         title: "Error",
@@ -116,7 +116,7 @@ const TeacherDashboard = () => {
       <aside className="hidden lg:flex flex-col w-64 bg-card border-r border-border">
         {/* Logo */}
         <div className="p-6 border-b border-border">
-          <Link to="/" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-xl gradient-warm flex items-center justify-center">
               <GraduationCap className="w-5 h-5 text-secondary-foreground" />
             </div>
@@ -131,7 +131,7 @@ const TeacherDashboard = () => {
               key={item.id}
               onClick={() => {
                 if (item.id === 'settings') {
-                  navigate('/teacher/onboarding');
+                  router.push('/teacher/onboarding');
                 } else {
                   setActiveTab(item.id);
                 }
@@ -192,7 +192,7 @@ const TeacherDashboard = () => {
         <div className="bg-muted/20 border-b border-border">
           <div className="container mx-auto px-6 py-3">
             <button
-              onClick={() => navigate('/teacher/onboarding')}
+              onClick={() => router.push('/teacher/onboarding')}
               className="w-full text-left focus:outline-none"
               aria-label="Open onboarding and verification"
             >

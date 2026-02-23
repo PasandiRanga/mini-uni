@@ -1,6 +1,8 @@
+'use client';
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -14,8 +16,7 @@ const requiredDocs = [
 const optionalDocs = [{ key: "UNIVERSITY_ID", label: "University ID (if applicable)" }];
 
 const TeacherOnboarding = () => {
-  const { token } = useAuth();
-  const navigate = useNavigate();
+  const router = useRouter();
   const { toast } = useToast();
   const [files, setFiles] = useState<Record<string, File | null>>({});
   const [isLoading, setIsLoading] = useState(false);
@@ -33,30 +34,21 @@ const TeacherOnboarding = () => {
     });
 
   const handleSubmit = async () => {
-    if (!token) {
-      toast({ title: "Not authenticated", description: "Please login and try again.", variant: "destructive" });
-      return;
-    }
-
     setIsLoading(true);
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3001";
-
       // Upload required docs first
       for (const doc of requiredDocs.concat(optionalDocs)) {
         const file = files[doc.key];
         if (!file && requiredDocs.find(d => d.key === doc.key)) {
-          // required and missing
           continue;
         }
 
         if (file) {
           const documentUrl = await toDataUrl(file);
-          const res = await fetch(`${apiUrl}/teachers/upload-document`, {
+          const res = await fetch(`/api/teachers/upload-document`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify({ documentType: doc.key, documentUrl }),
           });
@@ -69,7 +61,7 @@ const TeacherOnboarding = () => {
       }
 
       toast({ title: "Uploaded", description: "Documents uploaded. Verification will proceed shortly." });
-      navigate('/teacher/dashboard');
+      router.push('/teacher/dashboard');
     } catch (e: any) {
       toast({ title: "Upload failed", description: e.message || String(e), variant: "destructive" });
     } finally {
@@ -116,7 +108,7 @@ const TeacherOnboarding = () => {
             <Button onClick={handleSubmit} disabled={isLoading}>
               {isLoading ? 'Uploading...' : 'Submit Documents'}
             </Button>
-            <Button variant="ghost" onClick={() => navigate('/teacher/dashboard')}>Back to Dashboard</Button>
+            <Button variant="ghost" onClick={() => router.push('/teacher/dashboard')}>Back to Dashboard</Button>
           </div>
         </div>
       </div>

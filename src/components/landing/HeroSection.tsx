@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import Link from "next/link";
 import { ArrowRight, Play, Sparkles, Users, BookOpen, Star } from "lucide-react";
 
 const HeroSection = () => {
@@ -32,13 +32,13 @@ const HeroSection = () => {
 
             <div className="flex flex-wrap gap-4">
               <Button variant="hero" size="xl" asChild>
-                <Link to="/signup">
+                <Link href="/signup">
                   Find a Teacher
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Link>
               </Button>
               <Button variant="outline" size="xl" asChild>
-                <Link to="/signup">
+                <Link href="/signup">
                   Start Teaching
                   <Sparkles className="w-5 h-5 ml-2" />
                 </Link>

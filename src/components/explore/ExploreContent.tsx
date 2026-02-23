@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Link, useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -56,8 +57,7 @@ const ExploreContent: React.FC = () => {
     const fetchPosts = async () => {
       setIsLoadingPosts(true);
       try {
-        const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
-        const res = await fetch(`${baseUrl}/api/posts`);
+        const res = await fetch(`/api/posts`);
         if (res.ok) {
           const data = await res.json();
           setPosts(data);
@@ -85,7 +85,7 @@ const ExploreContent: React.FC = () => {
   const [viewType, setViewType] = useState<'grid' | 'compact'>('grid');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const navigate = useNavigate();
+  const router = useRouter();
   const { toast } = useToast();
   const { user, isAuthenticated } = useAuth();
   const isGuest = !isAuthenticated;
@@ -211,7 +211,7 @@ const ExploreContent: React.FC = () => {
                   <button onClick={() => setViewType('grid')} className={`p-2 rounded-lg transition-all ${viewType === 'grid' ? 'bg-card shadow-soft text-primary' : 'text-muted-foreground'}`} title="Grid View"><LayoutGrid className="w-4 h-4" /></button>
                   <button onClick={() => setViewType('compact')} className={`p-2 rounded-lg transition-all ${viewType === 'compact' ? 'bg-card shadow-soft text-primary' : 'text-muted-foreground'}`} title="Compact View"><LayoutList className="w-4 h-4" /></button>
                 </div>
-                <Button variant="hero" className="gap-2" onClick={() => { if (isGuest) { toast({ title: 'Create an account', description: 'Please register or log in to create posts.' }); navigate('/auth'); return; } navigate('/post/create'); }}>
+                <Button variant="hero" className="gap-2" onClick={() => { if (isGuest) { toast({ title: 'Create an account', description: 'Please register or log in to create posts.' }); router.push('/auth'); return; } router.push('/post/create'); }}>
                   <Plus className="w-4 h-4" />
                   Create Post
                 </Button>
@@ -277,7 +277,7 @@ const ExploreContent: React.FC = () => {
                                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0"><Heart className="w-4 h-4" /></Button>
                                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0"><Share2 className="w-4 h-4" /></Button>
                               </div>
-                              {post.type === 'TEACHER_OFFERING' && <Button size="sm" variant="hero" onClick={() => navigate(`/teachers/${post.user?.id}`)}>Contact Teacher</Button>}
+                              {post.type === 'TEACHER_OFFERING' && <Button size="sm" variant="hero" onClick={() => router.push(`/teachers/${post.user?.id}`)}>Contact Teacher</Button>}
                             </div>
                           </article>
                         </div>
@@ -312,7 +312,7 @@ const ExploreContent: React.FC = () => {
 
                     <div className="flex items-center justify-between pt-4 border-t border-border mt-auto">
                       <div className="flex gap-2">
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => { if (isGuest) { toast({ title: 'Sign in to save', description: 'Log in to save posts.' }); navigate('/auth'); return; } }}><Heart className="w-4 h-4" /></Button>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => { if (isGuest) { toast({ title: 'Sign in to save', description: 'Log in to save posts.' }); router.push('/auth'); return; } }}><Heart className="w-4 h-4" /></Button>
                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0"><Share2 className="w-4 h-4" /></Button>
                       </div>
                       {(() => {
@@ -321,7 +321,7 @@ const ExploreContent: React.FC = () => {
                         const isOwner = user && post.user && user.id === post.user.id;
 
                         if (isGuest) return (
-                          <Button size="sm" variant={post.type === 'TEACHER_OFFERING' ? 'hero' : 'secondary'} className="h-8 px-3 text-xs" onClick={() => { toast({ title: 'Register to interact', description: 'Please register to contact posts.' }); navigate('/auth'); }}>
+                          <Button size="sm" variant={post.type === 'TEACHER_OFFERING' ? 'hero' : 'secondary'} className="h-8 px-3 text-xs" onClick={() => { toast({ title: 'Register to interact', description: 'Please register to contact posts.' }); router.push('/auth'); }}>
                             {post.type === 'TEACHER_OFFERING' ? 'Contact' : 'Respond'}
                           </Button>
                         );
@@ -329,7 +329,7 @@ const ExploreContent: React.FC = () => {
                         if (isOwner) return <span className="text-[10px] uppercase font-bold text-muted-foreground">My Post</span>;
 
                         if (userRole === 'STUDENT' && postType === 'TEACHER_OFFERING') return (
-                          <Button size="sm" variant="hero" className="h-8 px-3 text-xs" onClick={() => navigate(`/teachers/${post.user?.id}`)}>
+                          <Button size="sm" variant="hero" className="h-8 px-3 text-xs" onClick={() => router.push(`/teachers/${post.user?.id}`)}>
                             Contact
                           </Button>
                         );

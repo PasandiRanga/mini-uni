@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useNavigate, Link } from "react-router-dom";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import Footer from "@/components/layout/Footer";
@@ -38,14 +39,13 @@ const FindTeacher: React.FC = () => {
 
   const { toast } = useToast();
   const { isAuthenticated } = useAuth();
-  const navigate = useNavigate();
+  const router = useRouter();
 
   useEffect(() => {
     const fetchTeachers = async () => {
       setIsLoading(true);
       try {
-        const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
-        const res = await fetch(`${baseUrl}/api/teachers`);
+        const res = await fetch(`/api/teachers`);
         if (!res.ok) {
           console.error('Teachers fetch failed', res.status, res.statusText);
           return;
@@ -86,7 +86,7 @@ const FindTeacher: React.FC = () => {
       if (verifiedOnly && !t.verified) return false;
       if (query) {
         const q = query.toLowerCase();
-        const hay = `${t.firstName} ${t.lastName} ${(t.subjects || []).join(' ')}`.toLowerCase();
+        const hay = `${t.firstName} ${t.lastName} ${(t.subjects || []).join(' ')} `.toLowerCase();
         if (!hay.includes(q)) return false;
       }
       if (subject && !(t.subjects || []).includes(subject)) return false;
@@ -107,7 +107,7 @@ const FindTeacher: React.FC = () => {
             <p className="text-muted-foreground">Browse verified teachers, compare prices and book classes.</p>
           </div>
 
-          <div className={`${viewType === 'grid' ? 'max-w-6xl' : 'max-w-4xl'} mx-auto mb-6`}>
+          <div className={`${viewType === 'grid' ? 'max-w-6xl' : 'max-w-4xl'} mx - auto mb - 6`}>
             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
               <div className="flex gap-3 flex-1 w-full">
                 <div className="relative flex-1">
@@ -120,14 +120,14 @@ const FindTeacher: React.FC = () => {
               <div className="flex bg-muted rounded-xl p-1 shrink-0">
                 <button
                   onClick={() => setViewType('grid')}
-                  className={`p-2 rounded-lg transition-all ${viewType === 'grid' ? 'bg-card shadow-soft text-primary' : 'text-muted-foreground'}`}
+                  className={`p - 2 rounded - lg transition - all ${viewType === 'grid' ? 'bg-card shadow-soft text-primary' : 'text-muted-foreground'} `}
                   title="Grid View"
                 >
                   <LayoutGrid className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setViewType('compact')}
-                  className={`p-2 rounded-lg transition-all ${viewType === 'compact' ? 'bg-card shadow-soft text-primary' : 'text-muted-foreground'}`}
+                  className={`p - 2 rounded - lg transition - all ${viewType === 'compact' ? 'bg-card shadow-soft text-primary' : 'text-muted-foreground'} `}
                   title="Compact View"
                 >
                   <LayoutList className="w-4 h-4" />
@@ -179,7 +179,7 @@ const FindTeacher: React.FC = () => {
             )}
           </div>
 
-          <div className={`${viewType === 'grid' ? 'max-w-6xl' : 'max-w-4xl'} mx-auto`}>
+          <div className={`${viewType === 'grid' ? 'max-w-6xl' : 'max-w-4xl'} mx - auto`}>
             <div className={viewType === 'grid' ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-4"}>
               {isLoading && <div className="text-center text-muted-foreground w-full py-10">Loading teachers...</div>}
               {!isLoading && filtered.length === 0 && (
@@ -191,9 +191,9 @@ const FindTeacher: React.FC = () => {
                 if (viewType === 'compact') {
                   return (
                     <div key={t.id} className="space-y-2">
-                      <article className={`bg-card rounded-xl p-4 shadow-sm border border-border/50 hover:border-primary/30 transition-all flex items-center justify-between gap-4 ${isExpanded ? 'border-primary/50 ring-1 ring-primary/5' : ''}`}>
+                      <article className={`bg - card rounded - xl p - 4 shadow - sm border border - border / 50 hover: border - primary / 30 transition - all flex items - center justify - between gap - 4 ${isExpanded ? 'border-primary/50 ring-1 ring-primary/5' : ''} `}>
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className={`w-10 h-10 shrink-0 rounded-lg gradient-hero flex items-center justify-center text-sm font-semibold text-primary-foreground`}>{(t.firstName || '').charAt(0)}{(t.lastName || '').charAt(0)}</div>
+                          <div className={`w - 10 h - 10 shrink - 0 rounded - lg gradient - hero flex items - center justify - center text - sm font - semibold text - primary - foreground`}>{(t.firstName || '').charAt(0)}{(t.lastName || '').charAt(0)}</div>
                           <div className="min-w-0">
                             <h3 className="font-semibold text-sm truncate">{t.firstName} {t.lastName}</h3>
                             <p className="text-xs text-muted-foreground truncate">{(t.subjects || []).join(', ')}</p>
@@ -219,7 +219,7 @@ const FindTeacher: React.FC = () => {
                               <div className="flex items-center gap-4">
                                 <div className="w-14 h-14 rounded-2xl gradient-hero flex items-center justify-center text-primary-foreground font-bold text-xl">{(t.firstName || '').charAt(0)}{(t.lastName || '').charAt(0)}</div>
                                 <div>
-                                  <Link to={`/teachers/${t.id}`} className="font-bold text-xl hover:text-primary transition-colors">{t.firstName} {t.lastName}</Link>
+                                  <Link href={`/ teachers / ${t.id} `} className="font-bold text-xl hover:text-primary transition-colors">{t.firstName} {t.lastName}</Link>
                                   <div className="flex items-center gap-2 mt-1">
                                     <Badge variant={t.verified ? 'secondary' : 'outline'} className="text-[10px] h-5">{t.verified ? 'Verified' : 'Pending'}</Badge>
                                     <div className="flex items-center text-yellow-500 text-sm font-bold"><Star className="w-3.5 h-3.5 fill-current mr-1" /> {t.rating ?? 'New'}</div>
@@ -236,8 +236,8 @@ const FindTeacher: React.FC = () => {
                               {(t.subjects || []).map(s => <Badge key={s} variant="outline" className="bg-muted/50 border-none font-medium">{s}</Badge>)}
                             </div>
                             <div className="flex gap-3 pt-4 border-t border-border">
-                              <Button className="flex-1 gradient-hero shadow-soft h-11" onClick={() => navigate(`/teachers/${t.id}`)}>Book a Class</Button>
-                              <Button variant="outline" className="h-11 px-5" onClick={() => navigate(`/teachers/${t.id}`)}><MessageCircle className="w-5 h-5" /></Button>
+                              <Button className="flex-1 gradient-hero shadow-soft h-11" onClick={() => router.push(`/ teachers / ${t.id} `)}>Book a Class</Button>
+                              <Button variant="outline" className="h-11 px-5" onClick={() => router.push(`/ teachers / ${t.id} `)}><MessageCircle className="w-5 h-5" /></Button>
                             </div>
                           </div>
                         </div>
@@ -251,7 +251,7 @@ const FindTeacher: React.FC = () => {
                     <div className="flex items-start gap-4 mb-4 flex-1">
                       <div className="w-16 h-16 rounded-2xl gradient-hero flex items-center justify-center text-primary-foreground font-bold text-2xl shrink-0">{(t.firstName || '').charAt(0)}{(t.lastName || '').charAt(0)}</div>
                       <div className="min-w-0">
-                        <Link to={`/teachers/${t.id}`} className="font-bold text-xl hover:text-primary transition-colors block truncate">{t.firstName} {t.lastName}</Link>
+                        <Link href={`/ teachers / ${t.id} `} className="font-bold text-xl hover:text-primary transition-colors block truncate">{t.firstName} {t.lastName}</Link>
                         <div className="flex flex-wrap gap-1 mt-1">
                           {(t.subjects || []).slice(0, 3).map(s => <span key={s} className="text-xs text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full">{s}</span>)}
                         </div>
@@ -272,7 +272,7 @@ const FindTeacher: React.FC = () => {
 
                       <div className="flex items-center gap-2">
                         <Badge variant={t.verified ? 'secondary' : 'outline'} className="hidden sm:inline-flex">{t.verified ? 'Verified' : 'Pending'}</Badge>
-                        <Button className={`${viewType === 'grid' ? 'flex-1' : ''}`} onClick={() => { if (!isAuthenticated) { toast({ title: 'Sign in to contact' }); navigate('/auth'); return; } navigate(`/teachers/${t.id}`); }}>View Profile</Button>
+                        <Button className={`${viewType === 'grid' ? 'flex-1' : ''} `} onClick={() => { if (!isAuthenticated) { toast({ title: 'Sign in to contact' }); navigate('/auth'); return; } navigate(` / teachers / ${t.id} `); }}>View Profile</Button>
                       </div>
                     </div>
                   </div>

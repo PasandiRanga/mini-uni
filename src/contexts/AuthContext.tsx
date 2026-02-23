@@ -11,7 +11,6 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string, role: string) => Promise<void>;
@@ -24,31 +23,34 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Initialize auth from localStorage on mount
+  // Initialize auth by checking session from server
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    const storedToken = localStorage.getItem('token');
-
-    if (storedUser && storedToken) {
+    const initializeAuth = async () => {
       try {
-        setUser(JSON.parse(storedUser));
-        setToken(storedToken);
+        const response = await fetch('/api/auth/me');
+        if (response.ok) {
+          const userData = await response.json();
+          setUser(userData);
+        } else {
+          // Clear any local state if server says unauthorized
+          setUser(null);
+        }
       } catch (error) {
-        console.error('Failed to parse stored auth data:', error);
-        localStorage.removeItem('user');
-        localStorage.removeItem('token');
+        console.error('Failed to fetch user session:', error);
+      } finally {
+        setIsLoading(false);
       }
-    }
+    };
+
+    initializeAuth();
   }, []);
 
   const login = async (email: string, password: string, role: string) => {
     setIsLoading(true);
     try {
-      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-      const response = await fetch(`${baseUrl}/api/auth/login`, {
+      const response = await fetch(`/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -61,17 +63,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       const data = await response.json();
 
-      // Normalize role casing from backend and store token and user
+      // Normalize role casing from backend
       const normalizedUser = data.user && typeof data.user.role === 'string'
         ? { ...data.user, role: data.user.role.toUpperCase() }
         : data.user;
 
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(normalizedUser));
-
-      setToken(data.token);
       setUser(normalizedUser);
-      // Wait a tick so consumers (routes) receive the updated auth state
+      // Wait a tick so consumers receive the updated auth state
       await new Promise((res) => setTimeout(res, 0));
     } finally {
       setIsLoading(false);
@@ -81,8 +79,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const register = async (email: string, password: string, firstName: string, lastName: string, phone: string, role: string) => {
     setIsLoading(true);
     try {
-      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-      const response = await fetch(`${baseUrl}/api/auth/register`, {
+      const response = await fetch(`/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, firstName, lastName, phone, role }),
@@ -92,9 +89,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const error = await response.json();
         throw new Error(error.message || 'Registration failed');
       }
-
-      // Registration successful - do not auto-login
-      // The user must now go to the login page
     } finally {
       setIsLoading(false);
     }
@@ -103,20 +97,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const logout = async () => {
     setIsLoading(true);
     try {
-      // Call backend logout endpoint
-      if (token) {
-        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-        await fetch(`${baseUrl}/api/auth/logout`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-        }).catch((error) => {
-          // Continue with logout even if backend call fails
-          console.warn('Backend logout failed, proceeding with client-side cleanup:', error);
-        });
-      }
+      await fetch(`/api/auth/logout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      }).catch((error) => {
+        console.warn('Backend logout failed, proceeding with client-side cleanup:', error);
+      });
 
       clearAuth();
     } finally {
@@ -125,16 +111,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const clearAuth = () => {
-    // Clear localStorage
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-
-    // Clear session storage if used
-    sessionStorage.removeItem('token');
-    sessionStorage.removeItem('user');
-
-    // Clear state
-    setToken(null);
     setUser(null);
   };
 
@@ -142,9 +118,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     <AuthContext.Provider
       value={{
         user,
-        token,
         isLoading,
-        isAuthenticated: !!token && !!user,
+        isAuthenticated: !!user,
         login,
         register,
         logout,

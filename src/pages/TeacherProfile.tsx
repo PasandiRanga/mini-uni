@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useRouter } from "next/navigation";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -30,14 +30,13 @@ const TeacherProfile: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
   const isGuest = !isAuthenticated;
   const { toast } = useToast();
-  const navigate = useNavigate();
+  const router = useRouter();
 
   useEffect(() => {
     if (!id) return;
-    const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
     const fetchDetail = async () => {
       try {
-        const res = await fetch(`${baseUrl}/api/teachers/${id}`);
+        const res = await fetch(`/api/teachers/${id}`);
         if (res.ok) {
           const data = await res.json();
           setTeacher(data);
@@ -49,7 +48,7 @@ const TeacherProfile: React.FC = () => {
 
     const fetchPosts = async () => {
       try {
-        const res = await fetch(`${baseUrl}/api/posts?teacherId=${id}`);
+        const res = await fetch(`/api/posts?teacherId=${id}`);
         if (res.ok) {
           const data = await res.json();
           setPosts(data || []);
@@ -96,12 +95,12 @@ const TeacherProfile: React.FC = () => {
                     <Button onClick={() => {
                       if (!isAuthenticated) {
                         toast({ title: 'Sign in to message', description: 'Please sign in before sending inquiries.' });
-                        navigate('/auth');
+                        router.push('/auth');
                         return;
                       }
                       setIsInquiryOpen(true);
                     }}><Mail className="w-4 h-4 mr-2" />Message</Button>
-                    <Button onClick={() => { if (!isAuthenticated) { toast({ title: 'Sign in to book', description: 'Please sign in before booking.' }); navigate('/auth'); return; } navigate(`/teachers/${teacher.id}/book`); }}>Book</Button>
+                    <Button onClick={() => { if (!isAuthenticated) { toast({ title: 'Sign in to book', description: 'Please sign in before booking.' }); router.push('/auth'); return; } router.push(`/teachers/${teacher.id}/book`); }}>Book</Button>
                   </>
                 ) : (
                   <p className="text-sm text-muted-foreground italic">You are viewing this as a teacher. Student interactions are disabled.</p>
