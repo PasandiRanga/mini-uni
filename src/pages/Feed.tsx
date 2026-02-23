@@ -1,15 +1,17 @@
-import { useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import { useRouter } from "next/navigation";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Search, 
-  Filter, 
-  MapPin, 
-  Star, 
-  Clock, 
+import {
+  Search,
+  Filter,
+  Star,
+  Clock,
   DollarSign,
   BookOpen,
   GraduationCap,
@@ -17,89 +19,147 @@ import {
   Heart,
   Share2,
   ChevronDown,
-  Plus
+  Plus,
+  LayoutGrid,
+  LayoutList
 } from "lucide-react";
+import Link from "next/link";
 
-// Mock data for the feed
-const mockTeacherPosts = [
-  {
-    id: 1,
-    type: "teacher",
-    name: "Dr. Sarah Mitchell",
-    avatar: "SM",
-    verified: true,
-    subject: "Mathematics",
-    title: "Expert Calculus & Algebra Tutoring",
-    description: "Specialized in AP Calculus, SAT Math prep, and college-level algebra. 8+ years of teaching experience with a proven track record of student success.",
-    hourlyRate: 45,
-    rating: 4.9,
-    reviews: 127,
-    location: "San Francisco, CA",
-    availability: "Mon-Fri, 3PM-8PM",
-    tags: ["Calculus", "Algebra", "SAT Prep"],
-    postedAt: "2 hours ago"
-  },
-  {
-    id: 2,
-    type: "teacher",
-    name: "James Chen",
-    avatar: "JC",
-    verified: true,
-    subject: "Physics",
-    title: "Physics Made Simple - All Levels",
-    description: "Making physics fun and understandable! I cover AP Physics, IB Physics, and introductory college physics. Hands-on approach with real-world examples.",
-    hourlyRate: 55,
-    rating: 4.8,
-    reviews: 89,
-    location: "Los Angeles, CA",
-    availability: "Weekends, Flexible",
-    tags: ["AP Physics", "IB Physics", "Mechanics"],
-    postedAt: "5 hours ago"
-  },
-  {
-    id: 3,
-    type: "student",
-    name: "Alex Johnson",
-    avatar: "AJ",
-    subject: "Chemistry",
-    title: "Looking for Chemistry Tutor - Grade 11",
-    description: "Need help with organic chemistry and balancing equations. Preparing for finals and could use someone patient who can explain concepts clearly.",
-    budget: "30-40/hr",
-    location: "Online",
-    schedule: "Evenings preferred",
-    tags: ["Organic Chemistry", "Grade 11", "Finals Prep"],
-    postedAt: "1 hour ago"
-  },
-  {
-    id: 4,
-    type: "teacher",
-    name: "Maria Garcia",
-    avatar: "MG",
-    verified: true,
-    subject: "Spanish",
-    title: "Native Spanish Speaker - All Levels Welcome",
-    description: "Learn Spanish from a native speaker! I teach conversational Spanish, business Spanish, and help with DELE exam preparation. ¡Vamos a aprender juntos!",
-    hourlyRate: 35,
-    rating: 5.0,
-    reviews: 64,
-    location: "Miami, FL",
-    availability: "Flexible Schedule",
-    tags: ["Conversational", "Business Spanish", "DELE"],
-    postedAt: "3 hours ago"
-  }
-];
+// Data fetched from backend (extend with commonly expected fields)
+type PostItem = {
+  id: string;
+  type: string; // TEACHER_OFFERING | STUDENT_REQUEST
+  title: string;
+  description: string;
+  subject?: string;
+  grade?: string;
+  fee?: number;
+  availability?: string[]; // e.g. ['Mon AM', 'Tue PM']
+  mode?: "ONLINE";
+  rating?: number;
+  createdAt?: string;
+  user?: { id: string; firstName: string; lastName: string; role: string };
+};
 
 const subjects = ["All Subjects", "Mathematics", "Physics", "Chemistry", "Biology", "English", "Spanish", "History", "Computer Science"];
 
 const Feed = () => {
+  const [posts, setPosts] = useState<PostItem[]>([]);
+  const [isLoadingPosts, setIsLoadingPosts] = useState(false);
+  const [postType, setPostType] = useState<"all" | "teachers" | "students" | "my-posts">("all");
+  const [myPosts, setMyPosts] = useState<PostItem[]>([]);
+  const [viewType, setViewType] = useState<'grid' | 'compact'>('grid');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const { user, token, isAuthenticated } = useAuth();
+  const { toast } = useToast();
+  const router = useRouter();
+  const isGuest = !isAuthenticated;
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      setIsLoadingPosts(true);
+      try {
+        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+        const res = await fetch(`${baseUrl}/api/posts`);
+        if (res.ok) {
+          const data = await res.json();
+          setPosts(data);
+        } else {
+          console.warn('Failed to fetch posts');
+        }
+      } catch (err) {
+        console.error('Error fetching posts', err);
+      } finally {
+        setIsLoadingPosts(false);
+      }
+    };
+
+    fetchPosts();
+  }, []);
+
+  useEffect(() => {
+    if (isAuthenticated && postType === "my-posts" && token) {
+      const fetchMyPosts = async () => {
+        try {
+          const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+          const res = await fetch(`${baseUrl}/api/posts/mine`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (res.ok) {
+            setMyPosts(await res.json());
+          }
+        } catch (err) {
+          console.error('Error fetching my posts', err);
+        }
+      };
+      fetchMyPosts();
+    }
+  }, [isAuthenticated, postType, token]);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("All Subjects");
-  const [postType, setPostType] = useState<"all" | "teachers" | "students">("all");
+
+  // Advanced filters
+  const [grade, setGrade] = useState<string | null>(null);
+
+  const [minPrice, setMinPrice] = useState<number | null>(null);
+  const [maxPrice, setMaxPrice] = useState<number | null>(null);
+
+  const [minRating, setMinRating] = useState<number | null>(null);
+  const [availabilityFilter, setAvailabilityFilter] = useState<string | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Compose filteredPosts using current filters
+  const filteredPosts = useMemo(() => {
+    const basePosts = postType === "my-posts" ? myPosts : posts;
+    return basePosts
+      .filter((post) => {
+        // Post type filter
+        if (postType === "teachers" && post.type !== "TEACHER_OFFERING") return false;
+        if (postType === "students" && post.type !== "STUDENT_REQUEST") return false;
+
+        // Subject filter
+        if (selectedSubject && selectedSubject !== "All Subjects" && post.subject !== selectedSubject) return false;
+
+        // Search query filter
+        if (searchQuery) {
+          const q = searchQuery.toLowerCase();
+          const hay = `${post.title} ${post.description} ${post.subject || ""} ${post.user?.firstName || ""} ${post.user?.lastName || ""}`.toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+
+        // Grade
+        if (grade && post.grade && post.grade !== grade) return false;
+
+        // Price range
+        if (minPrice != null && (post.fee == null || post.fee < minPrice)) return false;
+        if (maxPrice != null && (post.fee == null || post.fee > maxPrice)) return false;
+
+        // Rating
+        if (minRating != null && (post.rating == null || post.rating < minRating)) return false;
+
+        // Availability
+        if (availabilityFilter && post.availability) {
+          if (!post.availability.includes(availabilityFilter)) return false;
+        }
+
+        return true;
+      })
+      .sort((a, b) => {
+        // simple sort by rating then recent
+        const ra = a.rating || 0;
+        const rb = b.rating || 0;
+        if (rb !== ra) return rb - ra;
+        const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return db - da;
+      });
+  }, [posts, myPosts, searchQuery, selectedSubject, postType, grade, minPrice, maxPrice, minRating, availabilityFilter]);
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
+
       <main className="pt-20">
         {/* Header */}
         <div className="bg-muted/30 border-b border-border">
@@ -112,6 +172,11 @@ const Feed = () => {
                 Browse teacher offerings or student requests. Find your perfect match.
               </p>
             </div>
+            {isGuest && (
+              <div className="max-w-3xl mx-auto bg-yellow-50 border border-yellow-100 rounded-md p-3 text-sm text-yellow-900 mt-4">
+                You are browsing as a guest. Create an account to save posts, contact teachers, or create your own posts. <Button variant="link" asChild><Link href="/signup">Get started</Link></Button>
+              </div>
+            )}
 
             {/* Search and Filters */}
             <div className="max-w-4xl mx-auto">
@@ -125,12 +190,8 @@ const Feed = () => {
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
                 </div>
-                <Button variant="outline" size="lg" className="gap-2">
-                  <MapPin className="w-4 h-4" />
-                  Location
-                  <ChevronDown className="w-4 h-4" />
-                </Button>
-                <Button variant="outline" size="lg" className="gap-2">
+                {/* Location button removed — use 'City' in advanced filters instead */}
+                <Button variant="outline" size="lg" className="gap-2" onClick={() => setShowFilters((s) => !s)}>
                   <Filter className="w-4 h-4" />
                   Filters
                 </Button>
@@ -142,167 +203,286 @@ const Feed = () => {
                   <button
                     key={subject}
                     onClick={() => setSelectedSubject(subject)}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                      selectedSubject === subject
-                        ? "gradient-hero text-primary-foreground shadow-soft"
-                        : "bg-card border border-border hover:border-primary/30"
-                    }`}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${selectedSubject === subject
+                      ? "gradient-hero text-primary-foreground shadow-soft"
+                      : "bg-card border border-border hover:border-primary/30"
+                      }`}
                   >
                     {subject}
                   </button>
                 ))}
               </div>
+              {/* Advanced Filters Panel (toggle via Filters button) */}
+              {showFilters && (
+                <div className="mt-4 bg-card rounded-xl p-4 border border-border">
+                  <div className="grid md:grid-cols-3 gap-3">
+                    <div>
+                      <label className="text-sm font-medium">Grade / Level</label>
+                      <Input placeholder="e.g. Grade 10, Undergraduate" value={grade || ''} onChange={(e) => setGrade(e.target.value || null)} />
+                    </div>
+                    <div />
+                    <div />
+
+                  </div>
+
+                  <div className="grid md:grid-cols-3 gap-3 mt-3">
+                    <div>
+                      <label className="text-sm font-medium">Price min</label>
+                      <Input type="number" placeholder="Min" value={minPrice ?? ''} onChange={(e) => setMinPrice(e.target.value ? Number(e.target.value) : null)} />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Price max</label>
+                      <Input type="number" placeholder="Max" value={maxPrice ?? ''} onChange={(e) => setMaxPrice(e.target.value ? Number(e.target.value) : null)} />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Min rating</label>
+                      <Input type="number" placeholder="e.g. 4" value={minRating ?? ''} onChange={(e) => setMinRating(e.target.value ? Number(e.target.value) : null)} />
+                    </div>
+                  </div>
+
+                  <div className="grid md:grid-cols-3 gap-3 mt-3">
+                    <div>
+                      <label className="text-sm font-medium">Availability (optional)</label>
+                      <Input placeholder="e.g. Mon AM" value={availabilityFilter || ''} onChange={(e) => setAvailabilityFilter(e.target.value || null)} />
+                    </div>
+                    <div />
+                    <div className="flex items-end justify-end">
+                      <Button variant="outline" onClick={() => {
+                        setGrade(null); setMinPrice(null); setMaxPrice(null); setMinRating(null); setAvailabilityFilter(null);
+                      }}>Reset Filters</Button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
 
+
         {/* Feed Content */}
         <div className="container mx-auto px-4 py-8">
-          <div className="max-w-3xl mx-auto">
+          <div className={`${viewType === 'grid' ? 'max-w-6xl' : 'max-w-3xl'} mx-auto transition-all duration-300`}>
             {/* Post Type Toggle */}
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex bg-muted rounded-xl p-1">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
+              <div className="flex bg-muted rounded-xl p-1 overflow-x-auto w-full md:w-auto">
                 <button
                   onClick={() => setPostType("all")}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                    postType === "all" ? "bg-card shadow-soft" : "text-muted-foreground"
-                  }`}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${postType === "all" ? "bg-card shadow-soft text-primary" : "text-muted-foreground"}`}
                 >
                   All Posts
                 </button>
                 <button
                   onClick={() => setPostType("teachers")}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                    postType === "teachers" ? "bg-card shadow-soft" : "text-muted-foreground"
-                  }`}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${postType === "teachers" ? "bg-card shadow-soft text-primary" : "text-muted-foreground"}`}
                 >
                   Teachers
                 </button>
                 <button
                   onClick={() => setPostType("students")}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                    postType === "students" ? "bg-card shadow-soft" : "text-muted-foreground"
-                  }`}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${postType === "students" ? "bg-card shadow-soft text-primary" : "text-muted-foreground"}`}
                 >
                   Students
                 </button>
+                {isAuthenticated && (
+                  <button
+                    onClick={() => setPostType("my-posts")}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${postType === "my-posts" ? "bg-card shadow-soft text-primary" : "text-muted-foreground"}`}
+                  >
+                    My Posts
+                  </button>
+                )}
               </div>
 
-              <Button variant="hero" className="gap-2">
-                <Plus className="w-4 h-4" />
-                Create Post
-              </Button>
+              <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
+                <div className="flex bg-muted rounded-xl p-1">
+                  <button
+                    onClick={() => setViewType('grid')}
+                    className={`p-2 rounded-lg transition-all ${viewType === 'grid' ? 'bg-card shadow-soft text-primary' : 'text-muted-foreground'}`}
+                    title="Grid View"
+                  >
+                    <LayoutGrid className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setViewType('compact')}
+                    className={`p-2 rounded-lg transition-all ${viewType === 'compact' ? 'bg-card shadow-soft text-primary' : 'text-muted-foreground'}`}
+                    title="Compact View"
+                  >
+                    <LayoutList className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <Button variant="hero" className="gap-2" onClick={() => {
+                  if (isGuest) {
+                    toast({ title: 'Create an account', description: 'Please register or log in to create posts.' });
+                    router.push('/auth');
+                    return;
+                  }
+                  if (user?.role === 'TEACHER' && !user.isActive) {
+                    toast({ title: 'Verification Required', description: 'Please complete your profile verification.', variant: 'destructive' });
+                    return;
+                  }
+                  router.push('/post/create');
+                }}>
+                  <Plus className="w-4 h-4" />
+                  Create Post
+                </Button>
+              </div>
             </div>
 
             {/* Posts */}
-            <div className="space-y-4">
-              {mockTeacherPosts
-                .filter((post) => 
-                  postType === "all" || 
-                  (postType === "teachers" && post.type === "teacher") ||
-                  (postType === "students" && post.type === "student")
-                )
-                .map((post) => (
-                <article 
-                  key={post.id} 
-                  className="bg-card rounded-2xl p-6 shadow-card hover:shadow-elevated transition-all duration-300"
-                >
-                  {/* Header */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-12 h-12 rounded-xl ${post.type === "teacher" ? "gradient-hero" : "bg-accent"} flex items-center justify-center text-lg font-semibold text-primary-foreground`}>
-                        {post.avatar}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold">{post.name}</span>
-                          {post.type === "teacher" && post.verified && (
-                            <Badge variant="secondary" className="bg-success/10 text-success text-xs">
-                              Verified
-                            </Badge>
-                          )}
+            <div className={viewType === 'grid' ? "grid grid-cols-1 md:grid-cols-2 gap-6" : "space-y-4"}>
+              {filteredPosts.map((post) => {
+                const authorName = post.user ? `${post.user.firstName} ${post.user.lastName}` : 'Member';
+                const subjectTag = post.subject ? [post.subject] : [];
+                const isExpanded = expandedId === post.id;
+
+                if (viewType === 'compact') {
+                  return (
+                    <div key={post.id} className="space-y-2">
+                      <article className={`bg-card rounded-xl p-4 shadow-sm border border-border/50 hover:border-primary/30 transition-all flex items-center justify-between gap-4 ${isExpanded ? 'border-primary/50 ring-1 ring-primary/5' : ''}`}>
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className={`w-10 h-10 shrink-0 rounded-lg gradient-hero flex items-center justify-center text-sm font-semibold text-primary-foreground`}>{authorName.split(' ').map(n => n[0]).slice(0, 2).join('')}</div>
+                          <div className="min-w-0">
+                            <h3 className="font-semibold text-sm truncate">{post.title}</h3>
+                            <p className="text-xs text-muted-foreground truncate">{authorName} • {post.subject}</p>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <span>{post.subject}</span>
-                          <span>•</span>
-                          <span>{post.postedAt}</span>
+                        <div className="flex items-center gap-3 shrink-0">
+                          {post.fee && <span className="text-sm font-bold text-primary">${post.fee}</span>}
+                          <Button
+                            variant={isExpanded ? "secondary" : "ghost"}
+                            size="sm"
+                            className="h-8 px-3"
+                            onClick={() => setExpandedId(isExpanded ? null : post.id)}
+                          >
+                            {isExpanded ? 'Close' : 'View'}
+                          </Button>
+                        </div>
+                      </article>
+
+                      {isExpanded && (
+                        <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                          <article className="bg-card rounded-2xl p-6 shadow-elevated border border-primary/20">
+                            <div className="flex items-start justify-between mb-4">
+                              <div className="flex items-center gap-3">
+                                <div className={`w-12 h-12 rounded-xl gradient-hero flex items-center justify-center text-lg font-semibold text-primary-foreground`}>{authorName.split(' ').map(n => n[0]).slice(0, 2).join('')}</div>
+                                <div>
+                                  <div className="flex items-center gap-2"><span className="font-semibold">{authorName}</span></div>
+                                  <div className="flex items-center gap-2 text-sm text-muted-foreground"><span>{post.subject}</span></div>
+                                </div>
+                              </div>
+                              <Badge variant="outline" className={'border-primary text-primary shrink-0'}>{post.type === 'TEACHER_OFFERING' ? <GraduationCap className="w-3 h-3 mr-1" /> : <BookOpen className="w-3 h-3 mr-1" />}{post.type === 'TEACHER_OFFERING' ? 'Teacher' : 'Student'}</Badge>
+                            </div>
+                            <h3 className="text-lg font-semibold mb-2">{post.title}</h3>
+                            <p className="text-muted-foreground mb-4 leading-relaxed text-sm">{post.description}</p>
+                            <div className="flex flex-wrap gap-2 mb-4">{subjectTag.map((tag) => (<span key={tag} className="px-3 py-1 rounded-full bg-muted text-xs font-medium">{tag}</span>))}</div>
+                            <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
+                              <span className="flex items-center gap-1 font-semibold text-foreground"><DollarSign className="w-4 h-4 text-primary" />{post.fee}/hr</span>
+                              <span>Online</span>
+                            </div>
+                            <div className="flex items-center justify-between pt-4 border-t border-border">
+                              <div className="flex gap-2">
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => { if (isGuest) { toast({ title: 'Sign in' }); router.push('/auth'); } }}><Heart className="w-4 h-4" /></Button>
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0"><Share2 className="w-4 h-4" /></Button>
+                              </div>
+                              <Button size="sm" variant={post.type === 'TEACHER_OFFERING' ? 'hero' : 'secondary'} onClick={() => {
+                                if (isGuest) router.push('/auth');
+                                else if (post.type === 'TEACHER_OFFERING') router.push(`/teachers/${post.user?.id}`);
+                                else toast({ title: 'Responded' });
+                              }}>
+                                {post.type === 'TEACHER_OFFERING' ? 'Contact Teacher' : 'Respond'}
+                              </Button>
+                            </div>
+                          </article>
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+
+                return (
+                  <article key={post.id} className="bg-card rounded-2xl p-6 shadow-card hover:shadow-elevated transition-all duration-300 flex flex-col h-full">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3 text-left">
+                        <div className={`w-12 h-12 rounded-xl gradient-hero flex items-center justify-center text-lg font-semibold text-primary-foreground shrink-0`}>
+                          {authorName.split(' ').map(n => n[0]).slice(0, 2).join('')}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold truncate">{authorName}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground truncate">
+                            <span>{post.subject}</span>
+                          </div>
                         </div>
                       </div>
+
+                      <Badge variant="outline" className={'border-primary text-primary shrink-0'}>
+                        {post.type === 'TEACHER_OFFERING' ? <GraduationCap className="w-3 h-3 mr-1" /> : <BookOpen className="w-3 h-3 mr-1" />}
+                        {post.type === 'TEACHER_OFFERING' ? 'Teacher' : 'Student'}
+                      </Badge>
                     </div>
-                    
-                    <Badge variant="outline" className={post.type === "teacher" ? "border-primary text-primary" : "border-accent text-accent"}>
-                      {post.type === "teacher" ? <GraduationCap className="w-3 h-3 mr-1" /> : <BookOpen className="w-3 h-3 mr-1" />}
-                      {post.type === "teacher" ? "Teacher" : "Student Request"}
-                    </Badge>
-                  </div>
 
-                  {/* Content */}
-                  <h3 className="text-lg font-semibold mb-2">{post.title}</h3>
-                  <p className="text-muted-foreground mb-4 leading-relaxed">{post.description}</p>
+                    <h3 className="text-lg font-semibold mb-2 line-clamp-1">{post.title}</h3>
+                    <p className="text-muted-foreground mb-4 leading-relaxed line-clamp-2 text-sm">{post.description}</p>
 
-                  {/* Tags */}
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {post.tags.map((tag) => (
-                      <span key={tag} className="px-3 py-1 rounded-full bg-muted text-sm">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-
-                  {/* Meta Info */}
-                  <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-4">
-                    <span className="flex items-center gap-1">
-                      <MapPin className="w-4 h-4" />
-                      {post.location}
-                    </span>
-                    {post.type === "teacher" ? (
-                      <>
-                        <span className="flex items-center gap-1">
-                          <DollarSign className="w-4 h-4" />
-                          ${post.hourlyRate}/hr
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Star className="w-4 h-4 fill-warning text-warning" />
-                          {post.rating} ({post.reviews} reviews)
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-4 h-4" />
-                          {post.availability}
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="flex items-center gap-1">
-                          <DollarSign className="w-4 h-4" />
-                          Budget: ${post.budget}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-4 h-4" />
-                          {post.schedule}
-                        </span>
-                      </>
-                    )}
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex items-center justify-between pt-4 border-t border-border">
-                    <div className="flex gap-2">
-                      <Button variant="ghost" size="sm" className="gap-1.5">
-                        <Heart className="w-4 h-4" />
-                        Save
-                      </Button>
-                      <Button variant="ghost" size="sm" className="gap-1.5">
-                        <Share2 className="w-4 h-4" />
-                        Share
-                      </Button>
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {subjectTag.map((tag) => (
+                        <span key={tag} className="px-3 py-1 rounded-full bg-muted text-xs font-medium">{tag}</span>
+                      ))}
                     </div>
-                    <Button variant={post.type === "teacher" ? "hero" : "secondary"} className="gap-2">
-                      <MessageCircle className="w-4 h-4" />
-                      {post.type === "teacher" ? "Contact Teacher" : "Respond"}
-                    </Button>
-                  </div>
-                </article>
-              ))}
+
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4 mt-auto">
+                      <span className="flex items-center gap-1">Online</span>
+                      {post.fee && (
+                        <span className="flex items-center gap-1 font-semibold text-foreground">
+                          <DollarSign className="w-4 h-4 text-primary" />
+                          {post.fee}/hr
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between pt-4 border-t border-border mt-auto">
+                      <div className="flex gap-2">
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => {
+                          if (isGuest) { toast({ title: 'Sign in to save' }); router.push('/auth'); return; }
+                        }}>
+                          <Heart className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <Share2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      {(() => {
+                        const userRole = user?.role?.toUpperCase();
+                        const postType = post.type?.toUpperCase();
+                        const isOwner = user && post.user && user.id === post.user.id;
+
+                        if (isGuest) return (
+                          <Button size="sm" variant={post.type === 'TEACHER_OFFERING' ? 'hero' : 'secondary'} className="h-8 px-3 text-xs" onClick={() => {
+                            toast({ title: 'Register to interact' });
+                            router.push('/auth');
+                          }}>
+                            {post.type === 'TEACHER_OFFERING' ? 'Contact' : 'Respond'}
+                          </Button>
+                        );
+                        if (isOwner) return <span className="text-[10px] uppercase font-bold text-muted-foreground">My Post</span>;
+                        if (userRole === 'STUDENT' && postType === 'TEACHER_OFFERING') return (
+                          <Button size="sm" variant="hero" className="h-8 px-3 text-xs" onClick={() => router.push(`/teachers/${post.user?.id}`)}>
+                            Contact
+                          </Button>
+                        );
+                        if (userRole === 'TEACHER' && postType === 'STUDENT_REQUEST') return (
+                          <Button size="sm" variant="secondary" className="h-8 px-3 text-xs" onClick={() => toast({ title: 'Interest Sent' })}>
+                            Respond
+                          </Button>
+                        );
+                        return null;
+                      })()}
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           </div>
         </div>

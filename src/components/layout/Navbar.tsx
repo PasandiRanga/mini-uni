@@ -1,55 +1,95 @@
-import { Link, useLocation } from "react-router-dom";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Menu, X, GraduationCap, BookOpen } from "lucide-react";
+import { Menu, X, GraduationCap, LogOut } from "lucide-react";
 import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const location = useLocation();
-  const isHome = location.pathname === "/";
+  const router = useRouter();
+  const { isAuthenticated, logout, user } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+    setIsOpen(false);
+    router.push('/');
+  };
+
+  const getDashboardPath = () => user?.role === 'TEACHER' ? '/teacher/dashboard' : '/student/dashboard';
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-xl border-b border-border">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 group">
+          <Link href={isAuthenticated ? (getDashboardPath()) : "/"} className="flex items-center gap-2 group">
             <div className="w-9 h-9 rounded-xl gradient-hero flex items-center justify-center shadow-soft group-hover:shadow-card transition-shadow">
               <GraduationCap className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold text-foreground">mini uni</span>
+            <span className="text-xl font-bold text-foreground">MiniUni</span>
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-6">
-            <Link 
-              to="/feed" 
-              className="text-muted-foreground hover:text-foreground transition-colors font-medium"
-            >
-              Explore
-            </Link>
-            <Link 
-              to="/how-it-works" 
-              className="text-muted-foreground hover:text-foreground transition-colors font-medium"
-            >
-              How It Works
-            </Link>
-            <Link 
-              to="/for-teachers" 
-              className="text-muted-foreground hover:text-foreground transition-colors font-medium"
-            >
-              For Teachers
-            </Link>
+          <div className="hidden md:flex items-center gap-8">
+            {!isAuthenticated ? (
+              // Guest nav: Home, Explore, How It Works
+              <>
+                <Link href="/" className="text-muted-foreground hover:text-foreground transition-colors font-medium">
+                  Home
+                </Link>
+                <Link href="/feed" className="text-muted-foreground hover:text-foreground transition-colors font-medium">
+                  Explore
+                </Link>
+                <Link href="/how-it-works" className="text-muted-foreground hover:text-foreground transition-colors font-medium">
+                  How It Works
+                </Link>
+              </>
+            ) : (
+              // Authenticated nav: Explore, Find Teachers, Create Post
+              <>
+                <Link href="/feed" className="text-muted-foreground hover:text-foreground transition-colors font-medium">
+                  Explore
+                </Link>
+                <Link href="/teachers" className="text-muted-foreground hover:text-foreground transition-colors font-medium">
+                  Find Teachers
+                </Link>
+                {user?.role === 'STUDENT' && (
+                  <Link href="/post/create" className="text-muted-foreground hover:text-foreground transition-colors font-medium">
+                    Post Request
+                  </Link>
+                )}
+                {user?.role === 'TEACHER' && (
+                  <Link href="/post/create" className="text-muted-foreground hover:text-foreground transition-colors font-medium">
+                    Create Offering
+                  </Link>
+                )}
+              </>
+            )}
           </div>
 
           {/* Desktop Auth Buttons */}
           <div className="hidden md:flex items-center gap-3">
-            <Button variant="ghost" asChild>
-              <Link to="/auth">Log in</Link>
-            </Button>
-            <Button variant="hero" asChild>
-              <Link to="/auth?mode=signup">Get Started</Link>
-            </Button>
+            {isAuthenticated ? (
+              <>
+                <span className="text-sm text-muted-foreground">
+                  {user?.firstName}
+                </span>
+                <Button variant="ghost" size="sm" onClick={handleLogout} className="gap-2">
+                  <LogOut className="w-4 h-4" />
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="ghost" asChild>
+                  <Link href="/auth">Log in</Link>
+                </Button>
+                <Button variant="hero" asChild>
+                  <Link href="/signup">Get Started</Link>
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -66,34 +106,91 @@ const Navbar = () => {
       {isOpen && (
         <div className="md:hidden bg-card border-b border-border animate-fade-in">
           <div className="container mx-auto px-4 py-4 space-y-3">
-            <Link 
-              to="/feed" 
-              className="block py-2 text-muted-foreground hover:text-foreground transition-colors"
-              onClick={() => setIsOpen(false)}
-            >
-              Explore
-            </Link>
-            <Link 
-              to="/how-it-works" 
-              className="block py-2 text-muted-foreground hover:text-foreground transition-colors"
-              onClick={() => setIsOpen(false)}
-            >
-              How It Works
-            </Link>
-            <Link 
-              to="/for-teachers" 
-              className="block py-2 text-muted-foreground hover:text-foreground transition-colors"
-              onClick={() => setIsOpen(false)}
-            >
-              For Teachers
-            </Link>
-            <div className="pt-3 flex flex-col gap-2">
-              <Button variant="outline" className="w-full" asChild>
-                <Link to="/auth" onClick={() => setIsOpen(false)}>Log in</Link>
-              </Button>
-              <Button variant="hero" className="w-full" asChild>
-                <Link to="/auth?mode=signup" onClick={() => setIsOpen(false)}>Get Started</Link>
-              </Button>
+            {!isAuthenticated ? (
+              // Guest mobile nav
+              <>
+                <Link
+                  href="/"
+                  className="block py-2 text-muted-foreground hover:text-foreground transition-colors font-medium"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Home
+                </Link>
+                <Link
+                  href="/feed"
+                  className="block py-2 text-muted-foreground hover:text-foreground transition-colors font-medium"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Explore
+                </Link>
+                <Link
+                  href="/how-it-works"
+                  className="block py-2 text-muted-foreground hover:text-foreground transition-colors font-medium"
+                  onClick={() => setIsOpen(false)}
+                >
+                  How It Works
+                </Link>
+              </>
+            ) : (
+              // Authenticated mobile nav
+              <>
+                <Link
+                  href="/feed"
+                  className="block py-2 text-muted-foreground hover:text-foreground transition-colors font-medium"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Explore
+                </Link>
+                <Link
+                  href="/teachers"
+                  className="block py-2 text-muted-foreground hover:text-foreground transition-colors font-medium"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Find Teachers
+                </Link>
+                {user?.role === 'STUDENT' && (
+                  <Link
+                    href="/post/create"
+                    className="block py-2 text-muted-foreground hover:text-foreground transition-colors font-medium"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Post Request
+                  </Link>
+                )}
+                {user?.role === 'TEACHER' && (
+                  <Link
+                    href="/post/create"
+                    className="block py-2 text-muted-foreground hover:text-foreground transition-colors font-medium"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Create Offering
+                  </Link>
+                )}
+              </>
+            )}
+
+            {/* Mobile auth buttons */}
+            <div className="pt-3 border-t border-border flex flex-col gap-2">
+              {isAuthenticated ? (
+                <>
+                  <span className="text-sm text-muted-foreground py-2">
+                    {user?.firstName} {user?.lastName}
+                  </span>
+                  <Button variant="outline" className="w-full gap-2" onClick={handleLogout}>
+                    <LogOut className="w-4 h-4" />
+                    Logout
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="outline" className="w-full" asChild>
+                    <Link href="/auth" onClick={() => setIsOpen(false)}>Log in</Link>
+                  </Button>
+                  <Button variant="hero" className="w-full" asChild>
+                    <Link href="/signup" onClick={() => setIsOpen(false)}>Get Started</Link>
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>

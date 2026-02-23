@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import Link from "next/link";
 import { GraduationCap, Twitter, Instagram, Linkedin, Mail } from "lucide-react";
 
 const Footer = () => {
@@ -8,11 +8,11 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
           {/* Brand */}
           <div className="md:col-span-1">
-            <Link to="/" className="flex items-center gap-2 mb-4">
+            <Link href="/" className="flex items-center gap-2 mb-4">
               <div className="w-9 h-9 rounded-xl gradient-hero flex items-center justify-center">
                 <GraduationCap className="w-5 h-5 text-primary-foreground" />
               </div>
-              <span className="text-xl font-bold text-background">mini uni</span>
+              <span className="text-xl font-bold text-background">MiniUni</span>
             </Link>
             <p className="text-background/70 text-sm leading-relaxed">
               Connecting passionate teachers with eager students. Learn anything, anytime, anywhere.
@@ -34,10 +34,10 @@ const Footer = () => {
           <div>
             <h4 className="font-semibold mb-4 text-background">For Students</h4>
             <ul className="space-y-2.5 text-sm">
-              <li><Link to="/feed" className="text-background/70 hover:text-background transition-colors">Find Teachers</Link></li>
-              <li><Link to="/how-it-works" className="text-background/70 hover:text-background transition-colors">How It Works</Link></li>
-              <li><Link to="/subjects" className="text-background/70 hover:text-background transition-colors">Browse Subjects</Link></li>
-              <li><Link to="/pricing" className="text-background/70 hover:text-background transition-colors">Pricing</Link></li>
+              <li><Link href="/feed" className="text-background/70 hover:text-background transition-colors">Find Teachers</Link></li>
+              <li><Link href="/how-it-works" className="text-background/70 hover:text-background transition-colors">How It Works</Link></li>
+              <li><Link href="/subjects" className="text-background/70 hover:text-background transition-colors">Browse Subjects</Link></li>
+              <li><Link href="/pricing" className="text-background/70 hover:text-background transition-colors">Pricing</Link></li>
             </ul>
           </div>
 
@@ -45,10 +45,10 @@ const Footer = () => {
           <div>
             <h4 className="font-semibold mb-4 text-background">For Teachers</h4>
             <ul className="space-y-2.5 text-sm">
-              <li><Link to="/for-teachers" className="text-background/70 hover:text-background transition-colors">Start Teaching</Link></li>
-              <li><Link to="/verification" className="text-background/70 hover:text-background transition-colors">Verification Process</Link></li>
-              <li><Link to="/teacher-resources" className="text-background/70 hover:text-background transition-colors">Resources</Link></li>
-              <li><Link to="/success-stories" className="text-background/70 hover:text-background transition-colors">Success Stories</Link></li>
+              <li><Link href="/for-teachers" className="text-background/70 hover:text-background transition-colors">Start Teaching</Link></li>
+              <li><Link href="/verification" className="text-background/70 hover:text-background transition-colors">Verification Process</Link></li>
+              <li><Link href="/teacher-resources" className="text-background/70 hover:text-background transition-colors">Resources</Link></li>
+              <li><Link href="/success-stories" className="text-background/70 hover:text-background transition-colors">Success Stories</Link></li>
             </ul>
           </div>
 
@@ -56,16 +56,16 @@ const Footer = () => {
           <div>
             <h4 className="font-semibold mb-4 text-background">Support</h4>
             <ul className="space-y-2.5 text-sm">
-              <li><Link to="/help" className="text-background/70 hover:text-background transition-colors">Help Center</Link></li>
-              <li><Link to="/contact" className="text-background/70 hover:text-background transition-colors">Contact Us</Link></li>
-              <li><Link to="/privacy" className="text-background/70 hover:text-background transition-colors">Privacy Policy</Link></li>
-              <li><Link to="/terms" className="text-background/70 hover:text-background transition-colors">Terms of Service</Link></li>
+              <li><Link href="/help" className="text-background/70 hover:text-background transition-colors">Help Center</Link></li>
+              <li><Link href="/contact" className="text-background/70 hover:text-background transition-colors">Contact Us</Link></li>
+              <li><Link href="/privacy" className="text-background/70 hover:text-background transition-colors">Privacy Policy</Link></li>
+              <li><Link href="/terms" className="text-background/70 hover:text-background transition-colors">Terms of Service</Link></li>
             </ul>
           </div>
         </div>
 
         <div className="border-t border-background/10 mt-12 pt-8 text-center text-sm text-background/60">
-          <p>© 2024 mini uni. All rights reserved.</p>
+          <p>© 2024 MiniUni. All rights reserved.</p>
         </div>
       </div>
     </footer>
