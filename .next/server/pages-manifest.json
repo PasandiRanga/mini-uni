@@ -1,1 +1,19 @@
-{}
+{
+  "/_app": "pages/_app.js",
+  "/_error": "pages/_error.js",
+  "/Auth": "pages/Auth.js",
+  "/CreatePost": "pages/CreatePost.js",
+  "/FindTeacher": "pages/FindTeacher.js",
+  "/Feed": "pages/Feed.js",
+  "/HowItWorks": "pages/HowItWorks.js",
+  "/SignUp": "pages/SignUp.js",
+  "/MyPosts": "pages/MyPosts.js",
+  "/Index": "pages/Index.js",
+  "/RootRedirect": "pages/RootRedirect.js",
+  "/StudentDashboard": "pages/StudentDashboard.js",
+  "/NotFound": "pages/NotFound.js",
+  "/TeacherProfile": "pages/TeacherProfile.js",
+  "/TeacherOnboarding": "pages/TeacherOnboarding.js",
+  "/TeacherDashboard": "pages/TeacherDashboard.js",
+  "/_document": "pages/_document.js"
+}
