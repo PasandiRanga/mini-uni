@@ -21,8 +21,6 @@ export async function GET(
                         experience: true,
                         hourlyRate: true,
                         verificationStatus: true,
-                        city: true,
-                        qualifications: true,
                     },
                 },
             },
@@ -41,8 +39,6 @@ export async function GET(
             subjects: teacher.teacherProfile?.subjects,
             startingPrice: teacher.teacherProfile?.hourlyRate,
             verified: teacher.teacherProfile?.verificationStatus === "APPROVED",
-            city: teacher.teacherProfile?.city,
-            qualifications: teacher.teacherProfile?.qualifications,
         };
 
         return NextResponse.json(profile);

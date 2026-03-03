@@ -12,7 +12,7 @@ export const useStudentDashboard = () => {
     const [recommendations, setRecommendations] = useState<any[]>([]);
     const [calendarEvents, setCalendarEvents] = useState<any[]>([]);
     const [wallet, setWallet] = useState<any>(null);
-    const { user: authUser, token } = useAuth();
+    const { user: authUser } = useAuth();
 
     useEffect(() => {
         try {
@@ -27,23 +27,19 @@ export const useStudentDashboard = () => {
         const fetchData = async () => {
             if (!authUser?.id) return;
             try {
-                const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-                const headers: any = { 'Content-Type': 'application/json' };
-                if (token) headers.Authorization = `Bearer ${token}`;
-
                 // fetch user profile (to read interests)
-                const meRes = await fetch(`${baseUrl}/api/users/me`, { headers });
+                const meRes = await fetch(`/api/users/me`);
                 const me = meRes.ok ? await meRes.json() : null;
 
                 // fetch teachers for 'Your Teachers' and recommendations
-                const tRes = await fetch(`${baseUrl}/api/teachers`);
+                const tRes = await fetch(`/api/teachers`);
                 if (tRes.ok) {
                     const teachers = await tRes.json();
                     setRecentTeachers(teachers.slice(0, 6));
                 }
 
                 // fetch bookings (upcoming & history)
-                const bRes = await fetch(`${baseUrl}/api/bookings/student/${authUser.id}/upcoming`);
+                const bRes = await fetch(`/api/bookings/student/${authUser.id}/upcoming`);
                 if (bRes.ok) {
                     const bookings = await bRes.json();
 
@@ -101,7 +97,7 @@ export const useStudentDashboard = () => {
                 if (interests.length > 0) {
                     for (const subject of interests.slice(0, 3)) {
                         try {
-                            const pRes = await fetch(`${baseUrl}/api/posts?subject=${encodeURIComponent(subject)}`);
+                            const pRes = await fetch(`/api/posts?subject=${encodeURIComponent(subject)}`);
                             if (pRes.ok) {
                                 const posts = await pRes.json();
                                 recs = recs.concat(posts);
@@ -112,14 +108,14 @@ export const useStudentDashboard = () => {
                     }
                 }
                 if (recs.length === 0) {
-                    const pRes = await fetch(`${baseUrl}/api/posts`);
+                    const pRes = await fetch(`/api/posts`);
                     if (pRes.ok) recs = await pRes.json();
                 }
                 const unique = Array.from(new Map(recs.map((r: any) => [r.id, r])).values()).slice(0, 6);
                 setRecommendations(unique);
 
                 // wallet for student
-                const wRes = await fetch(`${baseUrl}/api/wallets/me`, { headers });
+                const wRes = await fetch(`/api/wallets/me`);
                 if (wRes.ok) setWallet(await wRes.json());
 
             } catch (err) {
@@ -128,7 +124,7 @@ export const useStudentDashboard = () => {
         };
 
         fetchData();
-    }, [authUser, token]);
+    }, [authUser]);
 
     return {
         user,

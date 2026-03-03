@@ -5,8 +5,8 @@
   "devFiles": [],
   "ampDevFiles": [],
   "lowPriorityFiles": [
-    "static/IqyaQZzJ9ovgOy3NOM6fA/_buildManifest.js",
-    "static/IqyaQZzJ9ovgOy3NOM6fA/_ssgManifest.js"
+    "static/m9BqeknKn0eUJzJpJXMTn/_buildManifest.js",
+    "static/m9BqeknKn0eUJzJpJXMTn/_ssgManifest.js"
   ],
   "rootMainFiles": [
     "static/chunks/webpack-bbca0ff56df418dd.js",
@@ -22,7 +22,7 @@
       "static/chunks/9332-c9b1102d588b50d0.js",
       "static/chunks/6110-9af16f05106b4dbc.js",
       "static/chunks/2200-967bc7326a60fc5f.js",
-      "static/chunks/pages/Auth-205470433e53640f.js"
+      "static/chunks/pages/Auth-906a4f79e410144a.js"
     ],
     "/CreatePost": [
       "static/chunks/webpack-bbca0ff56df418dd.js",
@@ -31,8 +31,8 @@
       "static/chunks/9332-c9b1102d588b50d0.js",
       "static/chunks/6110-9af16f05106b4dbc.js",
       "static/chunks/2200-967bc7326a60fc5f.js",
-      "static/chunks/8789-1aec7fb7676e45d7.js",
-      "static/chunks/pages/CreatePost-00d03a39c94a28e2.js"
+      "static/chunks/8789-55cecff485ae56d4.js",
+      "static/chunks/pages/CreatePost-d0273232ad1e68cc.js"
     ],
     "/Feed": [
       "static/chunks/webpack-bbca0ff56df418dd.js",
@@ -51,7 +51,7 @@
       "static/chunks/9332-c9b1102d588b50d0.js",
       "static/chunks/6110-9af16f05106b4dbc.js",
       "static/chunks/2200-967bc7326a60fc5f.js",
-      "static/chunks/8789-1aec7fb7676e45d7.js",
+      "static/chunks/8789-55cecff485ae56d4.js",
       "static/chunks/pages/FindTeacher-edb557dd7a75f97f.js"
     ],
     "/HowItWorks": [
@@ -82,7 +82,7 @@
       "static/chunks/9332-c9b1102d588b50d0.js",
       "static/chunks/6110-9af16f05106b4dbc.js",
       "static/chunks/2200-967bc7326a60fc5f.js",
-      "static/chunks/8789-1aec7fb7676e45d7.js",
+      "static/chunks/8789-55cecff485ae56d4.js",
       "static/chunks/pages/MyPosts-27e8d716de85f50d.js"
     ],
     "/NotFound": [
@@ -120,9 +120,9 @@
       "static/chunks/9332-c9b1102d588b50d0.js",
       "static/chunks/6110-9af16f05106b4dbc.js",
       "static/chunks/2200-967bc7326a60fc5f.js",
-      "static/chunks/8789-1aec7fb7676e45d7.js",
+      "static/chunks/8789-55cecff485ae56d4.js",
       "static/chunks/8885-aa1ddc72359d7f90.js",
-      "static/chunks/pages/StudentDashboard-7cd3ff988e2458e5.js"
+      "static/chunks/pages/StudentDashboard-9334e793369bb4f8.js"
     ],
     "/TeacherDashboard": [
       "static/chunks/webpack-bbca0ff56df418dd.js",
@@ -132,7 +132,7 @@
       "static/chunks/6110-9af16f05106b4dbc.js",
       "static/chunks/2200-967bc7326a60fc5f.js",
       "static/chunks/8885-aa1ddc72359d7f90.js",
-      "static/chunks/pages/TeacherDashboard-16b4fda314de3843.js"
+      "static/chunks/pages/TeacherDashboard-fce909d2acc3c4e0.js"
     ],
     "/TeacherOnboarding": [
       "static/chunks/webpack-bbca0ff56df418dd.js",
@@ -151,7 +151,7 @@
       "static/chunks/2200-967bc7326a60fc5f.js",
       "static/chunks/7396-d2bd239e2832d5c2.js",
       "static/chunks/145-52bb058464793657.js",
-      "static/chunks/pages/TeacherProfile-4df0d2acacd30024.js"
+      "static/chunks/pages/TeacherProfile-ea38306d7cb768d2.js"
     ],
     "/_app": [
       "static/chunks/webpack-bbca0ff56df418dd.js",

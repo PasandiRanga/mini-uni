@@ -32,42 +32,30 @@ import MyClasses from '@/components/classes/MyClasses';
 const TeacherDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [verification, setVerification] = useState<any>({ canStartClasses: false, progress: 0 });
-  const [user, setUser] = useState<any>(null);
   const [bookings, setBookings] = useState<any[]>([]);
   const [inquiries, setInquiries] = useState<any[]>([]);
   const [wallet, setWallet] = useState<any>(null);
-  const { user: authUser, logout: authLogout, token } = useAuth();
+  const { user, logout } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
 
   useEffect(() => {
-    try {
-      const u = localStorage.getItem("user");
-      if (u) setUser(JSON.parse(u));
-    } catch {
-      setUser(null);
-    }
-
-    if (!token) return;
-
-    const headers: any = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
-
     const fetchAll = async () => {
       try {
         // verification progress
-        const vRes = await fetch(`/api/teachers/verification-progress`, { headers });
+        const vRes = await fetch(`/api/teachers/verification-progress`);
         if (vRes.ok) setVerification(await vRes.json());
 
         // bookings for teacher
-        if (authUser?.id) {
-          const bRes = await fetch(`/api/bookings/teacher/${authUser.id}`);
+        if (user?.id) {
+          const bRes = await fetch(`/api/bookings/teacher/${user.id}`);
           if (bRes.ok) {
             const data = await bRes.json();
             setBookings(data);
           }
 
           // inquiries
-          const iRes = await fetch(`/api/inquiries/teacher/${authUser.id}`);
+          const iRes = await fetch(`/api/inquiries/teacher/${user.id}`);
           if (iRes.ok) {
             const data = await iRes.json();
             setInquiries(data);
@@ -75,7 +63,7 @@ const TeacherDashboard = () => {
         }
 
         // wallet for current user
-        const wRes = await fetch(`/api/wallets/me`, { headers });
+        const wRes = await fetch(`/api/wallets/me`);
         if (wRes.ok) setWallet(await wRes.json());
       } catch (err) {
         console.error('Failed to fetch teacher dashboard data', err);
@@ -83,16 +71,16 @@ const TeacherDashboard = () => {
     };
 
     fetchAll();
-  }, [token, authUser?.id]);
+  }, [user?.id]);
 
   const handleLogout = async () => {
     try {
-      await authLogout();
+      await logout();
       toast({
         title: "Logged out successfully",
         description: "You have been logged out. Redirecting to home...",
       });
-      router.push("/", { replace: true });
+      router.replace("/");
     } catch (error: any) {
       toast({
         title: "Error",
@@ -151,11 +139,11 @@ const TeacherDashboard = () => {
         <div className="p-4 border-t border-border">
           <div className="flex items-center gap-3 px-4 py-3">
             <div className="w-10 h-10 rounded-xl gradient-hero flex items-center justify-center text-primary-foreground font-semibold">
-              {authUser?.firstName?.charAt(0)}{authUser?.lastName?.charAt(0)}
+              {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-medium truncate">{authUser?.firstName} {authUser?.lastName}</p>
-              <p className="text-sm text-muted-foreground truncate">{authUser?.role}</p>
+              <p className="font-medium truncate">{user?.firstName} {user?.lastName}</p>
+              <p className="text-sm text-muted-foreground truncate">{user?.role}</p>
             </div>
             <button onClick={handleLogout} className="text-muted-foreground hover:text-foreground transition-colors">
               <LogOut className="w-5 h-5" />

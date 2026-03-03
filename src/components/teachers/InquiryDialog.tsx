@@ -19,7 +19,6 @@ export const InquiryDialog: React.FC<InquiryDialogProps> = ({ isOpen, onClose, t
     const [selectedSlotId, setSelectedSlotId] = useState("");
     const [message, setMessage] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const { token } = useAuth();
     const { toast } = useToast();
 
     const selectedPost = posts.find(p => p.id === selectedPostId);
@@ -32,12 +31,10 @@ export const InquiryDialog: React.FC<InquiryDialogProps> = ({ isOpen, onClose, t
 
         setIsSubmitting(true);
         try {
-            const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
-            const res = await fetch(`${baseUrl}/api/inquiries`, {
+            const res = await fetch("/api/inquiries", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
                 },
                 body: JSON.stringify({
                     postId: selectedPostId,
