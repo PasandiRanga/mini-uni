@@ -51,7 +51,7 @@ const DashboardLayout: React.FC<PropsWithChildren> = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    const t = searchParams.get("tab");
+    const t = searchParams?.get("tab");
     if (t) setActiveTab(t);
   }, [searchParams]);
 
@@ -95,8 +95,8 @@ const DashboardLayout: React.FC<PropsWithChildren> = ({ children }) => {
                   router.push(`/student/dashboard?tab=${item.id}`);
                 }}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === item.id
-                    ? "bg-primary text-primary-foreground shadow-soft"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  ? "bg-primary text-primary-foreground shadow-soft"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   }`}
               >
                 <item.icon className="w-5 h-5" />
@@ -177,8 +177,8 @@ const DashboardLayout: React.FC<PropsWithChildren> = ({ children }) => {
                       router.push(`/student/dashboard?tab=${item.id}`);
                     }}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === item.id
-                        ? "bg-primary text-primary-foreground shadow-soft"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      ? "bg-primary text-primary-foreground shadow-soft"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
                       }`}
                   >
                     <item.icon className="w-5 h-5" />

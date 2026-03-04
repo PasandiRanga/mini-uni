@@ -1,5 +1,5 @@
-import React from 'react';
-import { Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface ProtectedRouteProps {
@@ -7,11 +7,22 @@ interface ProtectedRouteProps {
   requiredRole?: 'STUDENT' | 'TEACHER';
 }
 
-export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
-  children, 
-  requiredRole 
+export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
+  children,
+  requiredRole
 }) => {
   const { isAuthenticated, user, isLoading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoading) {
+      if (!isAuthenticated || !user) {
+        router.replace('/auth');
+      } else if (requiredRole && user.role !== requiredRole) {
+        router.replace('/');
+      }
+    }
+  }, [isLoading, isAuthenticated, user, requiredRole, router]);
 
   if (isLoading) {
     return (
@@ -21,12 +32,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
-  if (!isAuthenticated || !user) {
-    return <Navigate to="/auth" replace />;
-  }
-
-  if (requiredRole && user.role !== requiredRole) {
-    return <Navigate to="/" replace />;
+  if (!isAuthenticated || !user || (requiredRole && user.role !== requiredRole)) {
+    return null;
   }
 
   return <>{children}</>;

@@ -1,3 +1,4 @@
+'use client';
 import { useEffect, useState, useMemo } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -50,7 +51,7 @@ const Feed = () => {
   const [myPosts, setMyPosts] = useState<PostItem[]>([]);
   const [viewType, setViewType] = useState<'grid' | 'compact'>('grid');
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const { user, token, isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
   const isGuest = !isAuthenticated;
@@ -59,7 +60,7 @@ const Feed = () => {
     const fetchPosts = async () => {
       setIsLoadingPosts(true);
       try {
-        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
         const res = await fetch(`${baseUrl}/api/posts`);
         if (res.ok) {
           const data = await res.json();
@@ -78,13 +79,11 @@ const Feed = () => {
   }, []);
 
   useEffect(() => {
-    if (isAuthenticated && postType === "my-posts" && token) {
+    if (isAuthenticated && postType === "my-posts") {
       const fetchMyPosts = async () => {
         try {
-          const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-          const res = await fetch(`${baseUrl}/api/posts/mine`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
+          const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+          const res = await fetch(`${baseUrl}/api/posts/mine`);
           if (res.ok) {
             setMyPosts(await res.json());
           }
@@ -94,7 +93,7 @@ const Feed = () => {
       };
       fetchMyPosts();
     }
-  }, [isAuthenticated, postType, token]);
+  }, [isAuthenticated, postType]);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("All Subjects");

@@ -1,3 +1,4 @@
+'use client';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from 'react';
 import { useRouter } from "next/navigation";
@@ -22,7 +23,7 @@ const MyPosts: React.FC = () => {
         if (res.ok) setPosts(await res.json());
       } catch (e) { console.error(e); }
     })();
-  }, [isAuthenticated, token]);
+  }, [isAuthenticated]);
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this post?')) return;

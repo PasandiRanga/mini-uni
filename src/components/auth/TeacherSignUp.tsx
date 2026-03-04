@@ -1,6 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,9 +16,9 @@ interface TeacherSignUpProps {
 type OnboardingStep = "register" | "documents";
 
 const TeacherSignUp = ({ onBack }: TeacherSignUpProps) => {
-  const navigate = useNavigate();
+  const router = useRouter();
   const { toast } = useToast();
-  const { register, token } = useAuth();
+  const { register } = useAuth();
   const [step, setStep] = useState<OnboardingStep>("register");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -44,19 +43,15 @@ const TeacherSignUp = ({ onBack }: TeacherSignUpProps) => {
 
   // Fetch verification progress after registration
   useEffect(() => {
-    if (token && step === "documents") {
+    if (step === "documents") {
       fetchVerificationProgress();
     }
-  }, [token, step]);
+  }, [step]);
 
   const fetchVerificationProgress = async () => {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3001";
-      const response = await fetch(`${apiUrl}/teachers/verification-progress`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const apiUrl = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000").replace(/\/$/, '');
+      const response = await fetch(`${apiUrl}/api/teachers/verification-progress`);
       if (response.ok) {
         const text = await response.text();
         if (text && text.trim()) {
@@ -112,7 +107,7 @@ const TeacherSignUp = ({ onBack }: TeacherSignUpProps) => {
         description: "Please log in to complete verification and start teaching.",
       });
 
-      navigate("/auth");
+      router.push("/auth");
     } catch (error: any) {
       toast({
         title: "Registration failed",
@@ -141,23 +136,20 @@ const TeacherSignUp = ({ onBack }: TeacherSignUpProps) => {
   };
 
   const handleDocumentSubmit = async () => {
-    if (!token) return;
-
     setIsLoading(true);
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3001";
+      const apiUrl = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000").replace(/\/$/, '');
 
       // Upload each document
       for (const [docType, file] of Object.entries(documents)) {
         if (file) {
           const documentUrl = await uploadDocument(docType, file);
 
-          const response = await fetch(`${apiUrl}/teachers/upload-document`, {
+          const response = await fetch(`${apiUrl}/api/teachers/upload-document`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify({
               documentType: docType,
@@ -186,7 +178,7 @@ const TeacherSignUp = ({ onBack }: TeacherSignUpProps) => {
       });
 
       // Navigate to teacher dashboard (but they'll be blocked until verified)
-      navigate("/teacher/dashboard");
+      router.push("/teacher/dashboard");
     } catch (error: any) {
       let errorMessage = "Failed to upload documents. Please try again.";
 

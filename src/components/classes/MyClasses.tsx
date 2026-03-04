@@ -3,7 +3,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Clock, Video, RefreshCw, User, DollarSign, MapPin, CheckCircle, XCircle } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -20,12 +20,12 @@ interface Booking {
 }
 
 const MyClasses: React.FC = () => {
-  const { user, token } = useAuth();
+  const { user } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+  const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000').replace(/\/$/, '');
 
   const fetchBookings = useCallback(async () => {
     if (!user) return;
@@ -35,7 +35,7 @@ const MyClasses: React.FC = () => {
         ? `${baseUrl}/api/bookings/student/${user.id}/upcoming`
         : `${baseUrl}/api/bookings/teacher/${user.id}`;
 
-      const res = await fetch(url, { headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) } });
+      const res = await fetch(url, { headers: { 'Content-Type': 'application/json' } });
       if (!res.ok) throw new Error('Failed to load classes');
       const data = await res.json();
       setBookings(Array.isArray(data) ? data : []);
@@ -45,7 +45,7 @@ const MyClasses: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, token, baseUrl, toast]);
+  }, [user, baseUrl, toast]);
 
   useEffect(() => {
     fetchBookings();
@@ -168,11 +168,11 @@ const MyClasses: React.FC = () => {
             <h4 className="text-lg font-semibold mb-2">You don’t have any upcoming classes yet</h4>
             <p className="text-sm text-muted-foreground mb-4">Once you book a class it will appear here — upcoming sessions are shown at a glance.</p>
             {user?.role === 'STUDENT' ? (
-              <Link to="/feed">
+              <Link href="/feed">
                 <Button variant="hero">Explore Classes</Button>
               </Link>
             ) : (
-              <Link to="/post/create">
+              <Link href="/post/create">
                 <Button variant="hero">Create an Offering</Button>
               </Link>
             )}
@@ -196,11 +196,11 @@ const MyClasses: React.FC = () => {
             <h4 className="text-lg font-semibold mb-2">No past classes yet</h4>
             <p className="text-sm text-muted-foreground mb-4">Completed classes will appear here with confirmation status and durations.</p>
             {user?.role === 'STUDENT' ? (
-              <Link to="/feed">
+              <Link href="/feed">
                 <Button variant="hero">Explore Classes</Button>
               </Link>
             ) : (
-              <Link to="/post/create">
+              <Link href="/post/create">
                 <Button variant="hero">Create an Offering</Button>
               </Link>
             )}

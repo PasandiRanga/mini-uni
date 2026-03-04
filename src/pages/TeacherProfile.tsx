@@ -1,3 +1,4 @@
+'use client';
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Navbar from "@/components/layout/Navbar";
@@ -22,8 +23,13 @@ type TeacherDetail = {
   qualifications?: string[];
 };
 
-const TeacherProfile: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+interface TeacherProfileProps {
+  id?: string;
+}
+
+const TeacherProfile: React.FC<TeacherProfileProps> = ({ id: propId }) => {
+  const params = useParams();
+  const id = propId || params?.id as string;
   const [teacher, setTeacher] = useState<TeacherDetail | null>(null);
   const [posts, setPosts] = useState<any[]>([]);
   const [isInquiryOpen, setIsInquiryOpen] = useState(false);

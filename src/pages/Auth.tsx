@@ -1,3 +1,4 @@
+'use client';
 import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -23,8 +24,8 @@ const Auth = () => {
   const router = useRouter();
   const { toast } = useToast();
 
-  const [mode] = useState<AuthMode>((searchParams.get("mode") as AuthMode) || "login");
-  const [role] = useState<UserRole>((searchParams.get("role") as UserRole) || "student");
+  const [mode] = useState<AuthMode>((searchParams?.get("mode") as AuthMode) || "login");
+  const [role] = useState<UserRole>((searchParams?.get("role") as UserRole) || "student");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 

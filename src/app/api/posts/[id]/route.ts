@@ -70,7 +70,7 @@ export async function PUT(
             delete updateData.locationLng;
         }
 
-        const updated = await prisma.prisma.post.update({
+        const updated = await prisma.post.update({
             where: { id: postId },
             data: updateData,
         });

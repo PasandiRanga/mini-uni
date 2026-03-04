@@ -30,7 +30,7 @@ const CreatePost: React.FC = () => {
   const [budgetMax, setBudgetMax] = useState<number | null>(null);
   const [preferredTimes, setPreferredTimes] = useState<string[]>([]);
   const [pricePerClass, setPricePerClass] = useState<number | null>(null);
-  const editId = searchParams.get('id');
+  const editId = searchParams?.get('id');
 
   const subjects = ['Mathematics', 'Physics', 'Chemistry', 'Biology', 'English', 'ICT', 'Commerce', 'History', 'Computer Science'];
   const gradeOptions = Array.from({ length: 13 }).map((_, i) => String(i + 1));

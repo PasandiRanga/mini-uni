@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +13,7 @@ interface StudentSignUpProps {
 }
 
 const StudentSignUp = ({ onBack }: StudentSignUpProps) => {
-  const navigate = useNavigate();
+  const router = useRouter();
   const { toast } = useToast();
   const { register } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
@@ -66,7 +66,7 @@ const StudentSignUp = ({ onBack }: StudentSignUpProps) => {
         description: "Please log in to continue.",
       });
 
-      navigate("/auth");
+      router.push("/auth");
     } catch (error: any) {
       let errorMessage = "Something went wrong. Please try again.";
 
