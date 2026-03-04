@@ -1,0 +1,183 @@
+﻿
+> miniuni@1.0.0 build
+> next build
+
+  Γû▓ Next.js 14.2.0
+
+   Creating an optimized production build ...
+node.exe : Failed to 
+compile.
+At C:\Program Files\nod
+ejs\npm.ps1:29 char:3
++   & $NODE_EXE 
+$NPM_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~
+    + CategoryInfo     
+         : 
+NotSpecified: (Fai    
+led to compile.:String 
+   ) [], 
+RemoteException
+    + 
+FullyQualifiedErrorI   
+ d : NativeCommandError
+ 
+
+./src/pages/Auth.tsx
+Error: 
+  [31mx[0m You're 
+importing a component 
+that needs useState. 
+It only works in a 
+Client Component but 
+none of its parents 
+are marked with "use 
+client", so they're 
+Server Components by 
+default.
+  [31m|[0m Learn 
+more: https://nextjs.or
+g/docs/getting-started/
+react-essentials
+  [31m|[0m 
+  [31m|[0m 
+   ,-[[36;1;4mE:\MiniU
+ni\src\pages\Auth.tsx[
+0m:1:1]
+ [2m1[0m | import { 
+useState, useEffect } 
+from "react";
+   : [31;1m         
+^^^^^^^^[0m
+ [2m2[0m | import { 
+useSearchParams, 
+useRouter } from 
+"next/navigation";
+ [2m3[0m | import 
+Link from "next/link";
+ [2m3[0m | import { 
+Button } from "@/compon
+ents/ui/button";
+   `----
+
+  [31mx[0m You're 
+importing a component 
+that needs useEffect. 
+It only works in a 
+Client Component but 
+none of its parents 
+are marked with "use 
+client", so they're 
+Server Components by 
+default.
+  [31m|[0m Learn 
+more: https://nextjs.or
+g/docs/getting-started/
+react-essentials
+  [31m|[0m 
+  [31m|[0m 
+   ,-[[36;1;4mE:\MiniU
+ni\src\pages\Auth.tsx[
+0m:1:1]
+ [2m1[0m | import { 
+useState, useEffect } 
+from "react";
+   : [31;1m           
+        ^^^^^^^^^[0m
+ [2m2[0m | import { 
+useSearchParams, 
+useRouter } from 
+"next/navigation";
+ [2m3[0m | import 
+Link from "next/link";
+ [2m3[0m | import { 
+Button } from "@/compon
+ents/ui/button";
+   `----
+
+  [31mx[0m You're 
+importing a component 
+that needs 
+useSearchParams. It 
+only works in a Client 
+Component but none of 
+its parents are marked 
+with "use client", so 
+they're Server 
+Components by default.
+  [31m|[0m Learn 
+more: https://nextjs.or
+g/docs/getting-started/
+react-essentials
+  [31m|[0m 
+  [31m|[0m 
+   ,-[[36;1;4mE:\MiniU
+ni\src\pages\Auth.tsx[
+0m:1:1]
+ [2m1[0m | import { 
+useState, useEffect } 
+from "react";
+ [2m2[0m | import { 
+useSearchParams, 
+useRouter } from 
+"next/navigation";
+   : [31;1m         
+^^^^^^^^^^^^^^^[0m
+ [2m3[0m | import 
+Link from "next/link";
+ [2m4[0m | import { 
+Button } from "@/compon
+ents/ui/button";
+ [2m4[0m | import { 
+Input } from "@/compone
+nts/ui/input";
+   `----
+
+  [31mx[0m You're 
+importing a component 
+that needs useRouter. 
+It only works in a 
+Client Component but 
+none of its parents 
+are marked with "use 
+client", so they're 
+Server Components by 
+default.
+  [31m|[0m Learn 
+more: https://nextjs.or
+g/docs/getting-started/
+react-essentials
+  [31m|[0m 
+  [31m|[0m 
+   ,-[[36;1;4mE:\MiniU
+ni\src\pages\Auth.tsx[
+0m:1:1]
+ [2m1[0m | import { 
+useState, useEffect } 
+from "react";
+ [2m2[0m | import { 
+useSearchParams, 
+useRouter } from 
+"next/navigation";
+   : [31;1m           
+               
+^^^^^^^^^[0m
+ [2m3[0m | import 
+Link from "next/link";
+ [2m4[0m | import { 
+Button } from "@/compon
+ents/ui/button";
+ [2m4[0m | import { 
+Input } from "@/compone
+nts/ui/input";
+   `----
+
+Import trace for 
+requested module:
+./src/pages/Auth.tsx
+./src/app/auth/page.tsx
+
+
+> Build failed because 
+of webpack errors

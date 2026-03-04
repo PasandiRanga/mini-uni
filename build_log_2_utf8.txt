@@ -1,0 +1,343 @@
+﻿
+> miniuni@1.0.0 build
+> next build
+
+  Γû▓ Next.js 14.2.0
+
+   Creating an optimized production build ...
+node.exe : Failed to 
+compile.
+At C:\Program Files\nod
+ejs\npm.ps1:29 char:3
++   & $NODE_EXE 
+$NPM_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~
+    + CategoryInfo     
+         : 
+NotSpecified: (Fai    
+led to compile.:String 
+   ) [], 
+RemoteException
+    + 
+FullyQualifiedErrorI   
+ d : NativeCommandError
+ 
+
+./src/pages/MyPosts.tsx
+Error: 
+  [31mx[0m You're 
+importing a component 
+that needs useEffect. 
+It only works in a 
+Client Component but 
+none of its parents 
+are marked with "use 
+client", so they're 
+Server Components by 
+default.
+  [31m|[0m Learn 
+more: https://nextjs.or
+g/docs/getting-started/
+react-essentials
+  [31m|[0m 
+  [31m|[0m 
+   ,-[[36;1;4mE:\MiniU
+ni\src\pages\MyPosts.ts
+x[0m:1:1]
+ [2m1[0m | /* 
+eslint-disable @typescr
+ipt-eslint/no-explicit-
+any */
+ [2m2[0m | import 
+React, { useEffect, 
+useState } from 
+'react';
+   : [31;1m           
+     ^^^^^^^^^[0m
+ [2m3[0m | import { 
+useRouter } from 
+"next/navigation";
+ [2m4[0m | import 
+DashboardLayout from '@
+/components/layout/Dash
+boardLayout';
+ [2m4[0m | import { 
+useAuth } from '@/conte
+xts/AuthContext';
+   `----
+
+  [31mx[0m You're 
+importing a component 
+that needs useState. 
+It only works in a 
+Client Component but 
+none of its parents 
+are marked with "use 
+client", so they're 
+Server Components by 
+default.
+  [31m|[0m Learn 
+more: https://nextjs.or
+g/docs/getting-started/
+react-essentials
+  [31m|[0m 
+  [31m|[0m 
+   ,-[[36;1;4mE:\MiniU
+ni\src\pages\MyPosts.ts
+x[0m:1:1]
+ [2m1[0m | /* 
+eslint-disable @typescr
+ipt-eslint/no-explicit-
+any */
+ [2m2[0m | import 
+React, { useEffect, 
+useState } from 
+'react';
+   : [31;1m           
+                
+^^^^^^^^[0m
+ [2m3[0m | import { 
+useRouter } from 
+"next/navigation";
+ [2m4[0m | import 
+DashboardLayout from '@
+/components/layout/Dash
+boardLayout';
+ [2m4[0m | import { 
+useAuth } from '@/conte
+xts/AuthContext';
+   `----
+
+  [31mx[0m You're 
+importing a component 
+that needs useRouter. 
+It only works in a 
+Client Component but 
+none of its parents 
+are marked with "use 
+client", so they're 
+Server Components by 
+default.
+  [31m|[0m Learn 
+more: https://nextjs.or
+g/docs/getting-started/
+react-essentials
+  [31m|[0m 
+  [31m|[0m 
+   ,-[[36;1;4mE:\MiniU
+ni\src\pages\MyPosts.ts
+x[0m:1:1]
+ [2m1[0m | /* 
+eslint-disable @typescr
+ipt-eslint/no-explicit-
+any */
+ [2m2[0m | import 
+React, { useEffect, 
+useState } from 
+'react';
+ [2m3[0m | import { 
+useRouter } from 
+"next/navigation";
+   : [31;1m         
+^^^^^^^^^[0m
+ [2m4[0m | import 
+DashboardLayout from '@
+/components/layout/Dash
+boardLayout';
+ [2m5[0m | import { 
+useAuth } from '@/conte
+xts/AuthContext';
+ [2m5[0m | import { 
+Button } from '@/compon
+ents/ui/button';
+   `----
+
+Import trace for 
+requested module:
+./src/pages/MyPosts.tsx
+./src/app/post/mine/pag
+e.tsx
+
+./src/pages/StudentDash
+board.tsx
+Error: 
+  [31mx[0m You're 
+importing a component 
+that needs useRouter. 
+It only works in a 
+Client Component but 
+none of its parents 
+are marked with "use 
+client", so they're 
+Server Components by 
+default.
+  [31m|[0m Learn 
+more: https://nextjs.or
+g/docs/getting-started/
+react-essentials
+  [31m|[0m 
+  [31m|[0m 
+   ,-[[36;1;4mE:\MiniU
+ni\src\pages\StudentDas
+hboard.tsx[0m:1:1]
+ [2m1[0m | /* 
+eslint-disable @typescr
+ipt-eslint/no-explicit-
+any */
+ [2m2[0m | import { 
+useState, useEffect } 
+from "react";
+ [2m3[0m | import { 
+useRouter } from 
+"next/navigation";
+   : [31;1m         
+^^^^^^^^^[0m
+ [2m4[0m | import { 
+Button } from "@/compon
+ents/ui/button";
+ [2m5[0m | import { 
+Badge } from "@/compone
+nts/ui/badge";
+ [2m5[0m | import { 
+useAuth } from "@/conte
+xts/AuthContext";
+   `----
+
+Import trace for 
+requested module:
+./src/pages/StudentDash
+board.tsx
+./src/app/student/dashb
+oard/page.tsx
+
+./src/pages/TeacherDash
+board.tsx
+Error: 
+  [31mx[0m You're 
+importing a component 
+that needs useState. 
+It only works in a 
+Client Component but 
+none of its parents 
+are marked with "use 
+client", so they're 
+Server Components by 
+default.
+  [31m|[0m Learn 
+more: https://nextjs.or
+g/docs/getting-started/
+react-essentials
+  [31m|[0m 
+  [31m|[0m 
+   ,-[[36;1;4mE:\MiniU
+ni\src\pages\TeacherDas
+hboard.tsx[0m:1:1]
+ [2m1[0m | /* 
+eslint-disable @typescr
+ipt-eslint/no-explicit-
+any */
+ [2m2[0m | import { 
+useState, useEffect } 
+from "react";
+   : [31;1m         
+^^^^^^^^[0m
+ [2m3[0m | import { 
+useRouter } from 
+"next/navigation";
+ [2m4[0m | import 
+Link from "next/link";
+ [2m4[0m | import { 
+Button } from "@/compon
+ents/ui/button";
+   `----
+
+  [31mx[0m You're 
+importing a component 
+that needs useEffect. 
+It only works in a 
+Client Component but 
+none of its parents 
+are marked with "use 
+client", so they're 
+Server Components by 
+default.
+  [31m|[0m Learn 
+more: https://nextjs.or
+g/docs/getting-started/
+react-essentials
+  [31m|[0m 
+  [31m|[0m 
+   ,-[[36;1;4mE:\MiniU
+ni\src\pages\TeacherDas
+hboard.tsx[0m:1:1]
+ [2m1[0m | /* 
+eslint-disable @typescr
+ipt-eslint/no-explicit-
+any */
+ [2m2[0m | import { 
+useState, useEffect } 
+from "react";
+   : [31;1m           
+        ^^^^^^^^^[0m
+ [2m3[0m | import { 
+useRouter } from 
+"next/navigation";
+ [2m4[0m | import 
+Link from "next/link";
+ [2m4[0m | import { 
+Button } from "@/compon
+ents/ui/button";
+   `----
+
+  [31mx[0m You're 
+importing a component 
+that needs useRouter. 
+It only works in a 
+Client Component but 
+none of its parents 
+are marked with "use 
+client", so they're 
+Server Components by 
+default.
+  [31m|[0m Learn 
+more: https://nextjs.or
+g/docs/getting-started/
+react-essentials
+  [31m|[0m 
+  [31m|[0m 
+   ,-[[36;1;4mE:\MiniU
+ni\src\pages\TeacherDas
+hboard.tsx[0m:1:1]
+ [2m1[0m | /* 
+eslint-disable @typescr
+ipt-eslint/no-explicit-
+any */
+ [2m2[0m | import { 
+useState, useEffect } 
+from "react";
+ [2m3[0m | import { 
+useRouter } from 
+"next/navigation";
+   : [31;1m         
+^^^^^^^^^[0m
+ [2m4[0m | import 
+Link from "next/link";
+ [2m5[0m | import { 
+Button } from "@/compon
+ents/ui/button";
+ [2m5[0m | import { 
+Badge } from "@/compone
+nts/ui/badge";
+   `----
+
+Import trace for 
+requested module:
+./src/pages/TeacherDash
+board.tsx
+./src/app/teacher/dashb
+oard/page.tsx
+
+
+> Build failed because 
+of webpack errors

@@ -1,3 +1,4 @@
+'use client';
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Navbar from "@/components/layout/Navbar";
@@ -28,7 +29,7 @@ interface TeacherProfileProps {
 
 const TeacherProfile: React.FC<TeacherProfileProps> = ({ id: propId }) => {
   const params = useParams();
-  const id = propId || params.id as string;
+  const id = propId || params?.id as string;
   const [teacher, setTeacher] = useState<TeacherDetail | null>(null);
   const [posts, setPosts] = useState<any[]>([]);
   const [isInquiryOpen, setIsInquiryOpen] = useState(false);

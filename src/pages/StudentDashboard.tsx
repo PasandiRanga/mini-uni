@@ -1,3 +1,4 @@
+'use client';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -252,7 +253,7 @@ const StudentDashboard = () => {
         title: "Logged out successfully",
         description: "You have been logged out. Redirecting to home...",
       });
-      router.push("/", { replace: true });
+      router.replace("/");
     } catch (error: any) {
       toast({
         title: "Error",

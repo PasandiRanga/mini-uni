@@ -1,3 +1,4 @@
+'use client';
 import React, { useEffect, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -236,8 +237,8 @@ const FindTeacher: React.FC = () => {
                               {(t.subjects || []).map(s => <Badge key={s} variant="outline" className="bg-muted/50 border-none font-medium">{s}</Badge>)}
                             </div>
                             <div className="flex gap-3 pt-4 border-t border-border">
-                              <Button className="flex-1 gradient-hero shadow-soft h-11" onClick={() => router.push(`/ teachers / ${t.id} `)}>Book a Class</Button>
-                              <Button variant="outline" className="h-11 px-5" onClick={() => router.push(`/ teachers / ${t.id} `)}><MessageCircle className="w-5 h-5" /></Button>
+                              <Button className="flex-1 gradient-hero shadow-soft h-11" onClick={() => router.push(`/teachers/${t.id}`)}>Book a Class</Button>
+                              <Button variant="outline" className="h-11 px-5" onClick={() => router.push(`/teachers/${t.id}`)}><MessageCircle className="w-5 h-5" /></Button>
                             </div>
                           </div>
                         </div>
@@ -272,7 +273,7 @@ const FindTeacher: React.FC = () => {
 
                       <div className="flex items-center gap-2">
                         <Badge variant={t.verified ? 'secondary' : 'outline'} className="hidden sm:inline-flex">{t.verified ? 'Verified' : 'Pending'}</Badge>
-                        <Button className={`${viewType === 'grid' ? 'flex-1' : ''} `} onClick={() => { if (!isAuthenticated) { toast({ title: 'Sign in to contact' }); navigate('/auth'); return; } navigate(` / teachers / ${t.id} `); }}>View Profile</Button>
+                        <Button className={`${viewType === 'grid' ? 'flex-1' : ''} `} onClick={() => { if (!isAuthenticated) { toast({ title: 'Sign in to contact' }); router.push('/auth'); return; } router.push(`/teachers/${t.id}`); }}>View Profile</Button>
                       </div>
                     </div>
                   </div>

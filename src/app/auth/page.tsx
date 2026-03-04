@@ -1,7 +1,10 @@
-'use client';
-
 import Auth from '@/pages/Auth';
+import { Suspense } from 'react';
 
 export default function AuthPage() {
-    return <Auth />;
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <Auth />
+        </Suspense>
+    );
 }

@@ -1,7 +1,10 @@
-'use client';
-
 import TeacherDashboard from '@/pages/TeacherDashboard';
+import { Suspense } from 'react';
 
 export default function TeacherDashboardPage() {
-    return <TeacherDashboard />;
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <TeacherDashboard />
+        </Suspense>
+    );
 }
