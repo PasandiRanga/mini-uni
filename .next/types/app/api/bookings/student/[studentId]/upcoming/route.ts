@@ -1,8 +1,8 @@
-// File: E:\MiniUni\src\app\api\auth\register\route.ts
-import * as entry from '../../../../../../src/app/api/auth/register/route.js'
+// File: E:\MiniUni\src\app\api\bookings\student\[studentId]\upcoming\route.ts
+import * as entry from '../../../../../../../../src/app/api/bookings/student/[studentId]/upcoming/route.js'
 import type { NextRequest } from 'next/server.js'
 
-type TEntry = typeof import('../../../../../../src/app/api/auth/register/route.js')
+type TEntry = typeof import('../../../../../../../../src/app/api/bookings/student/[studentId]/upcoming/route.js')
 
 // Check that the entry is a valid entry
 checkFields<Diff<{
