@@ -1,71 +1,65 @@
-import { Shield, Calendar, Video, Wallet, MapPin, MessageCircle, Clock, Star } from "lucide-react";
+import { Shield, Calendar, Video, Wallet, MapPin, MessageCircle } from "lucide-react";
+import Reveal from "@/components/Reveal";
 
 const features = [
   {
     icon: Shield,
-    title: "Verified Teachers",
-    description: "Every teacher goes through ID and qualification verification before teaching on our platform.",
-    color: "primary"
+    title: "Verified teachers",
+    description: "Every teacher passes ID and qualification review before their first class. No exceptions.",
   },
   {
     icon: Calendar,
-    title: "Easy Scheduling",
-    description: "Browse available time slots, request your preferred time, and get instant confirmations.",
-    color: "accent"
+    title: "Effortless scheduling",
+    description: "Browse real availability, pick a slot, and get instant confirmation — no back-and-forth.",
   },
   {
     icon: Video,
-    title: "Video Classes",
-    description: "Auto-generated Google Meet links for seamless online learning experiences.",
-    color: "secondary"
+    title: "Live video classes",
+    description: "A Google Meet link is generated for every booking. Click, join, learn.",
   },
   {
     icon: Wallet,
-    title: "Secure Payments",
-    description: "Escrow-based payments. Funds released only after both parties confirm class completion.",
-    color: "success"
+    title: "Escrow payments",
+    description: "Your payment is held safely and released only when both sides confirm the class happened.",
   },
   {
     icon: MapPin,
-    title: "Location-Based",
-    description: "Find teachers near you for in-person classes or connect online with anyone worldwide.",
-    color: "warning"
+    title: "Local or worldwide",
+    description: "Meet teachers near you in person, or connect online with experts anywhere.",
   },
   {
     icon: MessageCircle,
-    title: "Direct Messaging",
-    description: "Chat directly with teachers to discuss requirements before booking.",
-    color: "primary"
-  }
+    title: "Direct conversation",
+    description: "Discuss goals and expectations with teachers before you ever spend a cent.",
+  },
 ];
 
 const FeaturesSection = () => {
   return (
-    <section className="py-24 bg-muted/30">
+    <section className="relative py-28">
       <div className="container mx-auto px-4">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-            Everything you need for 
-            <span className="font-serif italic text-gradient"> seamless learning</span>
+        <Reveal className="mx-auto mb-20 max-w-2xl text-center">
+          <p className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-accent">Why MiniUni</p>
+          <h2 className="text-4xl sm:text-5xl font-semibold leading-tight">
+            Built for learning,
+            <span className="font-serif italic font-normal text-gradient"> not friction.</span>
           </h2>
-          <p className="text-lg text-muted-foreground">
-            A complete platform designed to make finding and booking classes as simple as possible.
-          </p>
-        </div>
+        </Reveal>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid gap-px overflow-hidden rounded-3xl border border-border/70 bg-border/50 md:grid-cols-2 lg:grid-cols-3">
           {features.map((feature, index) => (
-            <div 
+            <Reveal
               key={feature.title}
-              className="bg-card rounded-2xl p-6 shadow-card hover:shadow-elevated transition-all duration-300 hover:-translate-y-1 group"
-              style={{ animationDelay: `${index * 0.1}s` }}
+              delay={index * 0.08}
+              className="group relative bg-card p-9 transition-colors duration-300 hover:bg-muted/60"
             >
-              <div className={`w-12 h-12 rounded-xl bg-${feature.color}/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                <feature.icon className={`w-6 h-6 text-${feature.color}`} />
-              </div>
-              <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
-              <p className="text-muted-foreground text-sm leading-relaxed">{feature.description}</p>
-            </div>
+              <span className="absolute right-7 top-7 font-serif text-xl italic text-muted-foreground/40 transition-colors group-hover:text-accent">
+                {String(index + 1).padStart(2, "0")}
+              </span>
+              <feature.icon className="mb-6 h-6 w-6 text-primary transition-transform duration-300 group-hover:-translate-y-1" strokeWidth={1.75} />
+              <h3 className="mb-2.5 text-lg font-semibold">{feature.title}</h3>
+              <p className="text-sm leading-relaxed text-muted-foreground">{feature.description}</p>
+            </Reveal>
           ))}
         </div>
       </div>

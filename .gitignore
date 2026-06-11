@@ -40,3 +40,10 @@ backend/prisma/migrations
 
 # Docker
 *.log
+
+# Next.js
+/.next/
+next-env.d.ts
+
+# TypeScript build info
+tsconfig.tsbuildinfo

@@ -38,6 +38,15 @@ export async function getSessionFromRequest(request: NextRequest | Request) {
     }
 
     if (!token) {
+        // Plain Request objects don't expose .cookies — parse the header directly
+        const cookieHeader = request.headers.get("cookie");
+        if (cookieHeader) {
+            const match = cookieHeader.match(/(?:^|;\s*)token=([^;]+)/);
+            if (match) token = decodeURIComponent(match[1]);
+        }
+    }
+
+    if (!token) {
         const authHeader = request.headers.get("authorization");
         if (authHeader && authHeader.startsWith("Bearer ")) {
             token = authHeader.substring(7);

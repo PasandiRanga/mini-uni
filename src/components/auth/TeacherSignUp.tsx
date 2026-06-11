@@ -50,8 +50,7 @@ const TeacherSignUp = ({ onBack }: TeacherSignUpProps) => {
 
   const fetchVerificationProgress = async () => {
     try {
-      const apiUrl = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000").replace(/\/$/, '');
-      const response = await fetch(`${apiUrl}/api/teachers/verification-progress`);
+      const response = await fetch(`/api/teachers/verification-progress`);
       if (response.ok) {
         const text = await response.text();
         if (text && text.trim()) {
@@ -104,10 +103,10 @@ const TeacherSignUp = ({ onBack }: TeacherSignUpProps) => {
 
       toast({
         title: "Account created!",
-        description: "Please log in to complete verification and start teaching.",
+        description: "Welcome to MiniUni — taking you to your dashboard.",
       });
 
-      router.push("/auth");
+      router.push("/teacher/dashboard");
     } catch (error: any) {
       toast({
         title: "Registration failed",
@@ -139,14 +138,12 @@ const TeacherSignUp = ({ onBack }: TeacherSignUpProps) => {
     setIsLoading(true);
 
     try {
-      const apiUrl = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000").replace(/\/$/, '');
-
       // Upload each document
       for (const [docType, file] of Object.entries(documents)) {
         if (file) {
           const documentUrl = await uploadDocument(docType, file);
 
-          const response = await fetch(`${apiUrl}/api/teachers/upload-document`, {
+          const response = await fetch(`/api/teachers/upload-document`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",

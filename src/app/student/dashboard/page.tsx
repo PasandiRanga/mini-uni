@@ -1,10 +1,13 @@
 import StudentDashboard from '@/pages/StudentDashboard';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { Suspense } from 'react';
 
 export default function StudentDashboardPage() {
     return (
-        <Suspense fallback={<div>Loading...</div>}>
-            <StudentDashboard />
-        </Suspense>
+        <ProtectedRoute requiredRole="STUDENT">
+            <Suspense fallback={<div>Loading...</div>}>
+                <StudentDashboard />
+            </Suspense>
+        </ProtectedRoute>
     );
 }

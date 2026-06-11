@@ -25,15 +25,13 @@ const MyClasses: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000').replace(/\/$/, '');
-
   const fetchBookings = useCallback(async () => {
     if (!user) return;
     setLoading(true);
     try {
       const url = user.role === 'STUDENT'
-        ? `${baseUrl}/api/bookings/student/${user.id}/upcoming`
-        : `${baseUrl}/api/bookings/teacher/${user.id}`;
+        ? `/api/bookings/student/${user.id}/upcoming`
+        : `/api/bookings/teacher/${user.id}`;
 
       const res = await fetch(url, { headers: { 'Content-Type': 'application/json' } });
       if (!res.ok) throw new Error('Failed to load classes');
@@ -45,7 +43,7 @@ const MyClasses: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, baseUrl, toast]);
+  }, [user, toast]);
 
   useEffect(() => {
     fetchBookings();

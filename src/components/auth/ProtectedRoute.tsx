@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -19,7 +21,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       if (!isAuthenticated || !user) {
         router.replace('/auth');
       } else if (requiredRole && user.role !== requiredRole) {
-        router.replace('/');
+        // Wrong role for this page — send them to their own dashboard, not home,
+        // so a teacher never lingers on a student page (and vice versa).
+        router.replace(user.role === 'TEACHER' ? '/teacher/dashboard' : '/student/dashboard');
       }
     }
   }, [isLoading, isAuthenticated, user, requiredRole, router]);

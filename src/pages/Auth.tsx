@@ -43,10 +43,12 @@ const Auth = () => {
 
     try {
       if (mode === "login") {
-        // Attempt real login via Auth context
-        await login(formData.email, formData.password, role.toUpperCase());
+        // Attempt real login via Auth context. Redirect by the ACTUAL authenticated
+        // role returned from the server — not the role hint in the URL (which defaults
+        // to "student" and otherwise sends teachers to the wrong dashboard).
+        const loggedInUser = await login(formData.email, formData.password, role.toUpperCase());
         toast({ title: "Welcome back!", description: "Redirecting to your dashboard..." });
-        router.push(role === "teacher" ? "/teacher/dashboard" : "/student/dashboard");
+        router.replace(loggedInUser?.role === "TEACHER" ? "/teacher/dashboard" : "/student/dashboard");
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);

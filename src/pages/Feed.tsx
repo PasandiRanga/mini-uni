@@ -60,8 +60,7 @@ const Feed = () => {
     const fetchPosts = async () => {
       setIsLoadingPosts(true);
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-        const res = await fetch(`${baseUrl}/api/posts`);
+        const res = await fetch(`/api/posts`);
         if (res.ok) {
           const data = await res.json();
           setPosts(data);
@@ -82,8 +81,7 @@ const Feed = () => {
     if (isAuthenticated && postType === "my-posts") {
       const fetchMyPosts = async () => {
         try {
-          const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-          const res = await fetch(`${baseUrl}/api/posts/mine`);
+          const res = await fetch(`/api/posts/mine`);
           if (res.ok) {
             setMyPosts(await res.json());
           }
