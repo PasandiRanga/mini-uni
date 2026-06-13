@@ -17,18 +17,22 @@ import {
   LogOut,
   Plus,
   Clock,
-  Video,
   Star,
   Users,
-  ChevronRight,
-  TrendingUp,
   DollarSign,
-  CheckCircle,
-  AlertCircle,
-  FileText
+  ChevronRight,
 } from "lucide-react";
 import MyClasses from '@/components/classes/MyClasses';
 
+const greeting = () => {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 18) return "Good afternoon";
+  return "Good evening";
+};
+
+const todayLabel = () =>
+  new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
 
 const TeacherDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -99,242 +103,231 @@ const TeacherDashboard = () => {
     { id: "settings", label: "Settings", icon: Settings },
   ];
 
+  const goTab = (id: string) => {
+    if (id === 'settings') {
+      router.push('/teacher/onboarding');
+    } else {
+      setActiveTab(id);
+    }
+  };
+
+  const unreadCount = inquiries.filter(i => !i.read).length;
+
+  const stats = [
+    { icon: DollarSign, label: "Total earnings", value: `$${wallet?.totalEarnings || 0}` },
+    { icon: Clock, label: "Pending balance", value: `$${wallet?.pendingBalance || 0}` },
+    { icon: Users, label: "Total bookings", value: bookings.length },
+    { icon: Star, label: "Average rating", value: "4.9" },
+  ];
+
   return (
-    <div className="min-h-screen bg-background flex">
-      {/* Sidebar */}
-      <aside className="hidden lg:flex flex-col w-64 bg-card border-r border-border">
-        {/* Logo */}
-        <div className="p-6 border-b border-border">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl gradient-warm flex items-center justify-center">
-              <GraduationCap className="w-5 h-5 text-secondary-foreground" />
-            </div>
-            <span className="text-lg font-bold">MiniUni</span>
-          </Link>
-        </div>
+    <div className="min-h-screen bg-background lg:flex">
+      {/* Desktop — floating studio sidebar */}
+      <aside className="hidden lg:flex sticky top-0 h-screen w-[252px] shrink-0 flex-col p-4">
+        <div className="relative flex h-full flex-col overflow-hidden rounded-3xl border border-border/70 bg-card/80 shadow-card backdrop-blur-xl grain">
+          <div className="p-6 pb-4">
+            <Link href="/" className="flex items-center gap-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full gradient-warm">
+                <GraduationCap className="h-5 w-5 text-secondary-foreground" />
+              </div>
+              <span className="text-lg font-semibold tracking-tight">
+                Mini<span className="font-serif italic font-normal">Uni</span>
+              </span>
+            </Link>
+          </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-1">
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => {
-                if (item.id === 'settings') {
-                  router.push('/teacher/onboarding');
-                } else {
-                  setActiveTab(item.id);
-                }
-              }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === item.id
-                ? "gradient-warm text-secondary-foreground shadow-soft"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
-            >
-              <item.icon className="w-5 h-5" />
-              <span className="font-medium">{item.label}</span>
-            </button>
-          ))}
-        </nav>
+          <nav className="flex-1 space-y-1 px-3">
+            {navItems.map((item) => {
+              const active = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => goTab(item.id)}
+                  className={`group relative flex w-full items-center gap-3 rounded-2xl px-4 py-2.5 text-sm transition-all duration-300 ${active
+                    ? "bg-secondary text-secondary-foreground shadow-soft"
+                    : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+                    }`}
+                >
+                  <item.icon className={`h-[18px] w-[18px] transition-transform duration-300 ${active ? "" : "group-hover:-translate-y-0.5"}`} strokeWidth={1.75} />
+                  <span className="font-medium">{item.label}</span>
+                  {active && <span className="absolute right-3.5 h-1.5 w-1.5 rounded-full bg-accent" />}
+                </button>
+              );
+            })}
+          </nav>
 
-        {/* User Section */}
-        <div className="p-4 border-t border-border">
-          <div className="flex items-center gap-3 px-4 py-3">
-            <div className="w-10 h-10 rounded-xl gradient-hero flex items-center justify-center text-primary-foreground font-semibold">
-              {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
+          <div className="p-4">
+            <div className="flex items-center gap-3 rounded-2xl border border-border/60 bg-background/60 p-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full gradient-warm text-sm font-semibold text-secondary-foreground">
+                {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium">{user?.firstName} {user?.lastName}</p>
+                <p className="text-xs text-muted-foreground">Teacher</p>
+              </div>
+              <button onClick={handleLogout} className="text-muted-foreground transition-colors hover:text-destructive" title="Logout">
+                <LogOut className="h-[18px] w-[18px]" />
+              </button>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-medium truncate">{user?.firstName} {user?.lastName}</p>
-              <p className="text-sm text-muted-foreground truncate">{user?.role}</p>
-            </div>
-            <button onClick={handleLogout} className="text-muted-foreground hover:text-foreground transition-colors">
-              <LogOut className="w-5 h-5" />
-            </button>
           </div>
         </div>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto">
-        {/* Header */}
-        <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-xl border-b border-border">
-          <div className="flex items-center justify-between px-6 py-4">
-            <div>
-              <h1 className="text-2xl font-bold">Teacher Dashboard</h1>
-              <p className="text-muted-foreground">Manage your classes and connect with students.</p>
+      {/* Main column */}
+      <main className="flex min-w-0 flex-1 flex-col pb-24 lg:pb-0">
+        {/* Editorial greeting header */}
+        <header className="px-5 pt-8 sm:px-8 lg:px-10 lg:pt-10">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div className="animate-fade-up">
+              <p className="mb-1 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">{todayLabel()}</p>
+              <h1 className="text-3xl sm:text-4xl font-semibold leading-tight">
+                {greeting()},{" "}
+                <span className="font-serif italic font-normal text-gradient">{user?.firstName || "Teacher"}.</span>
+              </h1>
             </div>
-            <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="w-5 h-5" />
-                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-secondary text-secondary-foreground text-xs flex items-center justify-center">
-                  {inquiries.filter(i => !i.read).length}
-                </span>
+            <div className="flex items-center gap-2.5">
+              <Button variant="ghost" size="icon" className="relative rounded-full border border-border/70 bg-card">
+                <Bell className="h-[18px] w-[18px]" />
+                {unreadCount > 0 && (
+                  <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-secondary text-[10px] font-semibold text-secondary-foreground">
+                    {unreadCount}
+                  </span>
+                )}
               </Button>
               <Button variant="warm" className="gap-2" disabled={verification?.verificationStatus !== 'APPROVED'}>
-                <Plus className="w-4 h-4" />
-                Create Offering
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Create Offering</span>
+                <span className="sm:hidden">Create</span>
               </Button>
             </div>
           </div>
         </header>
 
-        {/* Onboarding / Verification horizontal progress bar (clickable) */}
-        <div className="bg-muted/20 border-b border-border">
-          <div className="container mx-auto px-6 py-3">
+        <div className="px-5 py-8 sm:px-8 lg:px-10">
+          {/* Verification banner — quiet but visible */}
+          {verification?.verificationStatus !== 'APPROVED' && (
             <button
               onClick={() => router.push('/teacher/onboarding')}
-              className="w-full text-left focus:outline-none"
+              className="group mb-8 block w-full overflow-hidden rounded-3xl border border-accent/40 bg-accent/[0.07] p-5 text-left transition-all duration-300 hover:border-accent/70 hover:bg-accent/10 sm:p-6"
               aria-label="Open onboarding and verification"
             >
-              <div className="flex items-center justify-between">
-                <div className="flex-1 mr-4">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm font-medium">{verification?.progress ?? 0}% completed — {verification?.verificationStatus || 'Verification Pending'}</div>
-                    <div className="text-xs text-muted-foreground">Classes cannot be started until verification is complete</div>
-                  </div>
-                  <div className="w-full bg-muted rounded-full h-3 mt-2 overflow-hidden">
-                    <div className="h-3 bg-secondary" style={{ width: `${verification?.progress ?? 0}%` }} />
-                  </div>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="font-medium">
+                    Verification <span className="font-serif italic">{(verification?.verificationStatus || 'pending').toLowerCase()}</span> — {verification?.progress ?? 0}% complete
+                  </p>
+                  <p className="mt-0.5 text-sm text-muted-foreground">Classes can't start until your profile is verified.</p>
                 </div>
-                <div className="ml-4 text-sm text-primary font-medium">Complete onboarding</div>
+                <span className="inline-flex items-center gap-1 text-sm font-medium text-primary">
+                  Complete onboarding <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
+                </span>
+              </div>
+              <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-border/70">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-secondary to-accent transition-all duration-700"
+                  style={{ width: `${verification?.progress ?? 0}%` }}
+                />
               </div>
             </button>
-          </div>
-        </div>
+          )}
 
-        {/* Dashboard Content */}
-        <div className="p-6">
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <div className="bg-card rounded-2xl p-5 shadow-card">
-              <div className="flex items-center justify-between mb-3">
-                <div className="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center">
-                  <DollarSign className="w-5 h-5 text-success" />
-                </div>
-                <Badge variant="secondary" className="bg-success/10 text-success">
-                  <TrendingUp className="w-3 h-3 mr-1" />
-                  +18%
-                </Badge>
+          {/* Ledger stat strip */}
+          <div className="animate-fade-up mb-10 grid grid-cols-2 overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft lg:grid-cols-4" style={{ animationDelay: "0.1s" }}>
+            {stats.map((stat, i) => (
+              <div
+                key={stat.label}
+                className={`group p-5 sm:p-7 transition-colors duration-300 hover:bg-muted/50 ${i % 2 === 1 ? "border-l border-border/60" : ""} ${i >= 2 ? "border-t border-border/60 lg:border-t-0 lg:border-l" : ""}`}
+              >
+                <stat.icon className="mb-4 h-5 w-5 text-secondary transition-transform duration-300 group-hover:-translate-y-0.5" strokeWidth={1.75} />
+                <p className="font-serif text-3xl italic leading-none sm:text-4xl">{stat.value}</p>
+                <p className="mt-2 text-xs uppercase tracking-[0.14em] text-muted-foreground">{stat.label}</p>
               </div>
-              <p className="text-2xl font-bold">${wallet?.totalEarnings || 0}</p>
-              <p className="text-sm text-muted-foreground">Total Earnings</p>
-            </div>
-
-            <div className="bg-card rounded-2xl p-5 shadow-card">
-              <div className="flex items-center justify-between mb-3">
-                <div className="w-10 h-10 rounded-xl bg-warning/10 flex items-center justify-center">
-                  <Clock className="w-5 h-5 text-warning" />
-                </div>
-              </div>
-              <p className="text-2xl font-bold">${wallet?.pendingBalance || 0}</p>
-              <p className="text-sm text-muted-foreground">Pending Balance</p>
-            </div>
-
-            <div className="bg-card rounded-2xl p-5 shadow-card">
-              <div className="flex items-center justify-between mb-3">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <Users className="w-5 h-5 text-primary" />
-                </div>
-              </div>
-              <p className="text-2xl font-bold">{bookings.length}</p>
-              <p className="text-sm text-muted-foreground">Total Bookings</p>
-            </div>
-
-            <div className="bg-card rounded-2xl p-5 shadow-card">
-              <div className="flex items-center justify-between mb-3">
-                <div className="w-10 h-10 rounded-xl bg-secondary/10 flex items-center justify-center">
-                  <Star className="w-5 h-5 text-secondary" />
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <p className="text-2xl font-bold">4.9</p>
-                <div className="flex">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <Star key={i} className="w-4 h-4 fill-warning text-warning" />
-                  ))}
-                </div>
-              </div>
-              <p className="text-sm text-muted-foreground">Average Rating</p>
-            </div>
+            ))}
           </div>
 
-          <div className="grid lg:grid-cols-3 gap-6">
+          <div className="grid gap-6 lg:grid-cols-3">
             {/* Upcoming Classes */}
-            <div className="lg:col-span-2">
-              <div className="bg-card rounded-2xl shadow-card overflow-hidden">
-                <div className="flex items-center justify-between p-5 border-b border-border">
-                  <h2 className="font-semibold text-lg">Upcoming Classes</h2>
-                  <Button variant="ghost" size="sm" className="text-primary">
-                    View All
-                    <ChevronRight className="w-4 h-4 ml-1" />
-                  </Button>
-                </div>
-                <div className="p-5">
-                  <MyClasses />
-                </div>
+            <section className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft lg:col-span-2">
+              <div className="flex items-center justify-between border-b border-border/60 px-6 py-5">
+                <h2 className="text-lg font-semibold">
+                  Upcoming <span className="font-serif italic font-normal">classes</span>
+                </h2>
+                <Button variant="ghost" size="sm" className="text-primary">
+                  View All
+                  <ChevronRight className="ml-1 h-4 w-4" />
+                </Button>
               </div>
-            </div>
+              <div className="p-6">
+                <MyClasses />
+              </div>
+            </section>
 
             {/* Recent Inquiries */}
-            <div className="bg-card rounded-2xl shadow-card overflow-hidden">
-              <div className="flex items-center justify-between p-5 border-b border-border">
-                <h2 className="font-semibold text-lg">Recent Inquiries</h2>
-                <Badge className="bg-secondary text-secondary-foreground">{inquiries.filter(i => !i.read).length || 'New'}</Badge>
+            <section className="flex flex-col overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
+              <div className="flex items-center justify-between border-b border-border/60 px-6 py-5">
+                <h2 className="text-lg font-semibold">
+                  <span className="font-serif italic font-normal">Inquiries</span>
+                </h2>
+                {unreadCount > 0 && (
+                  <Badge className="rounded-full bg-secondary text-secondary-foreground">{unreadCount} new</Badge>
+                )}
               </div>
-              <div className="p-5 space-y-4">
-                {inquiries.length === 0 && <div className="text-sm text-muted-foreground">No inquiries yet</div>}
+              <div className="flex-1 space-y-5 p-6">
+                {inquiries.length === 0 && <p className="text-sm text-muted-foreground">No inquiries yet</p>}
                 {inquiries.map((inq) => (
                   <div key={inq.id} className="flex items-start gap-3">
-                    <div className={`w-2 h-2 rounded-full mt-2 ${!inq.read ? 'bg-secondary' : 'bg-muted'}`} />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{inq.sender ? `${inq.sender.firstName} ${inq.sender.lastName}` : 'Student'}</p>
-                      <p className="text-sm text-muted-foreground truncate">{inq.post?.title || inq.post?.subject || ''}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{new Date(inq.createdAt).toLocaleString()}</p>
+                    <div className={`mt-2 h-1.5 w-1.5 shrink-0 rounded-full ${!inq.read ? 'bg-secondary' : 'bg-border'}`} />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium">{inq.sender ? `${inq.sender.firstName} ${inq.sender.lastName}` : 'Student'}</p>
+                      <p className="truncate text-sm text-muted-foreground">{inq.post?.title || inq.post?.subject || ''}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">{new Date(inq.createdAt).toLocaleString()}</p>
                     </div>
-                    <Button variant="ghost" size="sm">Reply</Button>
+                    <Button variant="ghost" size="sm" className="shrink-0">Reply</Button>
                   </div>
                 ))}
               </div>
-              <div className="p-4 border-t border-border">
-                <Button variant="outline" className="w-full">
-                  View All Messages
-                </Button>
+              <div className="border-t border-border/60 p-4">
+                <Button variant="outline" className="w-full">View All Messages</Button>
               </div>
-            </div>
+            </section>
           </div>
 
-          {/* Wallet Summary */}
-          <div className="mt-6 bg-gradient-to-r from-foreground to-foreground/90 rounded-2xl p-6 text-background">
-            <div className="flex items-start justify-between">
+          {/* Wallet — ink card */}
+          <div className="relative mt-6 overflow-hidden rounded-3xl bg-foreground p-7 text-background shadow-elevated grain sm:p-9">
+            <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-secondary/20 blur-3xl" />
+            <div className="relative flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
               <div>
-                <h3 className="text-lg font-semibold mb-1">Your Wallet</h3>
-                <p className="text-background/70 text-sm mb-4">Secure escrow-based payments</p>
-                <div className="grid grid-cols-3 gap-8">
+                <p className="mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-background/50">Your wallet</p>
+                <h3 className="mb-6 font-serif text-2xl italic text-background/90">Secure, escrow-based payments.</h3>
+                <div className="grid grid-cols-3 gap-6 sm:gap-10">
                   <div>
-                    <p className="text-3xl font-bold">{wallet?.releasedBalance ? `$${wallet.releasedBalance}` : '$0'}</p>
-                    <p className="text-sm text-background/70">Available</p>
+                    <p className="font-serif text-3xl italic sm:text-4xl">${wallet?.releasedBalance || 0}</p>
+                    <p className="mt-1 text-xs uppercase tracking-[0.14em] text-background/60">Available</p>
                   </div>
                   <div>
-                    <p className="text-3xl font-bold">{wallet?.pendingBalance ? `$${wallet.pendingBalance}` : '$0'}</p>
-                    <p className="text-sm text-background/70">Pending</p>
+                    <p className="font-serif text-3xl italic sm:text-4xl">${wallet?.pendingBalance || 0}</p>
+                    <p className="mt-1 text-xs uppercase tracking-[0.14em] text-background/60">Pending</p>
                   </div>
                   <div>
-                    <p className="text-3xl font-bold">{wallet?.totalEarnings ? `$${wallet.totalEarnings}` : '$0'}</p>
-                    <p className="text-sm text-background/70">All Time</p>
+                    <p className="font-serif text-3xl italic sm:text-4xl">${wallet?.totalEarnings || 0}</p>
+                    <p className="mt-1 text-xs uppercase tracking-[0.14em] text-background/60">All time</p>
                   </div>
                 </div>
               </div>
-              <div className="flex flex-col gap-2">
-                <Button className="bg-background text-foreground hover:bg-background/90">Withdraw Funds</Button>
-                <div className="bg-background/10 rounded-md p-3 text-sm text-background/90">
-                  <div className="font-medium">Recent Transactions</div>
-                  <div className="mt-2 space-y-2">
+              <div className="flex w-full flex-col gap-3 lg:w-72">
+                <Button className="w-full bg-background text-foreground hover:bg-background/90">Withdraw Funds</Button>
+                <div className="rounded-2xl border border-background/15 bg-background/5 p-4 text-sm">
+                  <p className="font-medium text-background/90">Recent transactions</p>
+                  <div className="mt-3 space-y-2.5">
                     {(wallet?.transactions || []).slice(0, 3).map((t: any) => (
-                      <div key={t.id} className="flex items-center justify-between text-sm">
-                        <div>{t.type}</div>
-                        <div className="font-medium">${t.amount}</div>
+                      <div key={t.id} className="flex items-center justify-between text-sm text-background/75">
+                        <span>{t.type}</span>
+                        <span className="font-medium text-background/90">${t.amount}</span>
                       </div>
                     ))}
-                    {(wallet?.transactions || []).length === 0 && <div className="text-xs text-background/70">No recent transactions</div>}
+                    {(wallet?.transactions || []).length === 0 && (
+                      <p className="text-xs text-background/50">No recent transactions</p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -342,6 +335,27 @@ const TeacherDashboard = () => {
           </div>
         </div>
       </main>
+
+      {/* Mobile — bottom dock */}
+      <nav className="fixed inset-x-4 bottom-4 z-50 lg:hidden">
+        <div className="flex items-center justify-around rounded-full border border-border/70 bg-card/90 px-2 py-2 shadow-elevated backdrop-blur-xl">
+          {navItems.map((item) => {
+            const active = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => goTab(item.id)}
+                className={`flex flex-col items-center gap-0.5 rounded-full px-3.5 py-1.5 transition-all duration-300 ${active ? "bg-secondary text-secondary-foreground" : "text-muted-foreground"
+                  }`}
+                aria-label={item.label}
+              >
+                <item.icon className="h-5 w-5" strokeWidth={1.75} />
+                <span className={`text-[9px] font-medium ${active ? "" : "sr-only"}`}>{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
     </div>
   );
 };

@@ -1,28 +1,11 @@
 'use client';
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import {
-  GraduationCap,
-  Home,
-  Search,
-  Calendar,
-  Wallet,
-  Settings,
-  Bell,
-  LogOut,
-  Plus,
-  Clock,
-  Video,
-  Star,
-  BookOpen,
-  ChevronRight,
-  TrendingUp
-} from "lucide-react";
+import { Calendar, Clock, BookOpen, Wallet, ArrowUpRight } from "lucide-react";
 import MyClasses from '@/components/classes/MyClasses';
 import ExploreContent from "@/components/explore/ExploreContent";
 import DashboardLayout, { useDashboard } from '@/components/layout/DashboardLayout';
@@ -48,223 +31,190 @@ const StudentDashboard = () => {
   // Child component that consumes Dashboard context — rendered inside DashboardLayout
   const DashboardContent: React.FC = () => {
     const { activeTab } = useDashboard();
+
+    if (activeTab === 'explore') return <ExploreContent />;
+
+    if (activeTab === 'classes') {
+      return (
+        <div className="space-y-6">
+          <MyClasses />
+        </div>
+      );
+    }
+
+    const stats = [
+      { icon: Calendar, label: "Classes completed", value: completedCount },
+      { icon: Clock, label: "Learning time", value: `${studyHours} hrs` },
+      { icon: BookOpen, label: "Subjects studied", value: 5 },
+      { icon: Wallet, label: "Wallet balance", value: `$${(wallet as any)?.releasedBalance || 0}` },
+    ];
+
     return (
       <>
-        {activeTab === 'explore' ? (
-          <ExploreContent />
-        ) : activeTab === 'classes' ? (
-          // My Classes view for students
-          <div className="space-y-6">
-            <MyClasses />
+        {/* Ledger stat strip */}
+        <div className="animate-fade-up mb-10 grid grid-cols-2 overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft lg:grid-cols-4" style={{ animationDelay: "0.1s" }}>
+          {stats.map((stat, i) => (
+            <div
+              key={stat.label}
+              className={`group p-5 sm:p-7 transition-colors duration-300 hover:bg-muted/50 ${i % 2 === 1 ? "border-l border-border/60" : ""} ${i >= 2 ? "border-t border-border/60 lg:border-t-0" : ""} ${i >= 2 ? "lg:border-l" : ""}`}
+            >
+              <stat.icon className="mb-4 h-5 w-5 text-primary transition-transform duration-300 group-hover:-translate-y-0.5" strokeWidth={1.75} />
+              <p className="font-serif text-3xl italic leading-none sm:text-4xl">{stat.value}</p>
+              <p className="mt-2 text-xs uppercase tracking-[0.14em] text-muted-foreground">{stat.label}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-3">
+          {/* Left: Enrolled Courses & secondary panels */}
+          <div className="space-y-6 lg:col-span-2">
+            <section className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
+              <div className="flex items-center justify-between border-b border-border/60 px-6 py-5">
+                <h2 className="text-lg font-semibold">
+                  Enrolled <span className="font-serif italic font-normal">courses</span>
+                </h2>
+                <Button variant="ghost" size="sm" className="text-primary">Manage</Button>
+              </div>
+              <div className="divide-y divide-border/60">
+                {enrolledCourses.length === 0 && (
+                  <p className="p-6 text-sm text-muted-foreground">You have no confirmed classes yet.</p>
+                )}
+                {enrolledCourses.map((c) => (
+                  <div key={c.id} className="flex flex-col items-start justify-between gap-3 px-6 py-4 transition-colors hover:bg-muted/40 sm:flex-row sm:items-center">
+                    <div>
+                      <p className="font-medium">{c.subject}</p>
+                      <p className="text-sm text-muted-foreground">with {c.teacher}</p>
+                    </div>
+                    <div className="text-left sm:text-right">
+                      <Badge className="rounded-full bg-primary/10 text-primary hover:bg-primary/15">{c.status}</Badge>
+                      {c.googleMeetLink && (
+                        <div className="mt-2">
+                          <a href={c.googleMeetLink} target="_blank" rel="noreferrer" className="link-underline inline-flex items-center gap-1 text-sm text-primary">
+                            Join Meet <ArrowUpRight className="h-3.5 w-3.5" />
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <section className="rounded-3xl border border-border/70 bg-card p-6 shadow-soft">
+                <h3 className="mb-4 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Upcoming classes</h3>
+                <div className="space-y-4">
+                  {upcomingClasses.length === 0 && <p className="text-sm text-muted-foreground">No upcoming classes</p>}
+                  {upcomingClasses.map((uc) => (
+                    <div key={uc.id} className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate font-medium">{uc.subject}</p>
+                        <p className="truncate text-sm text-muted-foreground">{uc.teacher}</p>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <p className="text-sm">{uc.date} {uc.time}</p>
+                        {uc.googleMeetLink && (
+                          <a href={uc.googleMeetLink} target="_blank" rel="noreferrer" className="link-underline text-sm text-primary">Join</a>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section className="rounded-3xl border border-border/70 bg-card p-6 shadow-soft">
+                <h3 className="mb-4 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">This month</h3>
+                <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-medium text-muted-foreground">
+                  {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+                    <div key={i} className="py-1">{d}</div>
+                  ))}
+                </div>
+                <div className="mt-1 grid grid-cols-7 gap-1">
+                  {Array.from({ length: 35 }).map((_, i) => {
+                    const day = i + 1;
+                    const dayEvents = calendarEvents.filter((ev: any) => {
+                      if (!ev.start) return false;
+                      const d = new Date(ev.start).getDate();
+                      return d === day;
+                    });
+                    const isToday = day === new Date().getDate();
+                    return (
+                      <div
+                        key={i}
+                        className={`flex h-8 items-center justify-center rounded-lg text-xs transition-colors ${dayEvents.length
+                          ? "bg-primary text-primary-foreground font-medium"
+                          : isToday
+                            ? "border border-accent/70 text-foreground font-medium"
+                            : day <= 31 ? "text-muted-foreground hover:bg-muted/60" : "opacity-0"
+                          }`}
+                        title={dayEvents.map((ev: any) => ev.title).join(', ')}
+                      >
+                        {day <= 31 ? day : ""}
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            </div>
           </div>
-        ) : (
-          /* Stats Grid */
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              <div className="bg-card rounded-2xl p-5 shadow-card">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                    <Calendar className="w-5 h-5 text-primary" />
-                  </div>
-                  <Badge variant="secondary" className="bg-success/10 text-success">
-                    <TrendingUp className="w-3 h-3 mr-1" />
-                    +12%
-                  </Badge>
-                </div>
-                <p className="text-2xl sm:text-3xl font-bold">{completedCount}</p>
-                <p className="text-sm text-muted-foreground">Classes Completed</p>
+
+          {/* Right: Recommendations & Your Teachers */}
+          <div className="space-y-6">
+            <section className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
+              <div className="flex items-center justify-between border-b border-border/60 px-6 py-5">
+                <h2 className="text-lg font-semibold">
+                  For <span className="font-serif italic font-normal">you</span>
+                </h2>
+                <Button variant="ghost" size="sm">See All</Button>
               </div>
-
-              <div className="bg-card rounded-2xl p-5 shadow-card">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
-                    <Clock className="w-5 h-5 text-accent" />
+              <div className="space-y-5 p-6">
+                {recommendations.length === 0 && <p className="text-sm text-muted-foreground">No recommendations yet.</p>}
+                {recommendations.map((r: any) => (
+                  <div key={r.id} className="group flex items-center gap-3">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full gradient-hero font-serif text-base italic text-primary-foreground">
+                      {(r.user?.firstName || 'U').charAt(0)}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium">{r.title}</p>
+                      <p className="truncate text-sm text-muted-foreground">{r.subject}</p>
+                    </div>
+                    <Button size="sm" variant="outline" className="shrink-0 opacity-70 transition-opacity group-hover:opacity-100">View</Button>
                   </div>
-                </div>
-                <p className="text-2xl sm:text-3xl font-bold">{studyHours} hrs</p>
-                <p className="text-sm text-muted-foreground">Total Learning Time</p>
+                ))}
               </div>
+            </section>
 
-              <div className="bg-card rounded-2xl p-5 shadow-card">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="w-10 h-10 rounded-xl bg-secondary/10 flex items-center justify-center">
-                    <BookOpen className="w-5 h-5 text-secondary" />
-                  </div>
-                </div>
-                <p className="text-2xl sm:text-3xl font-bold">5</p>
-                <p className="text-sm text-muted-foreground">Subjects Studied</p>
+            <section className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
+              <div className="flex items-center justify-between border-b border-border/60 px-6 py-5">
+                <h2 className="text-lg font-semibold">
+                  Your <span className="font-serif italic font-normal">teachers</span>
+                </h2>
+                <Button variant="ghost" size="sm">View All</Button>
               </div>
-
-              <div className="bg-card rounded-2xl p-5 shadow-card">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="w-10 h-10 rounded-xl bg-warning/10 flex items-center justify-center">
-                    <Wallet className="w-5 h-5 text-warning" />
-                  </div>
-                </div>
-                <p className="text-2xl sm:text-3xl font-bold">${(wallet as any)?.releasedBalance || 0}</p>
-                <p className="text-sm text-muted-foreground">Wallet Balance</p>
-              </div>
-            </div>
-
-            <div className="grid lg:grid-cols-3 gap-6">
-              {/* Left: Enrolled Courses & Study Hours */}
-              <div className="lg:col-span-2 space-y-6">
-                <div className="bg-card rounded-2xl shadow-card p-5">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="font-semibold text-lg">Enrolled Courses</h2>
-                    <Button variant="ghost" size="sm" className="text-primary">Manage</Button>
-                  </div>
-                  <div className="divide-y divide-border">
-                    {enrolledCourses.length === 0 && (
-                      <p className="p-4 text-sm text-muted-foreground">You have no confirmed classes yet.</p>
-                    )}
-                    {enrolledCourses.map((c) => (
-                      <div key={c.id} className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between">
-                        <div>
-                          <p className="font-medium">{c.subject}</p>
-                          <p className="text-sm text-muted-foreground">with {c.teacher}</p>
-                        </div>
-                        <div className="text-right">
-                          <Badge className="bg-primary/10 text-primary">{c.status}</Badge>
-                          {c.googleMeetLink && (
-                            <div className="mt-2">
-                              <a href={c.googleMeetLink} target="_blank" rel="noreferrer" className="text-sm text-primary hover:underline">Join Meet</a>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="bg-card rounded-2xl p-5 shadow-card">
-                    <p className="text-sm text-muted-foreground">Study Hours</p>
-                    <p className="text-2xl sm:text-3xl font-bold">{studyHours} hrs</p>
-                    <p className="text-sm text-muted-foreground">Total completed hours</p>
-                  </div>
-
-                  <div className="bg-card rounded-2xl p-5 shadow-card">
-                    <p className="text-sm text-muted-foreground">Upcoming Classes</p>
-                    <div className="mt-3 space-y-3">
-                      {upcomingClasses.length === 0 && <p className="text-sm text-muted-foreground">No upcoming classes</p>}
-                      {upcomingClasses.map((uc) => (
-                        <div key={uc.id} className="flex items-center justify-between">
-                          <div>
-                            <p className="font-medium">{uc.subject}</p>
-                            <p className="text-sm text-muted-foreground">{uc.teacher}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-sm">{uc.date} {uc.time}</p>
-                            {uc.googleMeetLink && (
-                              <a href={uc.googleMeetLink} target="_blank" rel="noreferrer" className="text-sm text-primary hover:underline">Join</a>
-                            )}
-                          </div>
-                        </div>
-                      ))}
+              <div className="space-y-4 p-6">
+                {recentTeachers.length === 0 && <p className="text-sm text-muted-foreground">No teachers yet.</p>}
+                {recentTeachers.map((teacher) => (
+                  <div key={teacher.id} className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full gradient-hero font-serif text-sm italic text-primary-foreground">
+                      {(teacher.firstName || 'T').charAt(0)}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium">{teacher.firstName} {teacher.lastName}</p>
+                      <p className="truncate text-sm text-muted-foreground">{(teacher.teacherProfile?.subjects || []).slice(0, 2).join(', ')}</p>
                     </div>
                   </div>
-
-                  <div className="bg-card rounded-2xl p-5 shadow-card">
-                    <p className="text-sm text-muted-foreground">Calendar</p>
-                    <div className="mt-3">
-                      <div className="grid grid-cols-7 gap-1 text-xs text-center">
-                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-                          <div key={d} className="py-1 font-medium">{d}</div>
-                        ))}
-                      </div>
-                      <div className="mt-2 grid grid-cols-7 gap-1 text-sm">
-                        {/* Simple month grid showing events on their day */}
-                        {Array.from({ length: 35 }).map((_, i) => {
-                          const day = i + 1;
-                          const dayEvents = calendarEvents.filter((ev: any) => {
-                            if (!ev.start) return false;
-                            const d = new Date(ev.start).getDate();
-                            return d === day;
-                          });
-                          return (
-                            <div key={i} className={`h-10 sm:h-14 p-1 rounded-md ${dayEvents.length ? 'bg-muted/40' : 'bg-card'}`}>
-                              <div className="text-xs text-muted-foreground">{day}</div>
-                              {dayEvents.slice(0, 2).map((ev: any) => (
-                                <div key={ev.id} className="text-xs truncate">• {ev.title}</div>
-                              ))}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                ))}
               </div>
-
-              {/* Right: Recommendations & Your Teachers */}
-              <div>
-                <div className="bg-card rounded-2xl shadow-card overflow-hidden mb-6">
-                  <div className="flex items-center justify-between p-5 border-b border-border">
-                    <h2 className="font-semibold text-lg">Recommended Classes</h2>
-                    <Button variant="ghost" size="sm">See All</Button>
-                  </div>
-                  <div className="p-4 space-y-4">
-                    {recommendations.length === 0 && <p className="text-sm text-muted-foreground">No recommendations yet.</p>}
-                    {recommendations.map((r: any) => (
-                      <div key={r.id} className="flex items-start gap-3">
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl gradient-hero flex items-center justify-center text-sm font-semibold text-primary-foreground">{(r.user?.firstName || 'U').charAt(0)}</div>
-                        <div className="flex-1">
-                          <p className="font-medium truncate">{r.title}</p>
-                          <p className="text-sm text-muted-foreground">{r.subject}</p>
-                        </div>
-                        <div>
-                          <Button size="sm" variant="hero">View</Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="bg-card rounded-2xl shadow-card overflow-hidden">
-                  <div className="flex items-center justify-between p-5 border-b border-border">
-                    <h2 className="font-semibold text-lg">Your Teachers</h2>
-                    <Button variant="ghost" size="sm">View All</Button>
-                  </div>
-                  <div className="p-5 space-y-4">
-                    {recentTeachers.map((teacher) => (
-                      <div key={teacher.id} className="flex items-center gap-3">
-                        <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl gradient-hero flex items-center justify-center text-sm font-semibold text-primary-foreground">{(teacher.firstName || 'T').charAt(0)}</div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">{teacher.firstName} {teacher.lastName}</p>
-                          <p className="text-sm text-muted-foreground">{(teacher.teacherProfile?.subjects || []).slice(0, 2).join(', ')}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
+            </section>
+          </div>
+        </div>
       </>
     );
   };
 
-  const handleLogout = async () => {
-    try {
-      await authLogout();
-      toast({
-        title: "Logged out successfully",
-        description: "You have been logged out. Redirecting to home...",
-      });
-      router.replace("/");
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to logout",
-        variant: "destructive",
-      });
-    }
-  };
   return (
     <DashboardLayout>
-      <div className="p-4 sm:p-6">
+      <div className="px-5 py-8 sm:px-8 lg:px-10">
         <DashboardContent />
       </div>
     </DashboardLayout>

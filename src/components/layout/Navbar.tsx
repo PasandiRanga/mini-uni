@@ -19,15 +19,17 @@ const Navbar = () => {
   const getDashboardPath = () => user?.role === 'TEACHER' ? '/teacher/dashboard' : '/student/dashboard';
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-xl border-b border-border">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/75 backdrop-blur-xl border-b border-border/60">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href={isAuthenticated ? (getDashboardPath()) : "/"} className="flex items-center gap-2 group">
-            <div className="w-9 h-9 rounded-xl gradient-hero flex items-center justify-center shadow-soft group-hover:shadow-card transition-shadow">
+          <Link href={isAuthenticated ? (getDashboardPath()) : "/"} className="flex items-center gap-2.5 group">
+            <div className="w-9 h-9 rounded-full gradient-hero flex items-center justify-center shadow-soft transition-all duration-300 group-hover:shadow-card group-hover:rotate-[8deg]">
               <GraduationCap className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold text-foreground">MiniUni</span>
+            <span className="text-xl font-semibold tracking-tight text-foreground">
+              Mini<span className="font-serif italic font-normal">Uni</span>
+            </span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -35,32 +37,32 @@ const Navbar = () => {
             {!isAuthenticated ? (
               // Guest nav: Home, Explore, How It Works
               <>
-                <Link href="/" className="text-muted-foreground hover:text-foreground transition-colors font-medium">
+                <Link href="/" className="link-underline text-sm text-muted-foreground hover:text-foreground transition-colors font-medium">
                   Home
                 </Link>
-                <Link href="/feed" className="text-muted-foreground hover:text-foreground transition-colors font-medium">
+                <Link href="/feed" className="link-underline text-sm text-muted-foreground hover:text-foreground transition-colors font-medium">
                   Explore
                 </Link>
-                <Link href="/how-it-works" className="text-muted-foreground hover:text-foreground transition-colors font-medium">
+                <Link href="/how-it-works" className="link-underline text-sm text-muted-foreground hover:text-foreground transition-colors font-medium">
                   How It Works
                 </Link>
               </>
             ) : (
               // Authenticated nav: Explore, Find Teachers, Create Post
               <>
-                <Link href="/feed" className="text-muted-foreground hover:text-foreground transition-colors font-medium">
+                <Link href="/feed" className="link-underline text-sm text-muted-foreground hover:text-foreground transition-colors font-medium">
                   Explore
                 </Link>
-                <Link href="/teachers" className="text-muted-foreground hover:text-foreground transition-colors font-medium">
+                <Link href="/teachers" className="link-underline text-sm text-muted-foreground hover:text-foreground transition-colors font-medium">
                   Find Teachers
                 </Link>
                 {user?.role === 'STUDENT' && (
-                  <Link href="/post/create" className="text-muted-foreground hover:text-foreground transition-colors font-medium">
+                  <Link href="/post/create" className="link-underline text-sm text-muted-foreground hover:text-foreground transition-colors font-medium">
                     Post Request
                   </Link>
                 )}
                 {user?.role === 'TEACHER' && (
-                  <Link href="/post/create" className="text-muted-foreground hover:text-foreground transition-colors font-medium">
+                  <Link href="/post/create" className="link-underline text-sm text-muted-foreground hover:text-foreground transition-colors font-medium">
                     Create Offering
                   </Link>
                 )}

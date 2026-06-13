@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcrypt";
 import prisma from "@/lib/prisma";
 import { UserRole } from "@prisma/client";
+import { encrypt } from "@/lib/auth";
 
 export async function POST(request: Request) {
     try {
@@ -65,7 +66,23 @@ export async function POST(request: Request) {
             },
         });
 
-        return NextResponse.json({ user }, { status: 201 });
+        // Issue session immediately so the user lands signed-in after sign-up
+        const token = await encrypt({
+            sub: user.id,
+            role: user.role,
+        });
+
+        const response = NextResponse.json({ user, token }, { status: 201 });
+
+        response.cookies.set("token", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+            maxAge: 60 * 60 * 24, // 1 day
+            path: "/",
+        });
+
+        return response;
     } catch (error: any) {
         console.error("Registration error:", error);
         return NextResponse.json(

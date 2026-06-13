@@ -13,8 +13,8 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string, role: string) => Promise<void>;
-  register: (email: string, password: string, firstName: string, lastName: string, phone: string, role: string) => Promise<void>;
+  login: (email: string, password: string, role: string) => Promise<User | null>;
+  register: (email: string, password: string, firstName: string, lastName: string, phone: string, role: string) => Promise<User | null>;
   logout: () => Promise<void>;
   clearAuth: () => void;
 }
@@ -71,6 +71,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setUser(normalizedUser);
       // Wait a tick so consumers receive the updated auth state
       await new Promise((res) => setTimeout(res, 0));
+      return normalizedUser ?? null;
     } finally {
       setIsLoading(false);
     }
@@ -89,6 +90,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const error = await response.json();
         throw new Error(error.message || 'Registration failed');
       }
+
+      const data = await response.json();
+
+      // Normalize role casing from backend
+      const normalizedUser = data.user && typeof data.user.role === 'string'
+        ? { ...data.user, role: data.user.role.toUpperCase() }
+        : data.user;
+
+      setUser(normalizedUser);
+      // Wait a tick so consumers receive the updated auth state
+      await new Promise((res) => setTimeout(res, 0));
+      return normalizedUser ?? null;
     } finally {
       setIsLoading(false);
     }

@@ -1,65 +1,62 @@
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight, GraduationCap, Users } from "lucide-react";
+import { ArrowRight, ArrowUpRight } from "lucide-react";
+import Reveal from "@/components/Reveal";
 
 const CTASection = () => {
   return (
-    <section className="py-24">
+    <section className="py-28">
       <div className="container mx-auto px-4">
-        <div className="grid md:grid-cols-2 gap-6">
-          {/* Students CTA */}
-          <div className="relative bg-card rounded-3xl p-8 lg:p-12 shadow-elevated overflow-hidden group hover:shadow-glow transition-all duration-500">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -z-0 group-hover:bg-primary/20 transition-colors" />
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Students CTA — ivory card */}
+          <Reveal className="group relative overflow-hidden rounded-[2rem] border border-border/70 bg-card p-10 lg:p-14 shadow-card transition-shadow duration-500 hover:shadow-elevated grain">
+            <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-primary/[0.07] blur-3xl transition-all duration-700 group-hover:bg-primary/[0.12]" />
 
             <div className="relative z-10">
-              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
-                <GraduationCap className="w-7 h-7 text-primary" />
-              </div>
+              <p className="mb-6 text-xs font-semibold uppercase tracking-[0.2em] text-accent">For students</p>
 
-              <h3 className="text-2xl lg:text-3xl font-bold mb-4">
+              <h3 className="mb-5 text-3xl lg:text-4xl font-semibold leading-tight">
                 Ready to start
-                <span className="font-serif italic text-gradient"> learning?</span>
+                <span className="font-serif italic font-normal text-gradient"> learning?</span>
               </h3>
 
-              <p className="text-muted-foreground mb-8 max-w-md">
-                Join thousands of students finding their perfect teachers. Post what you want to learn and get matched instantly.
+              <p className="mb-10 max-w-md leading-relaxed text-muted-foreground">
+                Post what you want to learn and get matched with a verified teacher — often within hours.
               </p>
 
               <Button variant="hero" size="lg" asChild>
                 <Link href="/signup">
-                  Find a Teacher
-                  <ArrowRight className="w-5 h-5 ml-1" />
+                  Find a teacher
+                  <ArrowRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
                 </Link>
               </Button>
             </div>
-          </div>
+          </Reveal>
 
-          {/* Teachers CTA */}
-          <div className="relative bg-foreground rounded-3xl p-8 lg:p-12 shadow-elevated overflow-hidden group hover:shadow-glow transition-all duration-500">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-secondary/20 rounded-full blur-3xl -z-0 group-hover:bg-secondary/30 transition-colors" />
+          {/* Teachers CTA — ink card */}
+          <Reveal delay={0.12} className="group relative overflow-hidden rounded-[2rem] bg-foreground p-10 lg:p-14 shadow-elevated grain">
+            <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-secondary/20 blur-3xl transition-all duration-700 group-hover:bg-secondary/30" />
 
             <div className="relative z-10">
-              <div className="w-14 h-14 rounded-2xl bg-secondary/20 flex items-center justify-center mb-6">
-                <Users className="w-7 h-7 text-secondary" />
-              </div>
+              <p className="mb-6 text-xs font-semibold uppercase tracking-[0.2em] text-accent">For teachers</p>
 
-              <h3 className="text-2xl lg:text-3xl font-bold mb-4 text-background">
+              <h3 className="mb-5 text-3xl lg:text-4xl font-semibold leading-tight text-background">
                 Share your
-                <span className="font-serif italic"> expertise</span>
+                <span className="font-serif italic font-normal"> expertise.</span>
               </h3>
 
-              <p className="text-background/70 mb-8 max-w-md">
-                Turn your knowledge into income. Set your own rates, create your schedule, and teach students from anywhere.
+              <p className="mb-10 max-w-md leading-relaxed text-background/70">
+                Set your rates, design your schedule, and get paid securely for every class you teach.
               </p>
 
               <Button variant="warm" size="lg" asChild>
                 <Link href="/signup">
-                  Start Teaching
-                  <ArrowRight className="w-5 h-5 ml-1" />
+                  Start teaching
+                  <ArrowUpRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                 </Link>
               </Button>
             </div>
-          </div>
+          </Reveal>
         </div>
       </div>
     </section>

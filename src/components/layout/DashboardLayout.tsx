@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { createContext, useContext, useEffect, useState, PropsWithChildren } from "react";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,8 +14,7 @@ import {
   Settings,
   Bell,
   LogOut,
-  Plus
-  , Menu, X
+  Plus,
 } from "lucide-react";
 
 type DashboardContextType = {
@@ -30,25 +29,22 @@ const DashboardContext = createContext<DashboardContextType>({
 
 export const useDashboard = () => useContext(DashboardContext);
 
+const greeting = () => {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 18) return "Good afternoon";
+  return "Good evening";
+};
+
+const todayLabel = () =>
+  new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+
 const DashboardLayout: React.FC<PropsWithChildren> = ({ children }) => {
   const [activeTab, setActiveTab] = useState("overview");
   const { user, logout } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
-  const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [mobileOpen, setMobileOpen] = useState(false);
-
-  useEffect(() => {
-    try {
-      const u = localStorage.getItem("user");
-      if (u) {
-        // keep local storage user for avatar initials in sidebar
-      }
-    } catch (e) {
-      // ignore
-    }
-  }, []);
 
   useEffect(() => {
     const t = searchParams?.get("tab");
@@ -68,142 +64,125 @@ const DashboardLayout: React.FC<PropsWithChildren> = ({ children }) => {
   const navItems = [
     { id: "overview", label: "Overview", icon: Home },
     { id: "explore", label: "Explore", icon: Search },
-    { id: "classes", label: "My Classes", icon: Calendar },
+    { id: "classes", label: "Classes", icon: Calendar },
     { id: "wallet", label: "Wallet", icon: Wallet },
     { id: "settings", label: "Settings", icon: Settings },
   ];
 
+  const goTab = (id: string) => {
+    setActiveTab(id);
+    router.push(`/student/dashboard?tab=${id}`);
+  };
+
   return (
     <DashboardContext.Provider value={{ activeTab, setActiveTab }}>
-      <div className="min-h-screen bg-background flex">
-        <aside className="hidden lg:flex flex-col w-64 bg-card border-r border-border">
-          <div className="p-6 border-b border-border">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-xl gradient-hero flex items-center justify-center">
-                <GraduationCap className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <span className="text-lg font-bold">MiniUni</span>
-            </Link>
-          </div>
+      <div className="min-h-screen bg-background lg:flex">
+        {/* Desktop — floating studio sidebar */}
+        <aside className="hidden lg:flex sticky top-0 h-screen w-[252px] shrink-0 flex-col p-4">
+          <div className="flex h-full flex-col rounded-3xl border border-border/70 bg-card/80 shadow-card backdrop-blur-xl grain relative overflow-hidden">
+            <div className="p-6 pb-4">
+              <Link href="/" className="flex items-center gap-2.5">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full gradient-hero">
+                  <GraduationCap className="h-5 w-5 text-primary-foreground" />
+                </div>
+                <span className="text-lg font-semibold tracking-tight">
+                  Mini<span className="font-serif italic font-normal">Uni</span>
+                </span>
+              </Link>
+            </div>
 
-          <nav className="flex-1 p-4 space-y-1">
-            {navItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => {
-                  setActiveTab(item.id);
-                  router.push(`/student/dashboard?tab=${item.id}`);
-                }}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === item.id
-                  ? "bg-primary text-primary-foreground shadow-soft"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                  }`}
-              >
-                <item.icon className="w-5 h-5" />
-                <span className="font-medium">{item.label}</span>
-              </button>
-            ))}
-          </nav>
+            <nav className="flex-1 space-y-1 px-3">
+              {navItems.map((item) => {
+                const active = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => goTab(item.id)}
+                    className={`group relative flex w-full items-center gap-3 rounded-2xl px-4 py-2.5 text-sm transition-all duration-300 ${active
+                      ? "bg-primary text-primary-foreground shadow-soft"
+                      : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+                      }`}
+                  >
+                    <item.icon className={`h-[18px] w-[18px] transition-transform duration-300 ${active ? "" : "group-hover:-translate-y-0.5"}`} strokeWidth={1.75} />
+                    <span className="font-medium">{item.label}</span>
+                    {active && <span className="absolute right-3.5 h-1.5 w-1.5 rounded-full bg-accent" />}
+                  </button>
+                );
+              })}
+            </nav>
 
-          <div className="p-4 border-t border-border">
-            <div className="flex items-center gap-3 px-4 py-3">
-              <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center text-accent-foreground font-semibold">
-                {user ? `${(user.firstName || "").charAt(0)}${(user.lastName || "").charAt(0)}` : "SJ"}
+            <div className="p-4">
+              <div className="flex items-center gap-3 rounded-2xl border border-border/60 bg-background/60 p-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full gradient-hero text-sm font-semibold text-primary-foreground">
+                  {user ? `${(user.firstName || "").charAt(0)}${(user.lastName || "").charAt(0)}` : "S"}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{user ? `${user.firstName} ${user.lastName}` : "Student"}</p>
+                  <p className="text-xs text-muted-foreground">Student</p>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="text-muted-foreground transition-colors hover:text-destructive"
+                  title="Logout"
+                >
+                  <LogOut className="h-4.5 w-4.5 h-[18px] w-[18px]" />
+                </button>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-medium truncate">{user ? `${user.firstName} ${user.lastName}` : "Student"}</p>
-                <p className="text-sm text-muted-foreground">Student</p>
-              </div>
-              <button onClick={handleLogout} className="text-muted-foreground hover:text-foreground transition-colors" title="Logout">
-                <LogOut className="w-5 h-5" />
-              </button>
             </div>
           </div>
         </aside>
 
-        <div className="flex-1 flex flex-col">
-          <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-xl border-b border-border">
-            <div className="flex items-center justify-between px-6 py-4">
-              <div className="flex items-center gap-3">
-                <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setMobileOpen(true)}>
-                  <Menu className="w-5 h-5" />
-                </Button>
-                <div>
-                  <h1 className="text-2xl font-bold">Welcome back, {user ? user.firstName : 'Student'}!</h1>
-                  <p className="text-muted-foreground">Here's what's happening with your classes.</p>
-                </div>
+        {/* Main column */}
+        <div className="flex min-w-0 flex-1 flex-col pb-24 lg:pb-0">
+          {/* Editorial greeting header */}
+          <header className="px-5 pt-8 sm:px-8 lg:px-10 lg:pt-10">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div className="animate-fade-up">
+                <p className="mb-1 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">{todayLabel()}</p>
+                <h1 className="text-3xl sm:text-4xl font-semibold leading-tight">
+                  {greeting()},{" "}
+                  <span className="font-serif italic font-normal text-gradient">{user?.firstName || "Student"}.</span>
+                </h1>
               </div>
-              <div className="flex items-center gap-3">
-                <Button variant="ghost" size="icon" className="relative">
-                  <Bell className="w-5 h-5" />
-                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-secondary text-secondary-foreground text-xs flex items-center justify-center">3</span>
+              <div className="flex items-center gap-2.5">
+                <Button variant="ghost" size="icon" className="relative rounded-full border border-border/70 bg-card">
+                  <Bell className="h-[18px] w-[18px]" />
+                  <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-secondary text-[10px] font-semibold text-secondary-foreground">3</span>
                 </Button>
                 <Button variant="hero" className="gap-2" asChild>
                   <Link href="/teachers">
-                    <Plus className="w-4 h-4" />
-                    Find Teacher
+                    <Plus className="h-4 w-4" />
+                    <span className="hidden sm:inline">Find Teacher</span>
+                    <span className="sm:hidden">Find</span>
                   </Link>
                 </Button>
               </div>
             </div>
           </header>
 
-          <main className="flex-1 overflow-y-auto">{children}</main>
+          <main className="flex-1">{children}</main>
         </div>
-        {/* Mobile off-canvas sidebar */}
-        {mobileOpen && (
-          <div className="fixed inset-0 z-50 lg:hidden">
-            <div className="absolute inset-0 bg-black/40" onClick={() => setMobileOpen(false)} />
-            <aside className="relative w-64 h-full bg-card border-r border-border">
-              <div className="p-4 border-b border-border flex items-center justify-between">
-                <Link href="/" className="flex items-center gap-2">
-                  <div className="w-9 h-9 rounded-xl gradient-hero flex items-center justify-center">
-                    <GraduationCap className="w-5 h-5 text-primary-foreground" />
-                  </div>
-                  <span className="text-lg font-bold">MiniUni</span>
-                </Link>
-                <Button variant="ghost" size="icon" onClick={() => setMobileOpen(false)}>
-                  <X className="w-5 h-5" />
-                </Button>
-              </div>
 
-              <nav className="p-4 space-y-1">
-                {navItems.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => {
-                      setActiveTab(item.id);
-                      setMobileOpen(false);
-                      router.push(`/student/dashboard?tab=${item.id}`);
-                    }}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === item.id
-                      ? "bg-primary text-primary-foreground shadow-soft"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                      }`}
-                  >
-                    <item.icon className="w-5 h-5" />
-                    <span className="font-medium">{item.label}</span>
-                  </button>
-                ))}
-              </nav>
-
-              <div className="p-4 border-t border-border">
-                <div className="flex items-center gap-3 px-4 py-3">
-                  <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center text-accent-foreground font-semibold">
-                    {user ? `${(user.firstName || "").charAt(0)}${(user.lastName || "").charAt(0)}` : "SJ"}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{user ? `${user.firstName} ${user.lastName}` : "Student"}</p>
-                    <p className="text-sm text-muted-foreground">Student</p>
-                  </div>
-                  <button onClick={handleLogout} className="text-muted-foreground hover:text-foreground transition-colors" title="Logout">
-                    <LogOut className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-            </aside>
+        {/* Mobile — bottom dock */}
+        <nav className="fixed inset-x-4 bottom-4 z-50 lg:hidden">
+          <div className="flex items-center justify-around rounded-full border border-border/70 bg-card/90 px-2 py-2 shadow-elevated backdrop-blur-xl">
+            {navItems.map((item) => {
+              const active = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => goTab(item.id)}
+                  className={`flex flex-col items-center gap-0.5 rounded-full px-3.5 py-1.5 transition-all duration-300 ${active ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                    }`}
+                  aria-label={item.label}
+                >
+                  <item.icon className="h-5 w-5" strokeWidth={1.75} />
+                  <span className={`text-[9px] font-medium ${active ? "" : "sr-only"}`}>{item.label}</span>
+                </button>
+              );
+            })}
           </div>
-        )}
+        </nav>
       </div>
     </DashboardContext.Provider>
   );

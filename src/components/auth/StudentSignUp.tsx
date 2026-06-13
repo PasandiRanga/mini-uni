@@ -63,10 +63,10 @@ const StudentSignUp = ({ onBack }: StudentSignUpProps) => {
 
       toast({
         title: "Account created successfully!",
-        description: "Please log in to continue.",
+        description: "Welcome to MiniUni — taking you to your dashboard.",
       });
 
-      router.push("/auth");
+      router.push("/student/dashboard");
     } catch (error: any) {
       let errorMessage = "Something went wrong. Please try again.";
 
