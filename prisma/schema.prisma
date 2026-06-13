@@ -89,6 +89,8 @@ model User {
   role          UserRole  @default(STUDENT)
   isActive      Boolean   @default(true)
   emailVerified Boolean   @default(false)
+  emailOtp        String?   // bcrypt hash of the current verification code
+  emailOtpExpiry  DateTime? // when the current code expires
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 

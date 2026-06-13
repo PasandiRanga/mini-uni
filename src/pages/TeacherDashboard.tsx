@@ -23,6 +23,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import MyClasses from '@/components/classes/MyClasses';
+import EmailVerificationBanner from "@/components/auth/EmailVerificationBanner";
 
 const greeting = () => {
   const h = new Date().getHours();
@@ -204,6 +205,8 @@ const TeacherDashboard = () => {
         </header>
 
         <div className="px-5 py-8 sm:px-8 lg:px-10">
+          <EmailVerificationBanner />
+
           {/* Verification banner — quiet but visible */}
           {verification?.verificationStatus !== 'APPROVED' && (
             <button
