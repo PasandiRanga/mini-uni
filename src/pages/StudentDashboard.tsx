@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Calendar, Clock, BookOpen, Wallet, ArrowUpRight } from "lucide-react";
 import MyClasses from '@/components/classes/MyClasses';
 import ExploreContent from "@/components/explore/ExploreContent";
+import EmailVerificationBanner from "@/components/auth/EmailVerificationBanner";
 import DashboardLayout, { useDashboard } from '@/components/layout/DashboardLayout';
 
 import { useStudentDashboard } from "@/hooks/useStudentDashboard";
@@ -38,6 +39,21 @@ const StudentDashboard = () => {
       return (
         <div className="space-y-6">
           <MyClasses />
+        </div>
+      );
+    }
+
+    if (activeTab === 'settings') {
+      return (
+        <div className="max-w-2xl space-y-6">
+          <div>
+            <h2 className="text-xl font-semibold">Settings</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Manage your account and verification.</p>
+          </div>
+          <section className="space-y-3">
+            <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Email verification</p>
+            <EmailVerificationBanner variant="card" />
+          </section>
         </div>
       );
     }
@@ -215,6 +231,8 @@ const StudentDashboard = () => {
   return (
     <DashboardLayout>
       <div className="px-5 py-8 sm:px-8 lg:px-10">
+        {/* Stable top-level import — survives DashboardContent remounts so the OTP flow keeps its state */}
+        <EmailVerificationBanner />
         <DashboardContent />
       </div>
     </DashboardLayout>

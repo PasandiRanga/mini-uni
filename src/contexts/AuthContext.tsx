@@ -7,6 +7,7 @@ interface User {
   lastName: string;
   role: 'STUDENT' | 'TEACHER';
   isActive: boolean;
+  emailVerified?: boolean;
 }
 
 interface AuthContextType {

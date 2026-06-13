@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import EmailVerificationBanner from "@/components/auth/EmailVerificationBanner";
 
 const requiredDocs = [
   { key: "ID", label: "Government ID (passport, national ID)" },
@@ -74,6 +75,11 @@ const TeacherOnboarding = () => {
       <div className="w-full max-w-3xl bg-card rounded-2xl p-6">
         <h2 className="text-2xl font-semibold mb-4">Onboarding & Verification</h2>
         <p className="text-muted-foreground mb-6">Upload the required documents so admins can verify your account. You can still view your dashboard while verification is pending, but class-related actions will remain restricted until approved.</p>
+
+        <section className="mb-8 space-y-3">
+          <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Email verification</p>
+          <EmailVerificationBanner variant="card" />
+        </section>
 
         <div className="space-y-6">
           {requiredDocs.map((d) => (
