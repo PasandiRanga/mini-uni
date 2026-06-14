@@ -1,7 +1,6 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import TeacherOnboarding from '@/pages/TeacherOnboarding';
-
+// Onboarding is now the step-by-step profile completion wizard.
 export default function TeacherOnboardingPage() {
-    return <TeacherOnboarding />;
+    redirect('/teacher/profile-completion');
 }

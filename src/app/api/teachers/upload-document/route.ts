@@ -21,7 +21,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "Teacher profile not found" }, { status: 404 });
         }
 
-        const validDocTypes = ["ID", "UNIVERSITY_ID", "ADDRESS_PROOF", "BANK_DETAILS"];
+        const validDocTypes = ["ID", "ID_FRONT", "ID_BACK", "UNIVERSITY_ID", "ADDRESS_PROOF", "BANK_DETAILS"];
         if (!validDocTypes.includes(documentType)) {
             return NextResponse.json({ error: "Invalid document type" }, { status: 400 });
         }

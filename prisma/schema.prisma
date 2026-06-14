@@ -91,6 +91,8 @@ model User {
   emailVerified Boolean   @default(false)
   emailOtp        String?   // bcrypt hash of the current verification code
   emailOtpExpiry  DateTime? // when the current code expires
+  notifyEmail   Boolean   @default(true) // notification preference: email
+  notifyInApp   Boolean   @default(true) // notification preference: in-app
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -119,6 +121,33 @@ model TeacherProfile {
   experience  Int?     // years of experience
   subjects    String[] // array of subjects taught
   hourlyRate Decimal? @db.Decimal(10, 2)
+
+  // Personal details (profile step 1)
+  fullName         String?
+  nameWithInitials String?
+  contactNumber    String?
+  contactNumber2   String?  // optional secondary contact
+  address          String?
+  country          String?
+  postalCode       String?
+
+  // Identity verification (profile step 2)
+  idType           String?  // NIC | LICENSE | PASSPORT
+
+  // Academic / professional background (profile step 3)
+  employmentStatus String?  // STUDENT | UNDERGRADUATE | GRADUATE
+  universityName   String?  // for students/undergraduates
+  universityCountry String?
+  workingStatus    String?  // for graduates
+  profession       String?
+  employer         String?
+
+  // Bank details (for withdrawals — managed from Settings)
+  bankAccountName   String?
+  bankAccountNumber String?
+  bankName          String?
+  bankBranch        String?
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

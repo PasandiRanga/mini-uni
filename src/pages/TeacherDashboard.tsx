@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import MyClasses from '@/components/classes/MyClasses';
 import EmailVerificationBanner from "@/components/auth/EmailVerificationBanner";
+import TeacherSettings from "@/components/teacher/TeacherSettings";
 
 const greeting = () => {
   const h = new Date().getHours();
@@ -38,6 +39,7 @@ const todayLabel = () =>
 const TeacherDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [verification, setVerification] = useState<any>({ canStartClasses: false, progress: 0 });
+  const [completion, setCompletion] = useState<{ percent: number; verificationStatus?: string } | null>(null);
   const [bookings, setBookings] = useState<any[]>([]);
   const [inquiries, setInquiries] = useState<any[]>([]);
   const [wallet, setWallet] = useState<any>(null);
@@ -51,6 +53,10 @@ const TeacherDashboard = () => {
         // verification progress
         const vRes = await fetch(`/api/teachers/verification-progress`);
         if (vRes.ok) setVerification(await vRes.json());
+
+        // profile completion (drives the "Complete your profile" banner)
+        const cRes = await fetch(`/api/teachers/profile-completion`);
+        if (cRes.ok) setCompletion(await cRes.json());
 
         // bookings for teacher
         if (user?.id) {
@@ -105,11 +111,7 @@ const TeacherDashboard = () => {
   ];
 
   const goTab = (id: string) => {
-    if (id === 'settings') {
-      router.push('/teacher/onboarding');
-    } else {
-      setActiveTab(id);
-    }
+    setActiveTab(id);
   };
 
   const unreadCount = inquiries.filter(i => !i.read).length;
@@ -205,31 +207,77 @@ const TeacherDashboard = () => {
         </header>
 
         <div className="px-5 py-8 sm:px-8 lg:px-10">
+          {activeTab === "settings" ? (
+            <TeacherSettings />
+          ) : (
+          <>
           <EmailVerificationBanner />
 
-          {/* Verification banner — quiet but visible */}
-          {verification?.verificationStatus !== 'APPROVED' && (
+          {/* Complete-your-profile banner — fills as the teacher completes the wizard steps */}
+          {completion && completion.percent < 100 && (
             <button
-              onClick={() => router.push('/teacher/onboarding')}
-              className="group mb-8 block w-full overflow-hidden rounded-3xl border border-accent/40 bg-accent/[0.07] p-5 text-left transition-all duration-300 hover:border-accent/70 hover:bg-accent/10 sm:p-6"
-              aria-label="Open onboarding and verification"
+              onClick={() => router.push('/teacher/profile-completion')}
+              className="group mb-8 block w-full overflow-hidden rounded-3xl border border-secondary/40 bg-secondary/[0.07] p-5 text-left transition-all duration-300 hover:border-secondary/70 hover:bg-secondary/10 sm:p-6"
+              aria-label="Complete your profile"
             >
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="font-medium">
-                    Verification <span className="font-serif italic">{(verification?.verificationStatus || 'pending').toLowerCase()}</span> — {verification?.progress ?? 0}% complete
+                    Complete your <span className="font-serif italic">profile</span> — {completion.percent}% done
                   </p>
-                  <p className="mt-0.5 text-sm text-muted-foreground">Classes can't start until your profile is verified.</p>
+                  <p className="mt-0.5 text-sm text-muted-foreground">Finish your personal, identity and academic details to start teaching.</p>
                 </div>
-                <span className="inline-flex items-center gap-1 text-sm font-medium text-primary">
-                  Complete onboarding <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
+                <span className="inline-flex items-center gap-1 text-sm font-medium text-secondary">
+                  Continue <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
                 </span>
               </div>
               <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-border/70">
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-secondary to-accent transition-all duration-700"
-                  style={{ width: `${verification?.progress ?? 0}%` }}
+                  style={{ width: `${completion.percent}%` }}
                 />
+              </div>
+            </button>
+          )}
+
+          {/* Submitted — pending admin approval (profile fully complete, not yet approved) */}
+          {completion && completion.percent === 100 && completion.verificationStatus === 'PENDING' && (
+            <div className="mb-8 overflow-hidden rounded-3xl border border-warning/40 bg-warning/[0.08] p-5 sm:p-6">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-warning/15 text-warning">
+                  <Clock className="h-[18px] w-[18px]" strokeWidth={1.75} />
+                </div>
+                <div>
+                  <p className="font-medium">
+                    Profile submitted — <span className="font-serif italic">pending approval</span>
+                  </p>
+                  <p className="mt-0.5 text-sm text-muted-foreground">
+                    Our team is reviewing your details. You&apos;ll be able to create classes once your profile is approved.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Rejected — needs changes */}
+          {completion && completion.verificationStatus === 'REJECTED' && (
+            <button
+              onClick={() => router.push('/teacher/profile-completion')}
+              className="group mb-8 block w-full overflow-hidden rounded-3xl border border-destructive/40 bg-destructive/[0.07] p-5 text-left transition-all duration-300 hover:border-destructive/70 hover:bg-destructive/10 sm:p-6"
+              aria-label="Review your profile"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="font-medium">
+                    Verification <span className="font-serif italic">needs changes</span>
+                  </p>
+                  <p className="mt-0.5 text-sm text-muted-foreground">
+                    Your profile couldn&apos;t be approved. Please review your details and documents, then resubmit.
+                  </p>
+                </div>
+                <span className="inline-flex items-center gap-1 text-sm font-medium text-destructive">
+                  Review profile <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
+                </span>
               </div>
             </button>
           )}
@@ -336,6 +384,8 @@ const TeacherDashboard = () => {
               </div>
             </div>
           </div>
+          </>
+          )}
         </div>
       </main>
 
