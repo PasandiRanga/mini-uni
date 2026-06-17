@@ -97,7 +97,7 @@ const PersonalDetailsForm = ({ onSaved }: PersonalDetailsFormProps) => {
     <div className="space-y-1.5">
       <Label htmlFor={id}>
         {label}
-        {opts.required && <span className="text-secondary"> *</span>}
+        {opts.required && <span className="text-primary"> *</span>}
         {!opts.required && !opts.readOnly && <span className="text-muted-foreground font-normal"> (optional)</span>}
       </Label>
       <Input

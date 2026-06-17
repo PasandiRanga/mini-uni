@@ -21,6 +21,7 @@ export async function GET(request: Request) {
                 role: true,
                 isActive: true,
                 emailVerified: true,
+                currency: true,
             },
         });
 

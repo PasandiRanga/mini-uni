@@ -113,7 +113,7 @@ const AcademicBackgroundForm = ({ onSaved }: AcademicBackgroundFormProps) => {
   const field = (id: keyof Academic, label: string, placeholder: string) => (
     <div className="space-y-1.5">
       <Label htmlFor={id}>
-        {label} <span className="text-secondary">*</span>
+        {label} <span className="text-primary">*</span>
       </Label>
       <Input id={id} value={data[id]} onChange={set(id)} placeholder={placeholder} />
     </div>
@@ -123,7 +123,7 @@ const AcademicBackgroundForm = ({ onSaved }: AcademicBackgroundFormProps) => {
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-2.5">
         <Label>
-          Current status <span className="text-secondary">*</span>
+          Current status <span className="text-primary">*</span>
         </Label>
         <div className="grid gap-3 sm:grid-cols-3">
           {OPTIONS.map((o) => {

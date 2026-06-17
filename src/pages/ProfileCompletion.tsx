@@ -70,8 +70,8 @@ const ProfileCompletion = () => {
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full gradient-warm">
-              <GraduationCap className="h-5 w-5 text-secondary-foreground" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-full gradient-hero">
+              <GraduationCap className="h-5 w-5 text-primary-foreground" />
             </div>
             <span className="text-lg font-semibold tracking-tight">
               Mini<span className="font-serif italic font-normal">Uni</span>
@@ -102,7 +102,7 @@ const ProfileCompletion = () => {
           </div>
           <div className="h-2 w-full overflow-hidden rounded-full bg-border/70">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-secondary to-accent transition-all duration-700"
+              className="h-full rounded-full bg-gradient-to-r from-primary to-accent transition-all duration-700"
               style={{ width: `${percent}%` }}
             />
           </div>

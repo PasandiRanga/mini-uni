@@ -9,6 +9,10 @@ import { Calendar, Clock, BookOpen, Wallet, ArrowUpRight } from "lucide-react";
 import MyClasses from '@/components/classes/MyClasses';
 import ExploreContent from "@/components/explore/ExploreContent";
 import EmailVerificationBanner from "@/components/auth/EmailVerificationBanner";
+import { CurrencySettings } from "@/components/settings/CurrencySettings";
+import { formatMoney } from "@/lib/currency";
+import ScheduleCalendar from "@/components/calendar/ScheduleCalendar";
+import MiniCalendar from "@/components/calendar/MiniCalendar";
 import DashboardLayout, { useDashboard } from '@/components/layout/DashboardLayout';
 
 import { useStudentDashboard } from "@/hooks/useStudentDashboard";
@@ -25,7 +29,8 @@ const StudentDashboard = () => {
     user,
     wallet
   } = useStudentDashboard();
-  const { logout: authLogout } = useAuth();
+  const { logout: authLogout, user: authUser } = useAuth();
+  const currency = authUser?.currency;
   const router = useRouter();
   const { toast } = useToast();
 
@@ -34,6 +39,8 @@ const StudentDashboard = () => {
     const { activeTab } = useDashboard();
 
     if (activeTab === 'explore') return <ExploreContent />;
+
+    if (activeTab === 'schedule') return <ScheduleCalendar />;
 
     if (activeTab === 'classes') {
       return (
@@ -54,6 +61,12 @@ const StudentDashboard = () => {
             <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Email verification</p>
             <EmailVerificationBanner variant="card" />
           </section>
+          <section className="space-y-3">
+            <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Currency</p>
+            <div className="rounded-2xl border border-border/70 bg-card p-6">
+              <CurrencySettings />
+            </div>
+          </section>
         </div>
       );
     }
@@ -62,23 +75,37 @@ const StudentDashboard = () => {
       { icon: Calendar, label: "Classes completed", value: completedCount },
       { icon: Clock, label: "Learning time", value: `${studyHours} hrs` },
       { icon: BookOpen, label: "Subjects studied", value: 5 },
-      { icon: Wallet, label: "Wallet balance", value: `$${(wallet as any)?.releasedBalance || 0}` },
+      { icon: Wallet, label: "Wallet balance", value: formatMoney((wallet as any)?.releasedBalance, currency) },
     ];
 
     return (
       <>
-        {/* Ledger stat strip */}
-        <div className="animate-fade-up mb-10 grid grid-cols-2 overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft lg:grid-cols-4" style={{ animationDelay: "0.1s" }}>
-          {stats.map((stat, i) => (
-            <div
-              key={stat.label}
-              className={`group p-5 sm:p-7 transition-colors duration-300 hover:bg-muted/50 ${i % 2 === 1 ? "border-l border-border/60" : ""} ${i >= 2 ? "border-t border-border/60 lg:border-t-0" : ""} ${i >= 2 ? "lg:border-l" : ""}`}
-            >
-              <stat.icon className="mb-4 h-5 w-5 text-primary transition-transform duration-300 group-hover:-translate-y-0.5" strokeWidth={1.75} />
-              <p className="font-serif text-3xl italic leading-none sm:text-4xl">{stat.value}</p>
-              <p className="mt-2 text-xs uppercase tracking-[0.14em] text-muted-foreground">{stat.label}</p>
-            </div>
-          ))}
+        {/* Separated stat tiles */}
+        <div className="animate-fade-up mb-10 grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-5" style={{ animationDelay: "0.1s" }}>
+          {stats.map((stat, i) => {
+            const featured = i === 0;
+            return (
+              <div
+                key={stat.label}
+                className={`group rounded-3xl border p-5 shadow-soft transition-all duration-300 hover:-translate-y-0.5 hover:shadow-card sm:p-6 ${featured
+                  ? "border-transparent gradient-hero text-primary-foreground"
+                  : "border-border/70 bg-card"
+                  }`}
+              >
+                <div className="mb-5 flex items-center justify-between">
+                  <stat.icon
+                    className={`h-5 w-5 transition-transform duration-300 group-hover:-translate-y-0.5 ${featured ? "text-primary-foreground/90" : "text-primary"}`}
+                    strokeWidth={1.75}
+                  />
+                  <span className={`flex h-7 w-7 items-center justify-center rounded-full ${featured ? "bg-primary-foreground/15 text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
+                    <ArrowUpRight className="h-3.5 w-3.5" />
+                  </span>
+                </div>
+                <p className="font-serif text-3xl leading-none sm:text-4xl">{stat.value}</p>
+                <p className={`mt-2 text-xs uppercase tracking-[0.14em] ${featured ? "text-primary-foreground/70" : "text-muted-foreground"}`}>{stat.label}</p>
+              </div>
+            );
+          })}
         </div>
 
         <div className="grid gap-6 lg:grid-cols-3">
@@ -140,36 +167,10 @@ const StudentDashboard = () => {
 
               <section className="rounded-3xl border border-border/70 bg-card p-6 shadow-soft">
                 <h3 className="mb-4 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">This month</h3>
-                <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-medium text-muted-foreground">
-                  {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
-                    <div key={i} className="py-1">{d}</div>
-                  ))}
-                </div>
-                <div className="mt-1 grid grid-cols-7 gap-1">
-                  {Array.from({ length: 35 }).map((_, i) => {
-                    const day = i + 1;
-                    const dayEvents = calendarEvents.filter((ev: any) => {
-                      if (!ev.start) return false;
-                      const d = new Date(ev.start).getDate();
-                      return d === day;
-                    });
-                    const isToday = day === new Date().getDate();
-                    return (
-                      <div
-                        key={i}
-                        className={`flex h-8 items-center justify-center rounded-lg text-xs transition-colors ${dayEvents.length
-                          ? "bg-primary text-primary-foreground font-medium"
-                          : isToday
-                            ? "border border-accent/70 text-foreground font-medium"
-                            : day <= 31 ? "text-muted-foreground hover:bg-muted/60" : "opacity-0"
-                          }`}
-                        title={dayEvents.map((ev: any) => ev.title).join(', ')}
-                      >
-                        {day <= 31 ? day : ""}
-                      </div>
-                    );
-                  })}
-                </div>
+                <MiniCalendar
+                  events={calendarEvents as any}
+                  onSelectDate={() => router.push('/student/dashboard?tab=schedule')}
+                />
               </section>
             </div>
           </div>

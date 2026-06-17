@@ -59,15 +59,17 @@ async function createPost(request: Request) {
         else if (role === "TEACHER") inferredType = "TEACHER_OFFERING";
         else inferredType = data.type || "STUDENT_REQUEST";
 
-        // If teacher is creating a offering, ensure verified
+        // If teacher is creating an offering, ensure verified and capture their currency
+        let teacherCurrency = "LKR";
         if (role === "TEACHER" && inferredType === "TEACHER_OFFERING") {
             const user = await prisma.user.findUnique({
                 where: { id: userId },
-                include: { teacherProfile: { select: { verificationStatus: true } } },
+                select: { currency: true, teacherProfile: { select: { verificationStatus: true } } },
             });
             if (!user?.teacherProfile || user.teacherProfile.verificationStatus !== "APPROVED") {
                 return NextResponse.json({ error: "Teacher account not verified to create offerings" }, { status: 403 });
             }
+            teacherCurrency = user.currency || "LKR";
         }
 
         // Sanitize payload
@@ -86,8 +88,7 @@ async function createPost(request: Request) {
         } else {
             payload.fee = data.fee != null ? Number(data.fee) : null;
             payload.experience = data.experience != null ? Number(data.experience) : null;
-            payload.locationLat = data.locationLat || null;
-            payload.locationLng = data.locationLng || null;
+            payload.currency = teacherCurrency;
         }
 
         const post = await prisma.post.create({ data: payload });

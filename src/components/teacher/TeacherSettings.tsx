@@ -9,7 +9,8 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import EmailVerificationBanner from "@/components/auth/EmailVerificationBanner";
 import PersonalDetailsForm from "@/components/teacher/PersonalDetailsForm";
-import { Loader2, Check, ArrowRight, UserCog, Lock, Bell, Landmark } from "lucide-react";
+import { CurrencySettings } from "@/components/settings/CurrencySettings";
+import { Loader2, Check, ArrowRight, UserCog, Lock, Bell, Landmark, Coins } from "lucide-react";
 
 const Section = ({
   icon: Icon,
@@ -55,7 +56,7 @@ const ProfileCompletionCard = () => {
             {percent === null ? "Loading…" : percent === 100 ? "Your profile is complete." : `${percent}% complete — finish to start teaching.`}
           </p>
         </div>
-        <Button variant="warm" className="gap-2" asChild>
+        <Button variant="hero" className="gap-2" asChild>
           <Link href="/teacher/profile-completion">
             {percent === 100 ? "Review profile" : "Continue"}
             <ArrowRight className="h-4 w-4" />
@@ -65,7 +66,7 @@ const ProfileCompletionCard = () => {
       {percent !== null && (
         <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-border/70">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-secondary to-accent transition-all duration-700"
+            className="h-full rounded-full bg-gradient-to-r from-primary to-accent transition-all duration-700"
             style={{ width: `${percent}%` }}
           />
         </div>
@@ -259,6 +260,10 @@ const TeacherSettings = () => {
 
       <Section icon={Lock} title="Password" description="Change your account password.">
         <ChangePasswordForm />
+      </Section>
+
+      <Section icon={Coins} title="Currency" description="Your account and payment currency.">
+        <CurrencySettings />
       </Section>
 
       <Section icon={Bell} title="Notifications" description="Choose how you'd like to be notified.">
