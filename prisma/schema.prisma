@@ -93,6 +93,7 @@ model User {
   emailOtpExpiry  DateTime? // when the current code expires
   notifyEmail   Boolean   @default(true) // notification preference: email
   notifyInApp   Boolean   @default(true) // notification preference: in-app
+  currency      String    @default("LKR") // account display + transaction currency (LKR | USD)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -200,6 +201,7 @@ model Post {
   grade       String?  // for student requests
   syllabus    String?  // for student requests
   fee         Decimal? @db.Decimal(10, 2) // for teacher offerings
+  currency    String   @default("LKR")    // currency of the fee (LKR | USD)
   experience  Int?     // for teacher offerings
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
@@ -330,7 +332,7 @@ model Payment {
   stripePaymentId String?     @unique
   amount        Decimal       @db.Decimal(10, 2)
   status        PaymentStatus @default(PENDING)
-  currency      String        @default("USD")
+  currency      String        @default("LKR")
   metadata      Json?         // Additional payment metadata
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt

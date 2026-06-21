@@ -117,7 +117,7 @@ const IdentityVerificationForm = ({ onSaved }: IdentityVerificationFormProps) =>
   const uploadBox = (label: string, file: File | null, onFile: boolean, setter: (f: File | null) => void) => (
     <div className="space-y-1.5">
       <Label>
-        {label} <span className="text-secondary">*</span>
+        {label} <span className="text-primary">*</span>
       </Label>
       <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-border bg-muted/30 px-4 py-4 transition-colors hover:border-primary/50 hover:bg-muted/50">
         {file || onFile ? (
@@ -142,7 +142,7 @@ const IdentityVerificationForm = ({ onSaved }: IdentityVerificationFormProps) =>
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-2.5">
         <Label>
-          Document type <span className="text-secondary">*</span>
+          Document type <span className="text-primary">*</span>
         </Label>
         <div className="grid gap-3 sm:grid-cols-3">
           {ID_TYPES.map((t) => {

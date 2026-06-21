@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,500;1,600&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,127 +6,127 @@
 
 @layer base {
   :root {
-    /* Core — warm ivory canvas, deep ink text */
-    --background: 40 36% 97%;
-    --foreground: 240 14% 12%;
+    /* Core — cool near-white canvas, deep plum text */
+    --background: 270 30% 98%;
+    --foreground: 264 28% 13%;
 
     /* Cards & surfaces */
-    --card: 40 40% 99%;
-    --card-foreground: 240 14% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 264 28% 13%;
 
-    --popover: 40 40% 99%;
-    --popover-foreground: 240 14% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 264 28% 13%;
 
-    /* Primary — deep ink indigo */
-    --primary: 244 45% 30%;
-    --primary-foreground: 40 36% 97%;
+    /* Primary — brand purple */
+    --primary: 263 56% 45%;
+    --primary-foreground: 0 0% 100%;
 
-    /* Secondary — warm terracotta */
-    --secondary: 18 70% 56%;
-    --secondary-foreground: 40 36% 97%;
+    /* Secondary — lighter violet */
+    --secondary: 272 52% 58%;
+    --secondary-foreground: 0 0% 100%;
 
-    /* Muted & subtle */
-    --muted: 40 22% 93%;
-    --muted-foreground: 240 8% 44%;
+    /* Muted & subtle — faint lilac grays */
+    --muted: 270 24% 95%;
+    --muted-foreground: 264 10% 46%;
 
-    /* Accent — antique gold */
-    --accent: 40 62% 50%;
-    --accent-foreground: 240 14% 12%;
+    /* Accent — vivid violet highlight */
+    --accent: 274 64% 56%;
+    --accent-foreground: 0 0% 100%;
 
-    /* Success states */
-    --success: 152 42% 38%;
-    --success-foreground: 40 36% 97%;
+    /* Success states (kept functional) */
+    --success: 152 42% 40%;
+    --success-foreground: 0 0% 100%;
 
-    /* Warning states */
-    --warning: 40 90% 52%;
-    --warning-foreground: 240 14% 12%;
+    /* Warning states (kept functional) */
+    --warning: 38 92% 52%;
+    --warning-foreground: 264 28% 13%;
 
-    /* Destructive */
-    --destructive: 4 66% 50%;
-    --destructive-foreground: 40 36% 97%;
+    /* Destructive (kept functional) */
+    --destructive: 351 70% 52%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 40 16% 87%;
-    --input: 40 16% 85%;
-    --ring: 244 45% 30%;
+    --border: 270 22% 90%;
+    --input: 270 22% 88%;
+    --ring: 263 56% 45%;
 
     --radius: 1rem;
 
     /* Sidebar */
-    --sidebar-background: 42 30% 96%;
-    --sidebar-foreground: 240 14% 12%;
-    --sidebar-primary: 244 45% 30%;
-    --sidebar-primary-foreground: 40 36% 97%;
-    --sidebar-accent: 40 22% 91%;
-    --sidebar-accent-foreground: 240 14% 12%;
-    --sidebar-border: 40 16% 88%;
-    --sidebar-ring: 244 45% 30%;
+    --sidebar-background: 270 28% 97%;
+    --sidebar-foreground: 264 28% 13%;
+    --sidebar-primary: 263 56% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 270 24% 93%;
+    --sidebar-accent-foreground: 264 28% 13%;
+    --sidebar-border: 270 22% 90%;
+    --sidebar-ring: 263 56% 45%;
 
-    /* Gradients */
-    --gradient-hero: linear-gradient(135deg, hsl(244, 45%, 30%) 0%, hsl(258, 42%, 42%) 100%);
-    --gradient-warm: linear-gradient(135deg, hsl(18, 70%, 56%) 0%, hsl(40, 62%, 50%) 100%);
-    --gradient-surface: linear-gradient(180deg, hsl(40, 40%, 99%) 0%, hsl(40, 22%, 93%) 100%);
-    --gradient-card: linear-gradient(135deg, hsl(40, 40%, 99%) 0%, hsl(40, 36%, 97%) 100%);
+    /* Gradients — purple family */
+    --gradient-hero: linear-gradient(135deg, hsl(263, 56%, 45%) 0%, hsl(275, 60%, 58%) 100%);
+    --gradient-warm: linear-gradient(135deg, hsl(272, 56%, 52%) 0%, hsl(286, 58%, 62%) 100%);
+    --gradient-surface: linear-gradient(180deg, hsl(0, 0%, 100%) 0%, hsl(270, 24%, 95%) 100%);
+    --gradient-card: linear-gradient(135deg, hsl(0, 0%, 100%) 0%, hsl(270, 30%, 98%) 100%);
 
-    /* Shadows — soft, ink-tinted, layered */
-    --shadow-soft: 0 1px 2px hsl(244 30% 20% / 0.05), 0 2px 8px -2px hsl(244 30% 20% / 0.06);
-    --shadow-card: 0 1px 2px hsl(244 30% 20% / 0.04), 0 8px 24px -8px hsl(244 30% 20% / 0.10);
-    --shadow-elevated: 0 2px 4px hsl(244 30% 20% / 0.05), 0 20px 48px -12px hsl(244 30% 20% / 0.18);
-    --shadow-glow: 0 0 48px hsl(258 42% 42% / 0.18);
+    /* Shadows — soft, purple-tinted, layered */
+    --shadow-soft: 0 1px 2px hsl(263 40% 30% / 0.05), 0 2px 8px -2px hsl(263 40% 30% / 0.07);
+    --shadow-card: 0 1px 2px hsl(263 40% 30% / 0.04), 0 8px 24px -8px hsl(263 40% 30% / 0.12);
+    --shadow-elevated: 0 2px 4px hsl(263 40% 30% / 0.06), 0 20px 48px -12px hsl(263 40% 30% / 0.20);
+    --shadow-glow: 0 0 48px hsl(274 64% 56% / 0.22);
   }
 
   .dark {
-    --background: 240 16% 8%;
-    --foreground: 40 30% 94%;
+    --background: 264 24% 8%;
+    --foreground: 270 30% 95%;
 
-    --card: 240 14% 11%;
-    --card-foreground: 40 30% 94%;
+    --card: 264 22% 11%;
+    --card-foreground: 270 30% 95%;
 
-    --popover: 240 14% 11%;
-    --popover-foreground: 40 30% 94%;
+    --popover: 264 22% 11%;
+    --popover-foreground: 270 30% 95%;
 
-    --primary: 252 70% 72%;
-    --primary-foreground: 240 16% 8%;
+    --primary: 270 70% 72%;
+    --primary-foreground: 264 24% 8%;
 
-    --secondary: 18 70% 60%;
-    --secondary-foreground: 240 16% 8%;
+    --secondary: 276 56% 64%;
+    --secondary-foreground: 264 24% 8%;
 
-    --muted: 240 10% 16%;
-    --muted-foreground: 40 12% 64%;
+    --muted: 264 16% 17%;
+    --muted-foreground: 270 14% 66%;
 
-    --accent: 40 62% 56%;
-    --accent-foreground: 240 16% 8%;
+    --accent: 274 68% 66%;
+    --accent-foreground: 264 24% 8%;
 
-    --success: 152 42% 46%;
-    --success-foreground: 240 16% 8%;
+    --success: 152 42% 48%;
+    --success-foreground: 264 24% 8%;
 
-    --warning: 40 90% 56%;
-    --warning-foreground: 240 16% 8%;
+    --warning: 38 92% 58%;
+    --warning-foreground: 264 24% 8%;
 
-    --destructive: 4 66% 56%;
-    --destructive-foreground: 40 30% 94%;
+    --destructive: 351 70% 60%;
+    --destructive-foreground: 270 30% 95%;
 
-    --border: 240 10% 18%;
-    --input: 240 10% 18%;
-    --ring: 252 70% 72%;
+    --border: 264 16% 19%;
+    --input: 264 16% 19%;
+    --ring: 270 70% 72%;
 
-    --sidebar-background: 240 14% 10%;
-    --sidebar-foreground: 40 30% 94%;
-    --sidebar-primary: 252 70% 72%;
-    --sidebar-primary-foreground: 240 16% 8%;
-    --sidebar-accent: 240 10% 16%;
-    --sidebar-accent-foreground: 40 30% 94%;
-    --sidebar-border: 240 10% 18%;
-    --sidebar-ring: 252 70% 72%;
+    --sidebar-background: 264 22% 10%;
+    --sidebar-foreground: 270 30% 95%;
+    --sidebar-primary: 270 70% 72%;
+    --sidebar-primary-foreground: 264 24% 8%;
+    --sidebar-accent: 264 16% 17%;
+    --sidebar-accent-foreground: 270 30% 95%;
+    --sidebar-border: 264 16% 19%;
+    --sidebar-ring: 270 70% 72%;
 
-    --gradient-hero: linear-gradient(135deg, hsl(252, 70%, 72%) 0%, hsl(258, 50%, 52%) 100%);
-    --gradient-warm: linear-gradient(135deg, hsl(18, 70%, 60%) 0%, hsl(40, 62%, 56%) 100%);
-    --gradient-surface: linear-gradient(180deg, hsl(240, 14%, 11%) 0%, hsl(240, 16%, 8%) 100%);
-    --gradient-card: linear-gradient(135deg, hsl(240, 14%, 12%) 0%, hsl(240, 14%, 10%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(270, 70%, 72%) 0%, hsl(263, 56%, 52%) 100%);
+    --gradient-warm: linear-gradient(135deg, hsl(276, 56%, 64%) 0%, hsl(286, 58%, 66%) 100%);
+    --gradient-surface: linear-gradient(180deg, hsl(264, 22%, 11%) 0%, hsl(264, 24%, 8%) 100%);
+    --gradient-card: linear-gradient(135deg, hsl(264, 22%, 12%) 0%, hsl(264, 22%, 10%) 100%);
 
     --shadow-soft: 0 2px 8px -2px hsl(0 0% 0% / 0.4);
     --shadow-card: 0 4px 24px -4px hsl(0 0% 0% / 0.5);
     --shadow-elevated: 0 12px 40px -8px hsl(0 0% 0% / 0.6);
-    --shadow-glow: 0 0 48px hsl(252 70% 72% / 0.25);
+    --shadow-glow: 0 0 48px hsl(270 70% 72% / 0.25);
   }
 }
 
@@ -141,8 +141,7 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    font-feature-settings: "ss01" on, "cv11" on;
+    font-family: "Poppins", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   }
 
   h1,
@@ -152,11 +151,13 @@
   h5,
   h6 {
     @apply font-semibold tracking-tight;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.01em;
   }
 
+  /* Display/accent text — still Poppins (formal), kept as a slightly heavier weight */
   .font-serif {
-    font-family: "Instrument Serif", ui-serif, Georgia, serif;
+    font-family: "Poppins", ui-sans-serif, system-ui, sans-serif;
+    font-weight: 500;
     letter-spacing: -0.01em;
   }
 
@@ -394,4 +395,10 @@
   to {
     transform: scaleX(1);
   }
+}
+
+/* Brand uses upright type only — neutralize the italic utility globally
+   so existing `italic` class usages render normal without touching markup. */
+.italic {
+  font-style: normal;
 }

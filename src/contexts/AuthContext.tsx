@@ -8,6 +8,7 @@ interface User {
   role: 'STUDENT' | 'TEACHER';
   isActive: boolean;
   emailVerified?: boolean;
+  currency?: string;
 }
 
 interface AuthContextType {

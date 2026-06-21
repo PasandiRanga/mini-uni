@@ -76,7 +76,7 @@ const EmailVerificationBanner = ({ variant = "banner" }: EmailVerificationBanner
           </p>
         </div>
 
-        <Button variant="warm" size="sm" className="gap-2" asChild>
+        <Button variant="hero" size="sm" className="gap-2" asChild>
           <Link href="/verify-email">
             Verify email
             <ArrowRight className="h-4 w-4" />

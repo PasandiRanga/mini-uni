@@ -17,14 +17,26 @@ import {
   LogOut,
   Plus,
   Clock,
-  Star,
   Users,
   DollarSign,
   ChevronRight,
+  ArrowUpRight,
+  Search,
+  FileText,
+  MessageSquare,
+  MoreHorizontal,
 } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import MyClasses from '@/components/classes/MyClasses';
 import EmailVerificationBanner from "@/components/auth/EmailVerificationBanner";
+import { formatMoney } from "@/lib/currency";
 import TeacherSettings from "@/components/teacher/TeacherSettings";
+import ScheduleCalendar from "@/components/calendar/ScheduleCalendar";
+import MiniCalendar from "@/components/calendar/MiniCalendar";
+import TeacherStudents from "@/components/teacher/TeacherStudents";
+import TeacherExplore from "@/components/teacher/TeacherExplore";
+import TeacherPosts from "@/components/teacher/TeacherPosts";
+import TeacherInquiries from "@/components/teacher/TeacherInquiries";
 
 const greeting = () => {
   const h = new Date().getHours();
@@ -38,6 +50,7 @@ const todayLabel = () =>
 
 const TeacherDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
+  const [moreOpen, setMoreOpen] = useState(false);
   const [verification, setVerification] = useState<any>({ canStartClasses: false, progress: 0 });
   const [completion, setCompletion] = useState<{ percent: number; verificationStatus?: string } | null>(null);
   const [bookings, setBookings] = useState<any[]>([]);
@@ -104,6 +117,9 @@ const TeacherDashboard = () => {
 
   const navItems = [
     { id: "overview", label: "Overview", icon: Home },
+    { id: "explore", label: "Explore", icon: Search },
+    { id: "posts", label: "My Posts", icon: FileText },
+    { id: "inquiries", label: "Inquiries", icon: MessageSquare },
     { id: "schedule", label: "Schedule", icon: Calendar },
     { id: "students", label: "Students", icon: Users },
     { id: "wallet", label: "Wallet", icon: Wallet },
@@ -115,12 +131,14 @@ const TeacherDashboard = () => {
   };
 
   const unreadCount = inquiries.filter(i => !i.read).length;
+  const completedCount = bookings.filter(b => b.status === 'COMPLETED').length;
+  const currency = user?.currency;
 
   const stats = [
-    { icon: DollarSign, label: "Total earnings", value: `$${wallet?.totalEarnings || 0}` },
-    { icon: Clock, label: "Pending balance", value: `$${wallet?.pendingBalance || 0}` },
-    { icon: Users, label: "Total bookings", value: bookings.length },
-    { icon: Star, label: "Average rating", value: "4.9" },
+    { icon: Wallet, label: "Available balance", value: formatMoney(wallet?.releasedBalance, currency) },
+    { icon: GraduationCap, label: "Classes completed", value: completedCount },
+    { icon: DollarSign, label: "Total earnings", value: formatMoney(wallet?.totalEarnings, currency) },
+    { icon: Clock, label: "On hold", value: formatMoney(wallet?.pendingBalance, currency) },
   ];
 
   return (
@@ -130,8 +148,8 @@ const TeacherDashboard = () => {
         <div className="relative flex h-full flex-col overflow-hidden rounded-3xl border border-border/70 bg-card/80 shadow-card backdrop-blur-xl grain">
           <div className="p-6 pb-4">
             <Link href="/" className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full gradient-warm">
-                <GraduationCap className="h-5 w-5 text-secondary-foreground" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-full gradient-hero">
+                <GraduationCap className="h-5 w-5 text-primary-foreground" />
               </div>
               <span className="text-lg font-semibold tracking-tight">
                 Mini<span className="font-serif italic font-normal">Uni</span>
@@ -147,7 +165,7 @@ const TeacherDashboard = () => {
                   key={item.id}
                   onClick={() => goTab(item.id)}
                   className={`group relative flex w-full items-center gap-3 rounded-2xl px-4 py-2.5 text-sm transition-all duration-300 ${active
-                    ? "bg-secondary text-secondary-foreground shadow-soft"
+                    ? "bg-primary text-primary-foreground shadow-soft"
                     : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
                     }`}
                 >
@@ -161,7 +179,7 @@ const TeacherDashboard = () => {
 
           <div className="p-4">
             <div className="flex items-center gap-3 rounded-2xl border border-border/60 bg-background/60 p-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full gradient-warm text-sm font-semibold text-secondary-foreground">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full gradient-hero text-sm font-semibold text-primary-foreground">
                 {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
               </div>
               <div className="min-w-0 flex-1">
@@ -192,12 +210,12 @@ const TeacherDashboard = () => {
               <Button variant="ghost" size="icon" className="relative rounded-full border border-border/70 bg-card">
                 <Bell className="h-[18px] w-[18px]" />
                 {unreadCount > 0 && (
-                  <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-secondary text-[10px] font-semibold text-secondary-foreground">
+                  <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
                     {unreadCount}
                   </span>
                 )}
               </Button>
-              <Button variant="warm" className="gap-2" disabled={verification?.verificationStatus !== 'APPROVED'}>
+              <Button variant="hero" className="gap-2" disabled={verification?.verificationStatus !== 'APPROVED'}>
                 <Plus className="h-4 w-4" />
                 <span className="hidden sm:inline">Create Offering</span>
                 <span className="sm:hidden">Create</span>
@@ -209,6 +227,16 @@ const TeacherDashboard = () => {
         <div className="px-5 py-8 sm:px-8 lg:px-10">
           {activeTab === "settings" ? (
             <TeacherSettings />
+          ) : activeTab === "schedule" ? (
+            <ScheduleCalendar />
+          ) : activeTab === "students" ? (
+            <TeacherStudents />
+          ) : activeTab === "explore" ? (
+            <TeacherExplore />
+          ) : activeTab === "posts" ? (
+            <TeacherPosts />
+          ) : activeTab === "inquiries" ? (
+            <TeacherInquiries />
           ) : (
           <>
           <EmailVerificationBanner />
@@ -217,7 +245,7 @@ const TeacherDashboard = () => {
           {completion && completion.percent < 100 && (
             <button
               onClick={() => router.push('/teacher/profile-completion')}
-              className="group mb-8 block w-full overflow-hidden rounded-3xl border border-secondary/40 bg-secondary/[0.07] p-5 text-left transition-all duration-300 hover:border-secondary/70 hover:bg-secondary/10 sm:p-6"
+              className="group mb-8 block w-full overflow-hidden rounded-3xl border border-primary/40 bg-primary/[0.07] p-5 text-left transition-all duration-300 hover:border-primary/70 hover:bg-primary/10 sm:p-6"
               aria-label="Complete your profile"
             >
               <div className="flex flex-wrap items-center justify-between gap-3">
@@ -227,13 +255,13 @@ const TeacherDashboard = () => {
                   </p>
                   <p className="mt-0.5 text-sm text-muted-foreground">Finish your personal, identity and academic details to start teaching.</p>
                 </div>
-                <span className="inline-flex items-center gap-1 text-sm font-medium text-secondary">
+                <span className="inline-flex items-center gap-1 text-sm font-medium text-primary">
                   Continue <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
                 </span>
               </div>
               <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-border/70">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-secondary to-accent transition-all duration-700"
+                  className="h-full rounded-full bg-gradient-to-r from-primary to-accent transition-all duration-700"
                   style={{ width: `${completion.percent}%` }}
                 />
               </div>
@@ -282,37 +310,42 @@ const TeacherDashboard = () => {
             </button>
           )}
 
-          {/* Ledger stat strip */}
-          <div className="animate-fade-up mb-10 grid grid-cols-2 overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft lg:grid-cols-4" style={{ animationDelay: "0.1s" }}>
-            {stats.map((stat, i) => (
-              <div
-                key={stat.label}
-                className={`group p-5 sm:p-7 transition-colors duration-300 hover:bg-muted/50 ${i % 2 === 1 ? "border-l border-border/60" : ""} ${i >= 2 ? "border-t border-border/60 lg:border-t-0 lg:border-l" : ""}`}
-              >
-                <stat.icon className="mb-4 h-5 w-5 text-secondary transition-transform duration-300 group-hover:-translate-y-0.5" strokeWidth={1.75} />
-                <p className="font-serif text-3xl italic leading-none sm:text-4xl">{stat.value}</p>
-                <p className="mt-2 text-xs uppercase tracking-[0.14em] text-muted-foreground">{stat.label}</p>
-              </div>
-            ))}
+          {/* Separated stat tiles */}
+          <div className="animate-fade-up mb-10 grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-5" style={{ animationDelay: "0.1s" }}>
+            {stats.map((stat, i) => {
+              const featured = i === 0;
+              return (
+                <div
+                  key={stat.label}
+                  className={`group rounded-3xl border p-5 shadow-soft transition-all duration-300 hover:-translate-y-0.5 hover:shadow-card sm:p-6 ${featured
+                    ? "border-transparent gradient-hero text-primary-foreground"
+                    : "border-border/70 bg-card"
+                    }`}
+                >
+                  <div className="mb-5 flex items-center justify-between">
+                    <stat.icon
+                      className={`h-5 w-5 transition-transform duration-300 group-hover:-translate-y-0.5 ${featured ? "text-primary-foreground/90" : "text-primary"}`}
+                      strokeWidth={1.75}
+                    />
+                    <span className={`flex h-7 w-7 items-center justify-center rounded-full ${featured ? "bg-primary-foreground/15 text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
+                      <ArrowUpRight className="h-3.5 w-3.5" />
+                    </span>
+                  </div>
+                  <p className={`font-serif text-3xl leading-none sm:text-4xl ${featured ? "" : ""}`}>{stat.value}</p>
+                  <p className={`mt-2 text-xs uppercase tracking-[0.14em] ${featured ? "text-primary-foreground/70" : "text-muted-foreground"}`}>{stat.label}</p>
+                </div>
+              );
+            })}
           </div>
 
           <div className="grid gap-6 lg:grid-cols-3">
-            {/* Upcoming Classes */}
-            <section className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft lg:col-span-2">
-              <div className="flex items-center justify-between border-b border-border/60 px-6 py-5">
-                <h2 className="text-lg font-semibold">
-                  Upcoming <span className="font-serif italic font-normal">classes</span>
-                </h2>
-                <Button variant="ghost" size="sm" className="text-primary">
-                  View All
-                  <ChevronRight className="ml-1 h-4 w-4" />
-                </Button>
-              </div>
-              <div className="p-6">
-                <MyClasses />
-              </div>
-            </section>
+            {/* Upcoming + Past class tiles (provided by MyClasses) */}
+            <div className="lg:col-span-2">
+              <MyClasses />
+            </div>
 
+            {/* Right column: inquiries + mini calendar */}
+            <div className="space-y-6">
             {/* Recent Inquiries */}
             <section className="flex flex-col overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
               <div className="flex items-center justify-between border-b border-border/60 px-6 py-5">
@@ -320,14 +353,14 @@ const TeacherDashboard = () => {
                   <span className="font-serif italic font-normal">Inquiries</span>
                 </h2>
                 {unreadCount > 0 && (
-                  <Badge className="rounded-full bg-secondary text-secondary-foreground">{unreadCount} new</Badge>
+                  <Badge className="rounded-full bg-primary text-primary-foreground">{unreadCount} new</Badge>
                 )}
               </div>
               <div className="flex-1 space-y-5 p-6">
                 {inquiries.length === 0 && <p className="text-sm text-muted-foreground">No inquiries yet</p>}
                 {inquiries.map((inq) => (
                   <div key={inq.id} className="flex items-start gap-3">
-                    <div className={`mt-2 h-1.5 w-1.5 shrink-0 rounded-full ${!inq.read ? 'bg-secondary' : 'bg-border'}`} />
+                    <div className={`mt-2 h-1.5 w-1.5 shrink-0 rounded-full ${!inq.read ? 'bg-primary' : 'bg-border'}`} />
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-medium">{inq.sender ? `${inq.sender.firstName} ${inq.sender.lastName}` : 'Student'}</p>
                       <p className="truncate text-sm text-muted-foreground">{inq.post?.title || inq.post?.subject || ''}</p>
@@ -341,26 +374,36 @@ const TeacherDashboard = () => {
                 <Button variant="outline" className="w-full">View All Messages</Button>
               </div>
             </section>
+
+            {/* Mini calendar — click a date to open the full schedule */}
+            <section className="rounded-3xl border border-border/70 bg-card p-6 shadow-soft">
+              <h3 className="mb-4 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">This month</h3>
+              <MiniCalendar
+                events={bookings.map((b) => ({ start: b.timeSlot?.startTime })) as any}
+                onSelectDate={() => setActiveTab('schedule')}
+              />
+            </section>
+            </div>
           </div>
 
           {/* Wallet — ink card */}
           <div className="relative mt-6 overflow-hidden rounded-3xl bg-foreground p-7 text-background shadow-elevated grain sm:p-9">
-            <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-secondary/20 blur-3xl" />
+            <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-primary/20 blur-3xl" />
             <div className="relative flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
               <div>
                 <p className="mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-background/50">Your wallet</p>
                 <h3 className="mb-6 font-serif text-2xl italic text-background/90">Secure, escrow-based payments.</h3>
                 <div className="grid grid-cols-3 gap-6 sm:gap-10">
                   <div>
-                    <p className="font-serif text-3xl italic sm:text-4xl">${wallet?.releasedBalance || 0}</p>
+                    <p className="font-serif text-3xl italic sm:text-4xl">{formatMoney(wallet?.releasedBalance, currency)}</p>
                     <p className="mt-1 text-xs uppercase tracking-[0.14em] text-background/60">Available</p>
                   </div>
                   <div>
-                    <p className="font-serif text-3xl italic sm:text-4xl">${wallet?.pendingBalance || 0}</p>
+                    <p className="font-serif text-3xl italic sm:text-4xl">{formatMoney(wallet?.pendingBalance, currency)}</p>
                     <p className="mt-1 text-xs uppercase tracking-[0.14em] text-background/60">Pending</p>
                   </div>
                   <div>
-                    <p className="font-serif text-3xl italic sm:text-4xl">${wallet?.totalEarnings || 0}</p>
+                    <p className="font-serif text-3xl italic sm:text-4xl">{formatMoney(wallet?.totalEarnings, currency)}</p>
                     <p className="mt-1 text-xs uppercase tracking-[0.14em] text-background/60">All time</p>
                   </div>
                 </div>
@@ -373,7 +416,7 @@ const TeacherDashboard = () => {
                     {(wallet?.transactions || []).slice(0, 3).map((t: any) => (
                       <div key={t.id} className="flex items-center justify-between text-sm text-background/75">
                         <span>{t.type}</span>
-                        <span className="font-medium text-background/90">${t.amount}</span>
+                        <span className="font-medium text-background/90">{formatMoney(t.amount, currency)}</span>
                       </div>
                     ))}
                     {(wallet?.transactions || []).length === 0 && (
@@ -389,24 +432,55 @@ const TeacherDashboard = () => {
         </div>
       </main>
 
-      {/* Mobile — bottom dock */}
+      {/* Mobile — bottom dock: Overview, Schedule, More */}
       <nav className="fixed inset-x-4 bottom-4 z-50 lg:hidden">
-        <div className="flex items-center justify-around rounded-full border border-border/70 bg-card/90 px-2 py-2 shadow-elevated backdrop-blur-xl">
-          {navItems.map((item) => {
+        <div className="flex items-center justify-around gap-1 rounded-full border border-border/70 bg-card/90 px-3 py-2 shadow-elevated backdrop-blur-xl">
+          {navItems.filter((i) => i.id === "overview" || i.id === "schedule").map((item) => {
             const active = activeTab === item.id;
             return (
               <button
                 key={item.id}
                 onClick={() => goTab(item.id)}
-                className={`flex flex-col items-center gap-0.5 rounded-full px-3.5 py-1.5 transition-all duration-300 ${active ? "bg-secondary text-secondary-foreground" : "text-muted-foreground"
-                  }`}
+                className={`flex flex-col items-center gap-0.5 rounded-full px-4 py-1.5 transition-all duration-300 ${active ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
                 aria-label={item.label}
               >
                 <item.icon className="h-5 w-5" strokeWidth={1.75} />
-                <span className={`text-[9px] font-medium ${active ? "" : "sr-only"}`}>{item.label}</span>
+                <span className="text-[9px] font-medium">{item.label}</span>
               </button>
             );
           })}
+
+          <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
+            <SheetTrigger asChild>
+              <button
+                className={`flex flex-col items-center gap-0.5 rounded-full px-4 py-1.5 transition-all duration-300 ${!["overview", "schedule"].includes(activeTab) ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+                aria-label="More"
+              >
+                <MoreHorizontal className="h-5 w-5" strokeWidth={1.75} />
+                <span className="text-[9px] font-medium">More</span>
+              </button>
+            </SheetTrigger>
+            <SheetContent side="bottom" className="rounded-t-3xl">
+              <SheetHeader className="text-left">
+                <SheetTitle>Menu</SheetTitle>
+              </SheetHeader>
+              <div className="mt-4 grid grid-cols-3 gap-3 pb-4">
+                {navItems.filter((i) => i.id !== "overview" && i.id !== "schedule").map((item) => {
+                  const active = activeTab === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => { goTab(item.id); setMoreOpen(false); }}
+                      className={`flex flex-col items-center gap-2 rounded-2xl border p-4 transition-colors ${active ? "border-primary bg-primary/[0.06] text-primary" : "border-border/70 text-foreground hover:bg-muted/50"}`}
+                    >
+                      <item.icon className="h-5 w-5" strokeWidth={1.75} />
+                      <span className="text-xs font-medium">{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
       </nav>
     </div>

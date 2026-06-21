@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, Video, RefreshCw, User, DollarSign, MapPin, CheckCircle, XCircle } from 'lucide-react';
+import { Calendar, Clock, Video, User, CheckCircle, ChevronRight, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { formatMoney } from '@/lib/currency';
 
 interface Booking {
   id: string;
@@ -15,14 +15,20 @@ interface Booking {
   teacher?: { firstName?: string; lastName?: string };
   student?: { firstName?: string; lastName?: string };
   googleMeetLink?: string | null;
-  mode?: 'ONLINE' | string;
   fee?: number;
 }
 
+const PREVIEW_COUNT = 3;
+const UPCOMING_STATUSES = ['CONFIRMED', 'IN_PROGRESS'];
+const PAST_STATUSES = ['COMPLETED', 'CANCELLED'];
+
 const MyClasses: React.FC = () => {
   const { user } = useAuth();
+  const currency = user?.currency;
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showAllUpcoming, setShowAllUpcoming] = useState(false);
+  const [showAllPast, setShowAllPast] = useState(false);
   const { toast } = useToast();
 
   const fetchBookings = useCallback(async () => {
@@ -51,93 +57,72 @@ const MyClasses: React.FC = () => {
     return () => clearInterval(iv);
   }, [fetchBookings]);
 
-  const now = new Date();
-  const upcoming = bookings.filter((b) => {
-    const s = b.timeSlot?.startTime ? new Date(b.timeSlot.startTime) : null;
-    return s ? s > now && b.status !== 'CANCELLED' : false;
-  }).sort((a, b) => (new Date(a.timeSlot?.startTime || '').getTime() - new Date(b.timeSlot?.startTime || '').getTime()));
+  const startMs = (b: Booking) => new Date(b.timeSlot?.startTime || 0).getTime();
 
-  const past = bookings.filter((b) => {
-    const e = b.timeSlot?.endTime ? new Date(b.timeSlot.endTime) : null;
-    return e ? e <= now || b.status === 'COMPLETED' || b.status === 'CANCELLED' : b.status === 'COMPLETED' || b.status === 'CANCELLED';
-  }).sort((a, b) => (new Date(b.timeSlot?.startTime || '').getTime() - new Date(a.timeSlot?.startTime || '').getTime()));
+  // Upcoming: only active classes, soonest first.
+  const upcoming = bookings
+    .filter((b) => UPCOMING_STATUSES.includes((b.status || '').toUpperCase()))
+    .sort((a, b) => startMs(a) - startMs(b));
+
+  // Past: finished or cancelled, most recent first.
+  const past = bookings
+    .filter((b) => PAST_STATUSES.includes((b.status || '').toUpperCase()))
+    .sort((a, b) => startMs(b) - startMs(a));
 
   const handleJoin = (link?: string | null) => {
     if (!link) {
-      toast({ title: 'No meeting link', description: 'This class does not have a meeting link', variant: 'default' });
+      toast({ title: 'No meeting link', description: 'This class does not have a meeting link yet' });
       return;
     }
     window.open(link, '_blank');
   };
 
-  const handleReschedule = (id: string) => {
-    toast({ title: 'Reschedule', description: `Open reschedule flow for booking ${id}` });
-    // TODO: implement reschedule flow
-  };
-
-  const getStatusClasses = (status: string) => {
+  const statusClasses = (status: string) => {
     switch ((status || '').toUpperCase()) {
       case 'COMPLETED': return 'bg-success/10 text-success';
       case 'CANCELLED': return 'bg-destructive/10 text-destructive';
       case 'IN_PROGRESS': return 'bg-accent/10 text-accent';
-      case 'CONFIRMED':
-      case 'SCHEDULED':
-        return 'bg-primary/10 text-primary';
-      case 'PENDING':
-      case 'AWAITING_CONFIRMATION':
-        return 'bg-warning/10 text-warning';
-      default:
-        return 'bg-muted/10 text-muted-foreground';
+      case 'CONFIRMED': return 'bg-primary/10 text-primary';
+      default: return 'bg-muted text-muted-foreground';
     }
   };
 
   const renderBookingCard = (b: Booking) => {
     const start = b.timeSlot?.startTime ? new Date(b.timeSlot.startTime) : null;
     const end = b.timeSlot?.endTime ? new Date(b.timeSlot.endTime) : null;
-    const duration = start && end ? `${Math.round(((end.getTime() - start.getTime()) / 60000))} mins` : '-';
-    const otherName = user?.role === 'STUDENT' ? `${b.teacher?.firstName || ''} ${b.teacher?.lastName || ''}` : `${b.student?.firstName || ''} ${b.student?.lastName || ''}`;
-    const statusClasses = getStatusClasses(b.status || '');
+    const duration = start && end ? `${Math.round((end.getTime() - start.getTime()) / 60000)} min` : '—';
+    const otherName = user?.role === 'STUDENT'
+      ? `${b.teacher?.firstName || ''} ${b.teacher?.lastName || ''}`.trim()
+      : `${b.student?.firstName || ''} ${b.student?.lastName || ''}`.trim();
     const title = b.inquiry?.post?.title || b.inquiry?.post?.subject || 'Class';
-    const grade = (b.inquiry?.post as any)?.grade || (b.inquiry?.post as any)?.level || null;
+    const initials = (otherName || 'U').split(' ').map((n) => n.charAt(0)).slice(0, 2).join('');
+    const isFuture = start ? start > new Date() : false;
 
     return (
-      <div key={b.id} className="p-4 bg-card rounded-2xl shadow-md border border-border mb-4">
-        <div className="md:flex md:items-start md:justify-between">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center text-primary font-semibold text-lg">
-              {(otherName || 'U').split(' ').map(n => n.charAt(0)).slice(0, 2).join('')}
+      <div key={b.id} className="rounded-2xl border border-border/70 bg-background/40 p-4 transition-colors hover:bg-muted/40">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl gradient-hero text-sm font-semibold text-primary-foreground">
+              {initials}
             </div>
-            <div>
-              <div className="flex items-center gap-3">
-                <div className="text-base font-semibold">{title}</div>
-                {grade && <div className="text-xs text-muted-foreground px-2 py-1 rounded-md border border-border">{grade}</div>}
-                <Badge className="ml-2">ONLINE</Badge>
-              </div>
-              <div className="text-sm text-muted-foreground mt-1">With <span className="font-medium text-foreground">{otherName || (user?.role === 'STUDENT' ? 'Teacher' : 'Student')}</span></div>
-              <div className="mt-3 flex flex-wrap gap-3 text-sm text-muted-foreground">
-                <div className="flex items-center gap-2"><Calendar className="w-4 h-4" />{start ? start.toLocaleDateString() : '-'}</div>
-                <div className="flex items-center gap-2"><Clock className="w-4 h-4" />{start ? start.toLocaleTimeString() : '-'} • {duration}</div>
-                {b.fee !== undefined && (
-                  <div className="flex items-center gap-2"><DollarSign className="w-4 h-4" />${b.fee}</div>
-                )}
-
+            <div className="min-w-0">
+              <p className="truncate font-medium">{title}</p>
+              <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+                <User className="h-3 w-3" /> {otherName || (user?.role === 'STUDENT' ? 'Teacher' : 'Student')}
+              </p>
+              <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{start ? start.toLocaleDateString() : '—'}</span>
+                <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{start ? start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'} · {duration}</span>
+                {b.fee !== undefined && b.fee !== null && <span className="font-medium text-foreground">{formatMoney(b.fee, currency)}</span>}
               </div>
             </div>
           </div>
-
-          <div className="mt-4 md:mt-0 flex flex-col items-start md:items-end gap-3">
-            <div className={`px-3 py-1 rounded-full text-sm font-medium ${statusClasses}`}>{b.status}</div>
-            {start && start > new Date() ? (
-              <div className="flex items-center gap-2">
-                {b.googleMeetLink && (
-                  <Button size="sm" variant="secondary" onClick={() => handleJoin(b.googleMeetLink)}>
-                    <Video className="w-4 h-4 mr-2" />Join Class
-                  </Button>
-                )}
-                <Button size="sm" variant="ghost" onClick={() => handleReschedule(b.id)}>Reschedule</Button>
-              </div>
-            ) : (
-              <div className="text-sm text-muted-foreground">{end ? `Duration: ${duration}` : ''}</div>
+          <div className="flex shrink-0 flex-col items-end gap-2">
+            <span className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${statusClasses(b.status)}`}>{b.status}</span>
+            {isFuture && b.googleMeetLink && (
+              <Button size="sm" variant="hero" className="h-8" onClick={() => handleJoin(b.googleMeetLink)}>
+                <Video className="h-3.5 w-3.5" /> Join
+              </Button>
             )}
           </div>
         </div>
@@ -145,71 +130,79 @@ const MyClasses: React.FC = () => {
     );
   };
 
+  const TileContainer = ({
+    title,
+    accent,
+    items,
+    showAll,
+    onToggle,
+    emptyIcon: EmptyIcon,
+    emptyText,
+  }: {
+    title: string;
+    accent: string;
+    items: Booking[];
+    showAll: boolean;
+    onToggle: () => void;
+    emptyIcon: typeof Calendar;
+    emptyText: string;
+  }) => {
+    const visible = showAll ? items : items.slice(0, PREVIEW_COUNT);
+    return (
+      <section className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
+        <div className="flex items-center justify-between border-b border-border/60 px-6 py-5">
+          <h2 className="text-lg font-semibold">
+            {title} <span className="font-serif font-normal">{accent}</span>
+          </h2>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={fetchBookings} disabled={loading}>
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">Refresh</span>
+            </Button>
+            {items.length > PREVIEW_COUNT && (
+              <Button variant="ghost" size="sm" className="text-primary" onClick={onToggle}>
+                {showAll ? 'Show less' : 'View all'}
+                <ChevronRight className="ml-1 h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </div>
+        <div className="p-6">
+          {loading && items.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Loading…</p>
+          ) : items.length === 0 ? (
+            <div className="py-8 text-center">
+              <EmptyIcon className="mx-auto mb-3 h-10 w-10 text-muted-foreground/60" strokeWidth={1.5} />
+              <p className="text-sm text-muted-foreground">{emptyText}</p>
+            </div>
+          ) : (
+            <div className="space-y-3">{visible.map(renderBookingCard)}</div>
+          )}
+        </div>
+      </section>
+    );
+  };
+
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold">My Classes</h2>
-        <div className="flex items-center gap-2">
-          <Button size="sm" variant="ghost" onClick={fetchBookings}><RefreshCw className="w-4 h-4 mr-1" />Refresh</Button>
-        </div>
-      </div>
-
-      <section className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-medium text-lg">Upcoming Classes</h3>
-          <div className="text-sm text-muted-foreground">{upcoming.length} scheduled</div>
-        </div>
-        {loading && <div className="text-sm text-muted-foreground">Loading...</div>}
-        {!loading && upcoming.length === 0 && (
-          <div className="p-8 bg-card rounded-2xl border border-border text-center">
-            <Calendar className="mx-auto mb-4 w-12 h-12 text-muted-foreground" />
-            <h4 className="text-lg font-semibold mb-2">You don’t have any upcoming classes yet</h4>
-            <p className="text-sm text-muted-foreground mb-4">Once you book a class it will appear here — upcoming sessions are shown at a glance.</p>
-            {user?.role === 'STUDENT' ? (
-              <Link href="/feed">
-                <Button variant="hero">Explore Classes</Button>
-              </Link>
-            ) : (
-              <Link href="/post/create">
-                <Button variant="hero">Create an Offering</Button>
-              </Link>
-            )}
-          </div>
-        )}
-        {!loading && upcoming.length > 0 && (
-          <div className="space-y-3">
-            {upcoming.map(renderBookingCard)}
-          </div>
-        )}
-      </section>
-
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-medium text-lg">Past Classes</h3>
-          <div className="text-sm text-muted-foreground">{past.length} total</div>
-        </div>
-        {!loading && past.length === 0 && (
-          <div className="p-8 bg-card rounded-2xl border border-border text-center">
-            <CheckCircle className="mx-auto mb-4 w-12 h-12 text-muted-foreground" />
-            <h4 className="text-lg font-semibold mb-2">No past classes yet</h4>
-            <p className="text-sm text-muted-foreground mb-4">Completed classes will appear here with confirmation status and durations.</p>
-            {user?.role === 'STUDENT' ? (
-              <Link href="/feed">
-                <Button variant="hero">Explore Classes</Button>
-              </Link>
-            ) : (
-              <Link href="/post/create">
-                <Button variant="hero">Create an Offering</Button>
-              </Link>
-            )}
-          </div>
-        )}
-        {!loading && past.length > 0 && (
-          <div className="space-y-3">
-            {past.map(renderBookingCard)}
-          </div>
-        )}
-      </section>
+    <div className="space-y-6">
+      <TileContainer
+        title="Upcoming"
+        accent="classes"
+        items={upcoming}
+        showAll={showAllUpcoming}
+        onToggle={() => setShowAllUpcoming((v) => !v)}
+        emptyIcon={Calendar}
+        emptyText="No upcoming classes yet. Confirmed classes appear here."
+      />
+      <TileContainer
+        title="Past"
+        accent="classes"
+        items={past}
+        showAll={showAllPast}
+        onToggle={() => setShowAllPast((v) => !v)}
+        emptyIcon={CheckCircle}
+        emptyText="No past classes yet. Completed and cancelled classes appear here."
+      />
     </div>
   );
 };

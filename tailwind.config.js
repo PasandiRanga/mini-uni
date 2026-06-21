@@ -73,8 +73,8 @@ module.exports = {
                 "2xl": "calc(var(--radius) + 8px)",
             },
             fontFamily: {
-                sans: ["Plus Jakarta Sans", "ui-sans-serif", "system-ui", "sans-serif"],
-                serif: ["Instrument Serif", "ui-serif", "Georgia", "serif"],
+                sans: ["Poppins", "ui-sans-serif", "system-ui", "sans-serif"],
+                serif: ["Poppins", "ui-sans-serif", "system-ui", "sans-serif"],
             },
             keyframes: {
                 "accordion-down": {
