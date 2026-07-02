@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { Suspense, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCreatePostModal } from '@/contexts/CreatePostModalContext';
@@ -8,7 +8,7 @@ import { useCreatePostModal } from '@/contexts/CreatePostModalContext';
 // The create-post experience is now a floating modal. This legacy route stays
 // for bookmarked / direct links: it opens the modal and sends the user to a
 // sensible page behind it.
-export default function CreatePostPage() {
+function CreatePostRedirect() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { user } = useAuth();
@@ -25,4 +25,13 @@ export default function CreatePostPage() {
     }, [router, searchParams, user, openCreatePost]);
 
     return null;
+}
+
+export default function CreatePostPage() {
+    // useSearchParams must sit inside a Suspense boundary for static rendering.
+    return (
+        <Suspense fallback={null}>
+            <CreatePostRedirect />
+        </Suspense>
+    );
 }
