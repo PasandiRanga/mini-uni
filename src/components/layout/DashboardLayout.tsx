@@ -154,13 +154,15 @@ const DashboardLayout: React.FC<PropsWithChildren> = ({ children }) => {
                   <Bell className="h-[18px] w-[18px]" />
                   <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-secondary text-[10px] font-semibold text-secondary-foreground">3</span>
                 </Button>
-                <Button variant="hero" className="gap-2" asChild>
-                  <Link href="/teachers">
-                    <Plus className="h-4 w-4" />
-                    <span className="hidden sm:inline">Find Teacher</span>
-                    <span className="sm:hidden">Find</span>
-                  </Link>
-                </Button>
+                {user?.role === "STUDENT" && (
+                  <Button variant="hero" className="gap-2" asChild>
+                    <Link href="/teachers">
+                      <Plus className="h-4 w-4" />
+                      <span className="hidden sm:inline">Find Teacher</span>
+                      <span className="sm:hidden">Find</span>
+                    </Link>
+                  </Button>
+                )}
               </div>
             </div>
           </header>

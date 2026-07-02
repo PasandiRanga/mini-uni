@@ -1,11 +1,14 @@
 'use client';
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Check } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Loader2, Check, CheckCircle2, ShieldAlert } from "lucide-react";
 
 type Details = {
   email: string;
@@ -36,6 +39,8 @@ interface PersonalDetailsFormProps {
 
 const PersonalDetailsForm = ({ onSaved }: PersonalDetailsFormProps) => {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const emailVerified = Boolean(user?.emailVerified);
   const [data, setData] = useState<Details>(EMPTY);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -123,7 +128,31 @@ const PersonalDetailsForm = ({ onSaved }: PersonalDetailsFormProps) => {
         {field("contactNumber2", "Secondary contact number", { type: "tel", placeholder: "+94 11 234 5678" })}
       </div>
 
-      {field("email", "Email", { readOnly: true, hint: "Linked to your account. Verify it from the Email verification section." })}
+      {/* Email — read-only with an inline verification indicator */}
+      <div className="space-y-1.5">
+        <Label htmlFor="email">Email</Label>
+        <div className="relative">
+          <Input id="email" type="email" value={data.email} readOnly className="bg-muted/50 pr-10 text-muted-foreground" />
+          <TooltipProvider delayDuration={150}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                {emailVerified ? (
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-success" tabIndex={0}>
+                    <CheckCircle2 className="h-[18px] w-[18px]" strokeWidth={2} />
+                  </span>
+                ) : (
+                  <Link href="/verify-email" className="absolute right-3 top-1/2 -translate-y-1/2 text-warning">
+                    <ShieldAlert className="h-[18px] w-[18px]" strokeWidth={2} />
+                  </Link>
+                )}
+              </TooltipTrigger>
+              <TooltipContent>
+                {emailVerified ? "Email verified" : "Email not verified — click to verify"}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+      </div>
 
       {field("address", "Address", { required: true, placeholder: "123 Main Street, Colombo" })}
 

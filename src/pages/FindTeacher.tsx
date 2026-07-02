@@ -39,8 +39,13 @@ const FindTeacher: React.FC = () => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const { toast } = useToast();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const router = useRouter();
+
+  // Teachers don't browse for teachers — send them back to their dashboard.
+  useEffect(() => {
+    if (user?.role === "TEACHER") router.replace("/teacher/dashboard");
+  }, [user?.role, router]);
 
   useEffect(() => {
     const fetchTeachers = async () => {

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCreatePostModal } from "@/contexts/CreatePostModalContext";
 import {
   Search,
   Filter,
@@ -88,6 +89,7 @@ const ExploreContent: React.FC = () => {
   const router = useRouter();
   const { toast } = useToast();
   const { user, isAuthenticated } = useAuth();
+  const { openCreatePost } = useCreatePostModal();
   const isGuest = !isAuthenticated;
 
   const filteredPosts = useMemo(() => {
@@ -211,7 +213,7 @@ const ExploreContent: React.FC = () => {
                   <button onClick={() => setViewType('grid')} className={`p-2 rounded-lg transition-all ${viewType === 'grid' ? 'bg-card shadow-soft text-primary' : 'text-muted-foreground'}`} title="Grid View"><LayoutGrid className="w-4 h-4" /></button>
                   <button onClick={() => setViewType('compact')} className={`p-2 rounded-lg transition-all ${viewType === 'compact' ? 'bg-card shadow-soft text-primary' : 'text-muted-foreground'}`} title="Compact View"><LayoutList className="w-4 h-4" /></button>
                 </div>
-                <Button variant="hero" className="gap-2" onClick={() => { if (isGuest) { toast({ title: 'Create an account', description: 'Please register or log in to create posts.' }); router.push('/auth'); return; } router.push('/post/create'); }}>
+                <Button variant="hero" className="gap-2" onClick={() => { if (isGuest) { toast({ title: 'Create an account', description: 'Please register or log in to create posts.' }); router.push('/auth'); return; } openCreatePost(); }}>
                   <Plus className="w-4 h-4" />
                   Create Post
                 </Button>

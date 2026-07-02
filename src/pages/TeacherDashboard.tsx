@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCreatePostModal } from "@/contexts/CreatePostModalContext";
 import { useToast } from "@/hooks/use-toast";
 import {
   GraduationCap,
@@ -57,6 +58,7 @@ const TeacherDashboard = () => {
   const [inquiries, setInquiries] = useState<any[]>([]);
   const [wallet, setWallet] = useState<any>(null);
   const { user, logout } = useAuth();
+  const { openCreatePost } = useCreatePostModal();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -215,9 +217,9 @@ const TeacherDashboard = () => {
                   </span>
                 )}
               </Button>
-              <Button variant="hero" className="gap-2" disabled={verification?.verificationStatus !== 'APPROVED'}>
+              <Button variant="hero" className="gap-2" onClick={() => openCreatePost()} disabled={verification?.verificationStatus !== 'APPROVED'}>
                 <Plus className="h-4 w-4" />
-                <span className="hidden sm:inline">Create Offering</span>
+                <span className="hidden sm:inline">Create Post</span>
                 <span className="sm:hidden">Create</span>
               </Button>
             </div>
@@ -311,13 +313,13 @@ const TeacherDashboard = () => {
           )}
 
           {/* Separated stat tiles */}
-          <div className="animate-fade-up mb-10 grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-5" style={{ animationDelay: "0.1s" }}>
+          <div className="animate-fade-up mb-10 grid grid-cols-2 auto-rows-fr gap-4 lg:grid-cols-4 lg:gap-5" style={{ animationDelay: "0.1s" }}>
             {stats.map((stat, i) => {
               const featured = i === 0;
               return (
                 <div
                   key={stat.label}
-                  className={`group rounded-3xl border p-5 shadow-soft transition-all duration-300 hover:-translate-y-0.5 hover:shadow-card sm:p-6 ${featured
+                  className={`group flex h-full flex-col rounded-3xl border p-5 shadow-soft transition-all duration-300 hover:-translate-y-0.5 hover:shadow-card sm:p-6 ${featured
                     ? "border-transparent gradient-hero text-primary-foreground"
                     : "border-border/70 bg-card"
                     }`}
@@ -331,8 +333,8 @@ const TeacherDashboard = () => {
                       <ArrowUpRight className="h-3.5 w-3.5" />
                     </span>
                   </div>
-                  <p className={`font-serif text-3xl leading-none sm:text-4xl ${featured ? "" : ""}`}>{stat.value}</p>
-                  <p className={`mt-2 text-xs uppercase tracking-[0.14em] ${featured ? "text-primary-foreground/70" : "text-muted-foreground"}`}>{stat.label}</p>
+                  <p className="mt-auto truncate font-serif text-2xl leading-none sm:text-3xl lg:text-4xl">{stat.value}</p>
+                  <p className={`mt-2 min-h-[2rem] text-xs uppercase leading-tight tracking-[0.14em] ${featured ? "text-primary-foreground/70" : "text-muted-foreground"}`}>{stat.label}</p>
                 </div>
               );
             })}

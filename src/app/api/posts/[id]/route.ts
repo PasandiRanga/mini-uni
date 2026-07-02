@@ -56,24 +56,46 @@ export async function PUT(
         }
 
         const data = await request.json();
-        const updateData: any = { ...data };
-        delete updateData.id;
-        delete updateData.userId;
-        delete updateData.type;
-        delete updateData.createdAt;
-        delete updateData.updatedAt;
 
-        if (role === "STUDENT") {
-            delete updateData.fee;
-            delete updateData.experience;
-            delete updateData.locationLat;
-            delete updateData.locationLng;
+        // Only persist real Post columns — the client also sends helper fields
+        // (availabilitySlots, durationMin, …) that are not scalar columns.
+        const updateData: any = {
+            title: data.title,
+            description: data.description,
+            subject: data.subject,
+        };
+
+        if (existing.type === "STUDENT_REQUEST") {
+            updateData.grade = data.grade ?? null;
+            updateData.syllabus = data.syllabus ?? null;
+        } else {
+            updateData.fee = data.fee != null ? Number(data.fee) : null;
+            updateData.ratePerHour = data.ratePerHour != null ? Number(data.ratePerHour) : null;
+            updateData.thumbnailUrl = data.thumbnailUrl ?? null;
+            updateData.maxStudents = data.maxStudents != null ? Number(data.maxStudents) : null;
+            if (Array.isArray(data.classTypes)) {
+                const valid = ["INDIVIDUAL", "GROUP", "MASS"];
+                updateData.classTypes = data.classTypes.filter((t: string) => valid.includes(t));
+            }
         }
 
         const updated = await prisma.post.update({
             where: { id: postId },
             data: updateData,
         });
+
+        // Replace availability for teacher offerings. Only unbooked (AVAILABLE) slots are
+        // swapped out so existing bookings are preserved.
+        if (existing.type === "TEACHER_OFFERING" && Array.isArray(data.availabilitySlots)) {
+            await prisma.timeSlot.deleteMany({ where: { postId, status: "AVAILABLE" } });
+            for (const slot of data.availabilitySlots) {
+                if (slot.start && slot.end) {
+                    await prisma.timeSlot.create({
+                        data: { postId, startTime: new Date(slot.start), endTime: new Date(slot.end) },
+                    });
+                }
+            }
+        }
 
         return NextResponse.json(updated);
     } catch (error: any) {

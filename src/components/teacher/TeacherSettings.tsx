@@ -1,16 +1,16 @@
 'use client';
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import EmailVerificationBanner from "@/components/auth/EmailVerificationBanner";
 import PersonalDetailsForm from "@/components/teacher/PersonalDetailsForm";
+import IdentityVerificationForm from "@/components/teacher/IdentityVerificationForm";
+import AcademicBackgroundForm from "@/components/teacher/AcademicBackgroundForm";
 import { CurrencySettings } from "@/components/settings/CurrencySettings";
-import { Loader2, Check, ArrowRight, UserCog, Lock, Bell, Landmark, Coins } from "lucide-react";
+import { Loader2, Check, UserCog, Lock, Bell, Landmark, Coins, ShieldCheck, GraduationCap } from "lucide-react";
 
 const Section = ({
   icon: Icon,
@@ -25,8 +25,8 @@ const Section = ({
 }) => (
   <section className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
     <div className="flex items-start gap-3 border-b border-border/60 px-6 py-5">
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-foreground">
-        <Icon className="h-[18px] w-[18px]" strokeWidth={1.75} />
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+        <Icon className="h-5 w-5" strokeWidth={1.75} />
       </div>
       <div>
         <h3 className="font-semibold">{title}</h3>
@@ -37,43 +37,9 @@ const Section = ({
   </section>
 );
 
-const ProfileCompletionCard = () => {
-  const [percent, setPercent] = useState<number | null>(null);
-
-  useEffect(() => {
-    fetch("/api/teachers/profile-completion")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => d && setPercent(d.percent ?? 0))
-      .catch(() => {});
-  }, []);
-
-  return (
-    <div className="overflow-hidden rounded-3xl border border-accent/40 bg-accent/[0.06] p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h3 className="font-semibold">Profile completion</h3>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            {percent === null ? "Loading…" : percent === 100 ? "Your profile is complete." : `${percent}% complete — finish to start teaching.`}
-          </p>
-        </div>
-        <Button variant="hero" className="gap-2" asChild>
-          <Link href="/teacher/profile-completion">
-            {percent === 100 ? "Review profile" : "Continue"}
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-        </Button>
-      </div>
-      {percent !== null && (
-        <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-border/70">
-          <div
-            className="h-full rounded-full bg-gradient-to-r from-primary to-accent transition-all duration-700"
-            style={{ width: `${percent}%` }}
-          />
-        </div>
-      )}
-    </div>
-  );
-};
+const GroupHeading = ({ children }: { children: React.ReactNode }) => (
+  <h3 className="px-1 pb-1 pt-2 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{children}</h3>
+);
 
 const ChangePasswordForm = () => {
   const { toast } = useToast();
@@ -242,37 +208,51 @@ const BankDetailsForm = () => {
 
 const TeacherSettings = () => {
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="mx-auto max-w-3xl space-y-8">
       <div>
-        <h2 className="text-2xl font-semibold">Settings</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Manage your profile, security, notifications and payouts.</p>
+        <h2 className="text-2xl font-semibold sm:text-3xl">
+          <span className="font-serif font-normal text-gradient">Settings</span>
+        </h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Manage your profile, security, notifications and payouts. You can complete your profile here or in the step-by-step flow — both stay in sync.
+        </p>
       </div>
 
-      <ProfileCompletionCard />
+      {/* Profile — same fields as profile completion, editable and prefilled */}
+      <div className="space-y-4">
+        <GroupHeading>Profile</GroupHeading>
+        <Section icon={UserCog} title="Personal details" description="Your name, contacts and address.">
+          <PersonalDetailsForm />
+        </Section>
+        <Section icon={ShieldCheck} title="Identity verification" description="Your ID type and document scans.">
+          <IdentityVerificationForm />
+        </Section>
+        <Section icon={GraduationCap} title="Academic & professional" description="Your education and work background.">
+          <AcademicBackgroundForm />
+        </Section>
+      </div>
 
-      <Section icon={Bell} title="Email verification" description="Confirm your account email address.">
-        <EmailVerificationBanner variant="card" />
-      </Section>
+      {/* Account */}
+      <div className="space-y-4">
+        <GroupHeading>Account</GroupHeading>
+        <Section icon={Lock} title="Password" description="Change your account password.">
+          <ChangePasswordForm />
+        </Section>
+        <Section icon={Coins} title="Currency" description="Your account and payment currency.">
+          <CurrencySettings />
+        </Section>
+        <Section icon={Bell} title="Notifications" description="Choose how you'd like to be notified.">
+          <NotificationPrefs />
+        </Section>
+      </div>
 
-      <Section icon={UserCog} title="Personal details" description="Edit your name, contacts and address.">
-        <PersonalDetailsForm />
-      </Section>
-
-      <Section icon={Lock} title="Password" description="Change your account password.">
-        <ChangePasswordForm />
-      </Section>
-
-      <Section icon={Coins} title="Currency" description="Your account and payment currency.">
-        <CurrencySettings />
-      </Section>
-
-      <Section icon={Bell} title="Notifications" description="Choose how you'd like to be notified.">
-        <NotificationPrefs />
-      </Section>
-
-      <Section icon={Landmark} title="Bank details" description="Used for withdrawing your earnings.">
-        <BankDetailsForm />
-      </Section>
+      {/* Payouts */}
+      <div className="space-y-4">
+        <GroupHeading>Payouts</GroupHeading>
+        <Section icon={Landmark} title="Bank details" description="Used for withdrawing your earnings.">
+          <BankDetailsForm />
+        </Section>
+      </div>
     </div>
   );
 };
