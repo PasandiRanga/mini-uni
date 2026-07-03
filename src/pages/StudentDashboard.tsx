@@ -81,13 +81,13 @@ const StudentDashboard = () => {
     return (
       <>
         {/* Separated stat tiles */}
-        <div className="animate-fade-up mb-10 grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-5" style={{ animationDelay: "0.1s" }}>
+        <div className="animate-fade-up mb-10 grid grid-cols-2 auto-rows-fr gap-4 lg:grid-cols-4 lg:gap-5" style={{ animationDelay: "0.1s" }}>
           {stats.map((stat, i) => {
             const featured = i === 0;
             return (
               <div
                 key={stat.label}
-                className={`group rounded-3xl border p-5 shadow-soft transition-all duration-300 hover:-translate-y-0.5 hover:shadow-card sm:p-6 ${featured
+                className={`group flex h-full flex-col rounded-3xl border p-5 shadow-soft transition-all duration-300 hover:-translate-y-0.5 hover:shadow-card sm:p-6 ${featured
                   ? "border-transparent gradient-hero text-primary-foreground"
                   : "border-border/70 bg-card"
                   }`}
@@ -101,8 +101,8 @@ const StudentDashboard = () => {
                     <ArrowUpRight className="h-3.5 w-3.5" />
                   </span>
                 </div>
-                <p className="font-serif text-3xl leading-none sm:text-4xl">{stat.value}</p>
-                <p className={`mt-2 text-xs uppercase tracking-[0.14em] ${featured ? "text-primary-foreground/70" : "text-muted-foreground"}`}>{stat.label}</p>
+                <p className="mt-auto truncate font-serif text-2xl leading-none sm:text-3xl lg:text-4xl">{stat.value}</p>
+                <p className={`mt-2 min-h-[2rem] text-xs uppercase leading-tight tracking-[0.14em] ${featured ? "text-primary-foreground/70" : "text-muted-foreground"}`}>{stat.label}</p>
               </div>
             );
           })}

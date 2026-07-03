@@ -5,6 +5,7 @@ import Footer from "@/components/layout/Footer";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCreatePostModal } from "@/contexts/CreatePostModalContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -52,6 +53,7 @@ const Feed = () => {
   const [viewType, setViewType] = useState<'grid' | 'compact'>('grid');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const { user, isAuthenticated } = useAuth();
+  const { openCreatePost } = useCreatePostModal();
   const { toast } = useToast();
   const router = useRouter();
   const isGuest = !isAuthenticated;
@@ -318,7 +320,7 @@ const Feed = () => {
                     toast({ title: 'Verification Required', description: 'Please complete your profile verification.', variant: 'destructive' });
                     return;
                   }
-                  router.push('/post/create');
+                  openCreatePost();
                 }}>
                   <Plus className="w-4 h-4" />
                   Create Post

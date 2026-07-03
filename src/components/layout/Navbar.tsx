@@ -4,11 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Menu, X, GraduationCap, LogOut } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCreatePostModal } from "@/contexts/CreatePostModalContext";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
   const { isAuthenticated, logout, user } = useAuth();
+  const { openCreatePost } = useCreatePostModal();
 
   const handleLogout = async () => {
     await logout();
@@ -53,18 +55,20 @@ const Navbar = () => {
                 <Link href="/feed" className="link-underline text-sm text-muted-foreground hover:text-foreground transition-colors font-medium">
                   Explore
                 </Link>
-                <Link href="/teachers" className="link-underline text-sm text-muted-foreground hover:text-foreground transition-colors font-medium">
-                  Find Teachers
-                </Link>
                 {user?.role === 'STUDENT' && (
-                  <Link href="/post/create" className="link-underline text-sm text-muted-foreground hover:text-foreground transition-colors font-medium">
-                    Post Request
+                  <Link href="/teachers" className="link-underline text-sm text-muted-foreground hover:text-foreground transition-colors font-medium">
+                    Find Teachers
                   </Link>
                 )}
+                {user?.role === 'STUDENT' && (
+                  <button type="button" onClick={() => openCreatePost()} className="link-underline text-sm text-muted-foreground hover:text-foreground transition-colors font-medium">
+                    Post Request
+                  </button>
+                )}
                 {user?.role === 'TEACHER' && (
-                  <Link href="/post/create" className="link-underline text-sm text-muted-foreground hover:text-foreground transition-colors font-medium">
-                    Create Offering
-                  </Link>
+                  <button type="button" onClick={() => openCreatePost()} className="link-underline text-sm text-muted-foreground hover:text-foreground transition-colors font-medium">
+                    Create Post
+                  </button>
                 )}
               </>
             )}
@@ -143,30 +147,32 @@ const Navbar = () => {
                 >
                   Explore
                 </Link>
-                <Link
-                  href="/teachers"
-                  className="block py-2 text-muted-foreground hover:text-foreground transition-colors font-medium"
-                  onClick={() => setIsOpen(false)}
-                >
-                  Find Teachers
-                </Link>
                 {user?.role === 'STUDENT' && (
                   <Link
-                    href="/post/create"
+                    href="/teachers"
                     className="block py-2 text-muted-foreground hover:text-foreground transition-colors font-medium"
                     onClick={() => setIsOpen(false)}
                   >
-                    Post Request
+                    Find Teachers
                   </Link>
                 )}
+                {user?.role === 'STUDENT' && (
+                  <button
+                    type="button"
+                    className="block w-full text-left py-2 text-muted-foreground hover:text-foreground transition-colors font-medium"
+                    onClick={() => { setIsOpen(false); openCreatePost(); }}
+                  >
+                    Post Request
+                  </button>
+                )}
                 {user?.role === 'TEACHER' && (
-                  <Link
-                    href="/post/create"
-                    className="block py-2 text-muted-foreground hover:text-foreground transition-colors font-medium"
-                    onClick={() => setIsOpen(false)}
+                  <button
+                    type="button"
+                    className="block w-full text-left py-2 text-muted-foreground hover:text-foreground transition-colors font-medium"
+                    onClick={() => { setIsOpen(false); openCreatePost(); }}
                   >
                     Create Offering
-                  </Link>
+                  </button>
                 )}
               </>
             )}

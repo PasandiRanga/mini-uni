@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCreatePostModal } from "@/contexts/CreatePostModalContext";
 import { formatMoney } from "@/lib/currency";
 import { FileText, RefreshCw, Pencil, Trash2, Plus } from "lucide-react";
 
@@ -25,6 +25,7 @@ interface MyPost {
 const TeacherPosts = () => {
   const { toast } = useToast();
   const { user } = useAuth();
+  const { openCreatePost } = useCreatePostModal();
   const [posts, setPosts] = useState<MyPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
@@ -43,6 +44,9 @@ const TeacherPosts = () => {
 
   useEffect(() => {
     fetchPosts();
+    const onChanged = () => fetchPosts();
+    window.addEventListener('miniuni:post-changed', onChanged);
+    return () => window.removeEventListener('miniuni:post-changed', onChanged);
   }, []);
 
   const handleDelete = async (id: string) => {
@@ -72,8 +76,8 @@ const TeacherPosts = () => {
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             <span className="hidden sm:inline">Refresh</span>
           </Button>
-          <Button variant="hero" size="sm" asChild>
-            <Link href="/post/create"><Plus className="h-4 w-4" /> New</Link>
+          <Button variant="hero" size="sm" onClick={() => openCreatePost()}>
+            <Plus className="h-4 w-4" /> New
           </Button>
         </div>
       </div>
@@ -85,8 +89,8 @@ const TeacherPosts = () => {
           <div className="py-10 text-center">
             <FileText className="mx-auto mb-3 h-10 w-10 text-muted-foreground/60" strokeWidth={1.5} />
             <p className="mb-4 text-sm text-muted-foreground">You haven&apos;t created any posts yet.</p>
-            <Button variant="hero" asChild>
-              <Link href="/post/create"><Plus className="h-4 w-4" /> Create your first post</Link>
+            <Button variant="hero" onClick={() => openCreatePost()}>
+              <Plus className="h-4 w-4" /> Create your first post
             </Button>
           </div>
         ) : (
@@ -107,8 +111,8 @@ const TeacherPosts = () => {
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
-                  <Button variant="ghost" size="icon" className="h-8 w-8" asChild title="Edit">
-                    <Link href={`/post/create?editId=${p.id}`}><Pencil className="h-4 w-4" /></Link>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openCreatePost(p.id, p)} title="Edit">
+                    <Pencil className="h-4 w-4" />
                   </Button>
                   <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDelete(p.id)} disabled={deleting === p.id} title="Delete">
                     <Trash2 className="h-4 w-4" />

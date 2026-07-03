@@ -87,8 +87,15 @@ async function createPost(request: Request) {
             payload.syllabus = data.syllabus || null;
         } else {
             payload.fee = data.fee != null ? Number(data.fee) : null;
+            payload.ratePerHour = data.ratePerHour != null ? Number(data.ratePerHour) : null;
             payload.experience = data.experience != null ? Number(data.experience) : null;
             payload.currency = teacherCurrency;
+            payload.thumbnailUrl = data.thumbnailUrl || null;
+            payload.maxStudents = data.maxStudents != null ? Number(data.maxStudents) : null;
+            if (Array.isArray(data.classTypes) && data.classTypes.length > 0) {
+                const valid = ["INDIVIDUAL", "GROUP", "MASS"];
+                payload.classTypes = data.classTypes.filter((t: string) => valid.includes(t));
+            }
         }
 
         const post = await prisma.post.create({ data: payload });

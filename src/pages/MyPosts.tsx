@@ -1,9 +1,9 @@
 'use client';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from 'react';
-import { useRouter } from "next/navigation";
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCreatePostModal } from '@/contexts/CreatePostModalContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Footer from '@/components/layout/Footer';
@@ -11,18 +11,21 @@ import { useToast } from '@/hooks/use-toast';
 
 const MyPosts: React.FC = () => {
   const { isAuthenticated } = useAuth();
+  const { openCreatePost } = useCreatePostModal();
   const [posts, setPosts] = useState<any[]>([]);
-  const router = useRouter();
   const { toast } = useToast();
 
   useEffect(() => {
     if (!isAuthenticated) return;
-    (async () => {
+    const load = async () => {
       try {
         const res = await fetch(`/api/posts/mine`);
         if (res.ok) setPosts(await res.json());
       } catch (e) { console.error(e); }
-    })();
+    };
+    load();
+    window.addEventListener('miniuni:post-changed', load);
+    return () => window.removeEventListener('miniuni:post-changed', load);
   }, [isAuthenticated]);
 
   const handleDelete = async (id: string) => {
@@ -43,7 +46,7 @@ const MyPosts: React.FC = () => {
         <main className="container mx-auto p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold">My Posts</h2>
-            <Button onClick={() => router.push('/post/create')}>Create Post</Button>
+            <Button onClick={() => openCreatePost()}>Create Post</Button>
           </div>
           <div className="space-y-4">
             {posts.length === 0 && <div className="bg-card p-4 rounded">You have no posts yet.</div>}
@@ -58,7 +61,7 @@ const MyPosts: React.FC = () => {
                   <p className="mt-2 text-sm">{p.description?.slice(0, 200)}</p>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Button variant="ghost" onClick={() => router.push(`/post/create?id=${p.id}`)}>Edit</Button>
+                  <Button variant="ghost" onClick={() => openCreatePost(p.id, p)}>Edit</Button>
                   <Button variant="destructive" onClick={() => handleDelete(p.id)}>Delete</Button>
                 </div>
               </div>

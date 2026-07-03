@@ -23,6 +23,12 @@ enum VerificationStatus {
   REJECTED
 }
 
+enum ClassType {
+  INDIVIDUAL
+  GROUP
+  MASS
+}
+
 enum PostType {
   STUDENT_REQUEST
   TEACHER_OFFERING
@@ -200,9 +206,13 @@ model Post {
   subject     String
   grade       String?  // for student requests
   syllabus    String?  // for student requests
-  fee         Decimal? @db.Decimal(10, 2) // for teacher offerings
+  fee         Decimal? @db.Decimal(10, 2) // for teacher offerings (per-class, = rate × duration)
+  ratePerHour Decimal? @db.Decimal(10, 2) // for teacher offerings — hourly rate
   currency    String   @default("LKR")    // currency of the fee (LKR | USD)
   experience  Int?     // for teacher offerings
+  classTypes  ClassType[]                 // INDIVIDUAL | GROUP | MASS (teacher may offer several)
+  maxStudents Int?                         // optional cap for GROUP classes
+  thumbnailUrl String? @db.Text           // optional class thumbnail (data URL or URL)
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
