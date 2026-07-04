@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Footer from '@/components/layout/Footer';
 import { useToast } from '@/hooks/use-toast';
+import { applyPostChange, emitPostChanged, onPostChanged } from '@/lib/postEvents';
 
 const MyPosts: React.FC = () => {
   const { isAuthenticated } = useAuth();
@@ -24,18 +25,21 @@ const MyPosts: React.FC = () => {
       } catch (e) { console.error(e); }
     };
     load();
-    window.addEventListener('miniuni:post-changed', load);
-    return () => window.removeEventListener('miniuni:post-changed', load);
+    // Apply create/edit/delete instantly instead of refetching.
+    return onPostChanged((c) => setPosts((prev) => applyPostChange(prev, c)));
   }, [isAuthenticated]);
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this post?')) return;
+    const prev = posts;
+    setPosts(p => p.filter(x => x.id !== id)); // optimistic
     try {
       const res = await fetch(`/api/posts/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Delete failed');
-      setPosts(p => p.filter(x => x.id !== id));
+      emitPostChanged({ action: 'deleted', id });
       toast({ title: 'Deleted', description: 'Post removed' });
     } catch (e) {
+      setPosts(prev); // rollback
       toast({ title: 'Error', description: (e as Error).message || 'Failed' });
     }
   };

@@ -116,7 +116,8 @@ export interface CreatePostModalProps {
   editId?: string | null;
   /** Already-loaded post to prefill from instantly (avoids a fetch round-trip). */
   initialPost?: any;
-  onSuccess?: () => void;
+  /** Called with the saved post so lists can update optimistically. */
+  onSuccess?: (post: any, action: 'created' | 'updated') => void;
 }
 
 const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, editId, initialPost, onSuccess }) => {
@@ -139,8 +140,8 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, e
   const [slots, setSlots] = useState<PickerSlot[]>([]);
   const [busy, setBusy] = useState<{ start: string; end: string; title?: string }[]>([]);
 
-  // student request
-  const [grade, setGrade] = useState('Grade 1');
+  // grade/level — required for a student request, optional on a teacher offering
+  const [grade, setGrade] = useState('');
   const [budget, setBudget] = useState<number | ''>('');
 
   const [submitting, setSubmitting] = useState(false);
@@ -192,7 +193,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, e
     setRatePerHour('');
     setDurationMin(60);
     setSlots([]);
-    setGrade('Grade 1');
+    setGrade('');
     setBudget('');
   };
 
@@ -214,7 +215,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, e
     const sl: PickerSlot[] = (p.timeSlots || []).map((t: { startTime: string; endTime: string }) => ({ start: new Date(t.startTime), end: new Date(t.endTime) }));
     setSlots(sl);
     if (sl.length) setDurationMin(Math.max(15, Math.round((sl[0].end.getTime() - sl[0].start.getTime()) / 60000)));
-    setGrade(p.grade || 'Grade 1');
+    setGrade(p.grade || '');
     let budgetVal: number | '' = '';
     if (p.syllabus) { try { const s = JSON.parse(p.syllabus); if (s && s.budget != null && s.budget !== '') budgetVal = Number(s.budget); } catch { /* not JSON */ } }
     setBudget(budgetVal);
@@ -257,6 +258,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, e
             type: 'TEACHER_OFFERING',
             title: title.trim() || `${subject} Class`,
             subject,
+            grade: grade.trim() || null,
             description,
             classTypes,
             maxStudents: classTypes.includes('GROUP') && maxStudents !== '' ? Number(maxStudents) : null,
@@ -284,8 +286,32 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, e
         const j = await res.json().catch(() => ({}));
         throw new Error(j.error || j.message || `HTTP ${res.status}`);
       }
+      const saved = await res.json().catch(() => ({}));
+
+      // Build the full post object so lists can update instantly (no refetch).
+      const optimisticPost = {
+        id: editId || saved?.id || `tmp-${Date.now()}`,
+        userId: user?.id,
+        type: payload.type,
+        title: payload.title,
+        subject,
+        grade: isTeacher ? (grade.trim() || null) : grade,
+        description,
+        fee: isTeacher ? Number(pricePerClass.toFixed(2)) : null,
+        ratePerHour: isTeacher && ratePerHour !== '' ? Number(ratePerHour) : null,
+        currency,
+        classTypes: isTeacher ? classTypes : [],
+        maxStudents: isTeacher && classTypes.includes('GROUP') && maxStudents !== '' ? Number(maxStudents) : null,
+        thumbnailUrl: isTeacher ? thumbnail : null,
+        syllabus: isTeacher ? null : JSON.stringify({ budget }),
+        isActive: true,
+        createdAt: initialPost?.createdAt || saved?.createdAt || new Date().toISOString(),
+        timeSlots: isTeacher ? slots.map((s) => ({ startTime: s.start.toISOString(), endTime: s.end.toISOString() })) : [],
+        user: user ? { id: user.id, firstName: user.firstName, lastName: user.lastName, role: user.role } : undefined,
+      };
+
       toast({ title: editId ? 'Post updated' : 'Post published', description: 'Your post is now live in Explore.' });
-      onSuccess?.();
+      onSuccess?.(optimisticPost, editId ? 'updated' : 'created');
       resetForm();
       onOpenChange(false);
     } catch (err) {
@@ -326,13 +352,11 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, e
                 <SubjectCombobox value={subject} onChange={setSubject} />
               </div>
 
-              {/* Level / grade (student) */}
-              {!isTeacher && (
-                <div className="space-y-1.5">
-                  <Label htmlFor="grade">Level / grade</Label>
-                  <Input id="grade" value={grade} onChange={(e) => setGrade(e.target.value)} placeholder="Grade 11 / A/L / University" />
-                </div>
-              )}
+              {/* Level / grade — required for a student request, optional for a teacher offering */}
+              <div className="space-y-1.5">
+                <Label htmlFor="grade">Level / grade{!isTeacher && <Req />}</Label>
+                <Input id="grade" value={grade} onChange={(e) => setGrade(e.target.value)} placeholder={isTeacher ? 'e.g. Grade 11, A/L, Undergraduate' : 'Grade 11 / A/L / University'} />
+              </div>
 
               {/* Description */}
               <div className="space-y-1.5">

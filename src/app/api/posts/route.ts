@@ -86,6 +86,7 @@ async function createPost(request: Request) {
             payload.grade = data.grade || null;
             payload.syllabus = data.syllabus || null;
         } else {
+            payload.grade = data.grade || null;
             payload.fee = data.fee != null ? Number(data.fee) : null;
             payload.ratePerHour = data.ratePerHour != null ? Number(data.ratePerHour) : null;
             payload.experience = data.experience != null ? Number(data.experience) : null;

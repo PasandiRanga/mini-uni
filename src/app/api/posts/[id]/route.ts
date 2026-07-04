@@ -69,6 +69,7 @@ export async function PUT(
             updateData.grade = data.grade ?? null;
             updateData.syllabus = data.syllabus ?? null;
         } else {
+            updateData.grade = data.grade || null;
             updateData.fee = data.fee != null ? Number(data.fee) : null;
             updateData.ratePerHour = data.ratePerHour != null ? Number(data.ratePerHour) : null;
             updateData.thumbnailUrl = data.thumbnailUrl ?? null;

@@ -35,7 +35,7 @@ import TeacherSettings from "@/components/teacher/TeacherSettings";
 import ScheduleCalendar from "@/components/calendar/ScheduleCalendar";
 import MiniCalendar from "@/components/calendar/MiniCalendar";
 import TeacherStudents from "@/components/teacher/TeacherStudents";
-import TeacherExplore from "@/components/teacher/TeacherExplore";
+import ExploreContent from "@/components/explore/ExploreContent";
 import TeacherPosts from "@/components/teacher/TeacherPosts";
 import TeacherInquiries from "@/components/teacher/TeacherInquiries";
 
@@ -234,7 +234,7 @@ const TeacherDashboard = () => {
           ) : activeTab === "students" ? (
             <TeacherStudents />
           ) : activeTab === "explore" ? (
-            <TeacherExplore />
+            <ExploreContent />
           ) : activeTab === "posts" ? (
             <TeacherPosts />
           ) : activeTab === "inquiries" ? (

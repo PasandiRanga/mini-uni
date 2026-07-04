@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCreatePostModal } from "@/contexts/CreatePostModalContext";
+import { applyPostChange, onPostChanged } from "@/lib/postEvents";
 import {
   Search,
   Filter,
@@ -70,6 +71,8 @@ const ExploreContent: React.FC = () => {
       }
     };
     fetchPosts();
+    // Reflect create/edit/delete instantly.
+    return onPostChanged((c) => setPosts((prev) => applyPostChange(prev, c)));
   }, []);
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -200,7 +203,7 @@ const ExploreContent: React.FC = () => {
         </div>
 
         <div className="container mx-auto px-4 py-8">
-          <div className={`${viewType === 'grid' ? 'max-w-6xl' : 'max-w-3xl'} mx-auto transition-all duration-300`}>
+          <div className="max-w-3xl mx-auto transition-all duration-300">
             <div className="flex items-center justify-between mb-6">
               <div className="flex bg-muted rounded-xl p-1">
                 <button onClick={() => setPostType('all')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${postType === 'all' ? 'bg-card shadow-soft' : 'text-muted-foreground'}`}>All Posts</button>
@@ -222,7 +225,7 @@ const ExploreContent: React.FC = () => {
 
             <div className={
               viewType === 'grid'
-                ? "grid grid-cols-1 md:grid-cols-2 gap-6"
+                ? "grid grid-cols-1 gap-6"
                 : "space-y-4"
             }>
               {filteredPosts.map((post) => {
