@@ -42,7 +42,7 @@ const Navbar = () => {
                 <Link href="/" className="link-underline text-sm text-muted-foreground hover:text-foreground transition-colors font-medium">
                   Home
                 </Link>
-                <Link href="/feed" className="link-underline text-sm text-muted-foreground hover:text-foreground transition-colors font-medium">
+                <Link href="/explore" className="link-underline text-sm text-muted-foreground hover:text-foreground transition-colors font-medium">
                   Explore
                 </Link>
                 <Link href="/how-it-works" className="link-underline text-sm text-muted-foreground hover:text-foreground transition-colors font-medium">
@@ -52,7 +52,7 @@ const Navbar = () => {
             ) : (
               // Authenticated nav: Explore, Find Teachers, Create Post
               <>
-                <Link href="/feed" className="link-underline text-sm text-muted-foreground hover:text-foreground transition-colors font-medium">
+                <Link href="/explore" className="link-underline text-sm text-muted-foreground hover:text-foreground transition-colors font-medium">
                   Explore
                 </Link>
                 {user?.role === 'STUDENT' && (
@@ -123,7 +123,7 @@ const Navbar = () => {
                   Home
                 </Link>
                 <Link
-                  href="/feed"
+                  href="/explore"
                   className="block py-2 text-muted-foreground hover:text-foreground transition-colors font-medium"
                   onClick={() => setIsOpen(false)}
                 >
@@ -141,7 +141,7 @@ const Navbar = () => {
               // Authenticated mobile nav
               <>
                 <Link
-                  href="/feed"
+                  href="/explore"
                   className="block py-2 text-muted-foreground hover:text-foreground transition-colors font-medium"
                   onClick={() => setIsOpen(false)}
                 >

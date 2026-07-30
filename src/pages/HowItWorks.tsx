@@ -89,7 +89,7 @@ const HowItWorks = () => {
           <div className="max-w-4xl mx-auto text-center mt-10">
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Button asChild variant="hero"><Link href="/signup">Get Started</Link></Button>
-              <Button asChild variant="outline"><Link href="/feed">Explore Posts</Link></Button>
+              <Button asChild variant="outline"><Link href="/explore">Explore Posts</Link></Button>
             </div>
           </div>
         </div>

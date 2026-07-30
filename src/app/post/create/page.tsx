@@ -19,7 +19,7 @@ function CreatePostRedirect() {
         if (opened.current) return;
         opened.current = true;
         const editId = searchParams?.get('editId') || searchParams?.get('id');
-        const dest = user?.role === 'TEACHER' ? '/teacher/dashboard?tab=posts' : '/feed';
+        const dest = user?.role === 'TEACHER' ? '/teacher/dashboard?tab=posts' : '/explore';
         router.replace(dest);
         openCreatePost(editId);
     }, [router, searchParams, user, openCreatePost]);

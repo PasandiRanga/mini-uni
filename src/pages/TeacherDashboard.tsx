@@ -122,6 +122,7 @@ const TeacherDashboard = () => {
     { id: "explore", label: "Explore", icon: Search },
     { id: "posts", label: "My Posts", icon: FileText },
     { id: "inquiries", label: "Inquiries", icon: MessageSquare },
+    { id: "classes", label: "My Classes", icon: GraduationCap },
     { id: "schedule", label: "Schedule", icon: Calendar },
     { id: "students", label: "Students", icon: Users },
     { id: "wallet", label: "Wallet", icon: Wallet },
@@ -239,6 +240,8 @@ const TeacherDashboard = () => {
             <TeacherPosts />
           ) : activeTab === "inquiries" ? (
             <TeacherInquiries />
+          ) : activeTab === "classes" ? (
+            <MyClasses />
           ) : (
           <>
           <EmailVerificationBanner />
@@ -341,9 +344,9 @@ const TeacherDashboard = () => {
           </div>
 
           <div className="grid gap-6 lg:grid-cols-3">
-            {/* Upcoming + Past class tiles (provided by MyClasses) */}
+            {/* Upcoming classes preview — "View all" opens the My Classes tab */}
             <div className="lg:col-span-2">
-              <MyClasses />
+              <MyClasses preview onViewAll={() => goTab("classes")} />
             </div>
 
             {/* Right column: inquiries + mini calendar */}
