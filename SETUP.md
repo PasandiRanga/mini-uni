@@ -67,7 +67,9 @@ cp .env.example .env
 ```env
 DATABASE_URL="postgresql://miniuni:miniuni_password@localhost:5432/miniuni?schema=public"
 JWT_SECRET="your-secret-key-change-in-production"
-STRIPE_SECRET_KEY="sk_test_your_stripe_secret_key"
+PAYHERE_MERCHANT_ID="your_payhere_merchant_id"
+PAYHERE_MERCHANT_SECRET="your_payhere_merchant_secret"
+PAYHERE_SANDBOX="true"
 # ... other environment variables
 ```
 
@@ -127,8 +129,8 @@ The database includes the following main models:
 - **Inquiry**: Communication between students and teachers
 - **TimeSlot**: Available time slots for classes
 - **Booking**: Confirmed class bookings
-- **Payment**: Stripe payment records
-- **Wallet**: Teacher virtual wallet for escrow
+- **Payment**: PayHere payment records
+- **Wallet**: Virtual wallet — teacher escrow/earnings, student spendable balance
 - **WalletTransaction**: Wallet transaction history
 - **Notification**: User notifications
 
@@ -159,12 +161,15 @@ The database includes the following main models:
 - `PUT /api/bookings/:id/confirm` - Confirm class completion
 
 ### Payments
-- `POST /api/payments/create-intent` - Create Stripe payment intent
-- `POST /api/payments/webhook` - Stripe webhook endpoint
+- `POST /api/payments/payhere/checkout` - Start a PayHere checkout for a class
+- `POST /api/payments/payhere/notify` - PayHere server notification (settles the payment)
+- `GET /api/payments/payhere/status/:orderId` - Payment status
+- `POST /api/payments/wallet` - Pay for a class from the wallet balance
 
 ### Wallets
 - `GET /api/wallets/me` - Get user's wallet
-- `GET /api/wallets/transactions` - Get wallet transactions
+- `POST /api/wallets/topup` - Start a PayHere wallet top-up
+- `POST /api/wallets/withdraw` - Request a payout (teachers)
 
 ### Notifications
 - `GET /api/notifications` - Get user's notifications
@@ -182,9 +187,12 @@ DATABASE_URL="postgresql://user:password@localhost:5432/miniuni?schema=public"
 JWT_SECRET=your-secret-key-change-in-production
 JWT_EXPIRES_IN=7d
 
-# Stripe
-STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
-STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
+# PayHere (Settings > Domains & Credentials in the PayHere dashboard)
+PAYHERE_MERCHANT_ID=your_payhere_merchant_id
+PAYHERE_MERCHANT_SECRET=your_payhere_merchant_secret
+PAYHERE_SANDBOX=true
+# Dev only — PayHere can't reach a notify_url on localhost. Never set in production.
+PAYHERE_ALLOW_LOCAL_CONFIRM=true
 
 # Google Meet API
 GOOGLE_CLIENT_ID=your_google_client_id
@@ -229,7 +237,7 @@ docker-compose logs -f backend
 ## Next Steps
 
 - Implement full CRUD operations for all modules
-- Add Stripe payment integration
+- Point the PayHere notify_url at a public URL (tunnel it in development)
 - Integrate Google Meet API for automatic link generation
 - Add Redis caching for frequently accessed data
 - Implement email notifications

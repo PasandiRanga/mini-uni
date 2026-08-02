@@ -1,7 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Calendar, Clock, Video, User, CheckCircle, XCircle, ChevronRight, RefreshCw } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Calendar, Clock, Video, User, CheckCircle, XCircle, ChevronRight, RefreshCw, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { formatMoney } from '@/lib/currency';
@@ -66,6 +76,8 @@ const MyClasses: React.FC<MyClassesProps> = ({ preview = false, onViewAll }) => 
   const [loading, setLoading] = useState(false);
   const [view, setView] = useState<ViewId>('upcoming');
   const [showAll, setShowAll] = useState(false);
+  const [toCancel, setToCancel] = useState<Booking | null>(null);
+  const [cancelling, setCancelling] = useState(false);
   const { toast } = useToast();
 
   const fetchBookings = useCallback(async () => {
@@ -116,6 +128,35 @@ const MyClasses: React.FC<MyClassesProps> = ({ preview = false, onViewAll }) => 
     window.open(link, '_blank');
   };
 
+  const handleCancel = async () => {
+    if (!toCancel) return;
+    setCancelling(true);
+    try {
+      const res = await fetch(`/api/bookings/${toCancel.id}/cancel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Failed to cancel the class');
+
+      toast({
+        title: 'Class cancelled',
+        description: data?.refunded
+          ? user?.role === 'STUDENT'
+            ? 'The amount you paid is back in your wallet.'
+            : "The student has been refunded to their wallet."
+          : 'The time slot is free again.',
+      });
+      setToCancel(null);
+      fetchBookings();
+    } catch (err: any) {
+      toast({ title: "Couldn't cancel", description: err?.message || 'Try again', variant: 'destructive' });
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   const statusClasses = (status: string) => {
     switch ((status || '').toUpperCase()) {
       case 'COMPLETED': return 'bg-success/10 text-success';
@@ -162,6 +203,16 @@ const MyClasses: React.FC<MyClassesProps> = ({ preview = false, onViewAll }) => 
             {isFuture && b.googleMeetLink && (
               <Button size="sm" variant="hero" className="h-8" onClick={() => handleJoin(b.googleMeetLink)}>
                 <Video className="h-3.5 w-3.5" /> Join
+              </Button>
+            )}
+            {isFuture && !preview && ['CONFIRMED', 'PAYMENT_COMPLETED', 'PENDING_PAYMENT'].includes((b.status || '').toUpperCase()) && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-8 text-destructive hover:text-destructive"
+                onClick={() => setToCancel(b)}
+              >
+                <XCircle className="h-3.5 w-3.5" /> Cancel
               </Button>
             )}
           </div>
@@ -233,6 +284,30 @@ const MyClasses: React.FC<MyClassesProps> = ({ preview = false, onViewAll }) => 
           <div className="space-y-3">{visible.map(renderBookingCard)}</div>
         )}
       </div>
+
+      <AlertDialog open={!!toCancel} onOpenChange={(o) => { if (!o && !cancelling) setToCancel(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel this class?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The time slot is freed up straight away
+              {user?.role === 'STUDENT'
+                ? ", and anything you've already paid goes back to your wallet, ready to spend on another class."
+                : ', and anything the student paid is refunded to their wallet.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={cancelling}>Keep the class</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleCancel(); }}
+              disabled={cancelling}
+            >
+              {cancelling && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Cancel class
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 };

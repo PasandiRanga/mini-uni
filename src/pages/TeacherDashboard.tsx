@@ -38,6 +38,7 @@ import TeacherStudents from "@/components/teacher/TeacherStudents";
 import ExploreContent from "@/components/explore/ExploreContent";
 import TeacherPosts from "@/components/teacher/TeacherPosts";
 import TeacherInquiries from "@/components/teacher/TeacherInquiries";
+import TeacherWallet from "@/components/teacher/TeacherWallet";
 
 const greeting = () => {
   const h = new Date().getHours();
@@ -242,6 +243,8 @@ const TeacherDashboard = () => {
             <TeacherInquiries />
           ) : activeTab === "classes" ? (
             <MyClasses />
+          ) : activeTab === "wallet" ? (
+            <TeacherWallet onOpenSettings={() => goTab("settings")} />
           ) : (
           <>
           <EmailVerificationBanner />
@@ -414,7 +417,12 @@ const TeacherDashboard = () => {
                 </div>
               </div>
               <div className="flex w-full flex-col gap-3 lg:w-72">
-                <Button className="w-full bg-background text-foreground hover:bg-background/90">Withdraw Funds</Button>
+                <Button
+                  className="w-full bg-background text-foreground hover:bg-background/90"
+                  onClick={() => goTab("wallet")}
+                >
+                  Withdraw Funds
+                </Button>
                 <div className="rounded-2xl border border-background/15 bg-background/5 p-4 text-sm">
                   <p className="font-medium text-background/90">Recent transactions</p>
                   <div className="mt-3 space-y-2.5">

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getSessionFromRequest } from "@/lib/auth";
-import { releaseEscrow } from "@/lib/wallet";
+import { releaseBookingEscrow } from "@/lib/wallet";
 
 export async function POST(
     request: Request,
@@ -46,11 +46,9 @@ export async function POST(
                 },
             });
 
-            await releaseEscrow(
-                completedBooking.teacherId,
-                completedBooking.fee,
-                completedBooking.id
-            );
+            // Both sides agree the class happened — clear the escrow now rather
+            // than waiting for the slot's end time to pass.
+            await releaseBookingEscrow(completedBooking.id);
 
             return NextResponse.json(completedBooking);
         }

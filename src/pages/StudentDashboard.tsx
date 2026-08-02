@@ -13,6 +13,7 @@ import { CurrencySettings } from "@/components/settings/CurrencySettings";
 import { formatMoney } from "@/lib/currency";
 import ScheduleCalendar from "@/components/calendar/ScheduleCalendar";
 import MiniCalendar from "@/components/calendar/MiniCalendar";
+import StudentWallet from "@/components/student/StudentWallet";
 import DashboardLayout, { useDashboard } from '@/components/layout/DashboardLayout';
 
 import { useStudentDashboard } from "@/hooks/useStudentDashboard";
@@ -41,6 +42,8 @@ const StudentDashboard = () => {
     if (activeTab === 'explore') return <ExploreContent />;
 
     if (activeTab === 'schedule') return <ScheduleCalendar />;
+
+    if (activeTab === 'wallet') return <StudentWallet />;
 
     if (activeTab === 'classes') {
       return (
