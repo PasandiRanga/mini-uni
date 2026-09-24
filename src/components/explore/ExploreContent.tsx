@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,7 @@ import { useCreatePostModal } from "@/contexts/CreatePostModalContext";
 import { applyPostChange, onPostChanged } from "@/lib/postEvents";
 import { formatMoney } from "@/lib/currency";
 import { CLASS_TYPE_LABELS, slotDurationLabel, slotDateLabel, isPostExpired, PostDescription } from "@/components/post/postCardBits";
+import BookClassModal, { type BookablePost } from "@/components/post/BookClassModal";
 import {
   Search,
   SlidersHorizontal,
@@ -60,26 +61,25 @@ const subjects = [
 const ExploreContent: React.FC = () => {
   const [posts, setPosts] = useState<PostItem[]>([]);
   const [isLoadingPosts, setIsLoadingPosts] = useState(false);
+  const [bookPost, setBookPost] = useState<BookablePost | null>(null);
+
+  const fetchPosts = useCallback(async () => {
+    setIsLoadingPosts(true);
+    try {
+      const res = await fetch(`/api/posts`);
+      if (res.ok) setPosts(await res.json());
+    } catch (err) {
+      console.error("Error fetching posts", err);
+    } finally {
+      setIsLoadingPosts(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchPosts = async () => {
-      setIsLoadingPosts(true);
-      try {
-        const res = await fetch(`/api/posts`);
-        if (res.ok) {
-          const data = await res.json();
-          setPosts(data);
-        }
-      } catch (err) {
-        console.error("Error fetching posts", err);
-      } finally {
-        setIsLoadingPosts(false);
-      }
-    };
     fetchPosts();
     // Reflect create/edit/delete instantly.
     return onPostChanged((c) => setPosts((prev) => applyPostChange(prev, c)));
-  }, []);
+  }, [fetchPosts]);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("All Subjects");
@@ -378,7 +378,13 @@ const ExploreContent: React.FC = () => {
                                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => { if (isGuest) { toast({ title: 'Sign in to save', description: 'Log in to save posts.' }); router.push('/auth'); return; } }}><Heart className="h-4 w-4" /></Button>
                                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0"><Share2 className="h-4 w-4" /></Button>
                               </div>
-                              {isTeacherPost && <Button size="sm" variant="hero" onClick={() => router.push(`/teachers/${post.user?.id}`)}>Contact Teacher</Button>}
+                              {isTeacherPost && (
+                                user?.role?.toUpperCase() === 'STUDENT' && user.id !== post.user?.id ? (
+                                  <Button size="sm" variant="hero" onClick={() => setBookPost(post as unknown as BookablePost)}>Book a class</Button>
+                                ) : (
+                                  <Button size="sm" variant="hero" onClick={() => router.push(`/teachers/${post.user?.id}`)}>Contact Teacher</Button>
+                                )
+                              )}
                             </div>
                           </div>
                         </div>
@@ -444,8 +450,8 @@ const ExploreContent: React.FC = () => {
                           if (isOwner) return <span className="text-[10px] uppercase font-bold text-muted-foreground">My Post</span>;
 
                           if (userRole === 'STUDENT' && postType === 'TEACHER_OFFERING') return (
-                            <Button size="sm" variant="hero" className="h-8 px-3 text-xs" onClick={() => router.push(`/teachers/${post.user?.id}`)}>
-                              Contact
+                            <Button size="sm" variant="hero" className="h-8 px-3 text-xs" onClick={() => setBookPost(post as unknown as BookablePost)}>
+                              Book a class
                             </Button>
                           );
 
@@ -466,6 +472,12 @@ const ExploreContent: React.FC = () => {
           </div>
         </div>
       </div>
+      <BookClassModal
+        post={bookPost}
+        open={!!bookPost}
+        onOpenChange={(o) => !o && setBookPost(null)}
+        onBooked={fetchPosts}
+      />
     </div>
   );
 };

@@ -1,5 +1,6 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, WithdrawalStatus } from "@prisma/client";
 import prisma from "./prisma";
+import { createNotification } from "./notifications";
 
 /**
  * Escrow model
@@ -251,6 +252,125 @@ export async function cancelWithdrawal(userId: string, withdrawalId: string) {
   });
 }
 
+/* -------------------------------------------------------------------------- *
+ * Admin — withdrawal payouts
+ *
+ * A teacher requests a withdrawal (see requestWithdrawal above), which debits
+ * their released balance immediately and creates a PENDING request. An admin
+ * then works the queue: PROCESSING while the bank transfer is in flight, PAID
+ * once the money is sent, or REJECTED — which puts the debited money back.
+ * -------------------------------------------------------------------------- */
+
+/** Withdrawal requests awaiting admin action, newest first, with the teacher attached. */
+export async function getWithdrawalsForAdmin(status?: string) {
+  const where =
+    status && status !== "ALL"
+      ? { status: status as WithdrawalStatus }
+      : {};
+
+  const withdrawals = await prisma.withdrawal.findMany({
+    where,
+    orderBy: { createdAt: "desc" },
+    take: 100,
+    include: {
+      wallet: {
+        select: {
+          user: { select: { id: true, firstName: true, lastName: true, email: true } },
+        },
+      },
+    },
+  });
+
+  return withdrawals.map((w) => ({
+    id: w.id,
+    amount: w.amount,
+    currency: w.currency,
+    status: w.status,
+    bankAccountName: w.bankAccountName,
+    bankAccountNumber: w.bankAccountNumber,
+    bankName: w.bankName,
+    bankBranch: w.bankBranch,
+    reference: w.reference,
+    note: w.note,
+    processedAt: w.processedAt,
+    createdAt: w.createdAt,
+    teacher: w.wallet?.user
+      ? {
+          id: w.wallet.user.id,
+          name: `${w.wallet.user.firstName ?? ""} ${w.wallet.user.lastName ?? ""}`.trim(),
+          email: w.wallet.user.email,
+        }
+      : null,
+  }));
+}
+
+/**
+ * Moves a still-open withdrawal to PROCESSING — the payout has been started at
+ * the bank but the money hasn't landed yet. Only a PENDING request can enter
+ * processing.
+ */
+export async function markWithdrawalProcessing(withdrawalId: string) {
+  const updated = await prisma.withdrawal.updateMany({
+    where: { id: withdrawalId, status: "PENDING" },
+    data: { status: "PROCESSING" },
+  });
+  if (updated.count === 0) throw new Error("NOT_ACTIONABLE");
+  return prisma.withdrawal.findUniqueOrThrow({ where: { id: withdrawalId } });
+}
+
+/**
+ * Marks a withdrawal PAID and settles its wallet entry. The money already left
+ * the released balance when the request was made, so this only records the
+ * payout — no balance change.
+ */
+export async function markWithdrawalPaid(withdrawalId: string, reference?: string) {
+  return prisma.$transaction(async (tx) => {
+    const claimed = await tx.withdrawal.updateMany({
+      where: { id: withdrawalId, status: { in: ["PENDING", "PROCESSING"] } },
+      data: { status: "PAID", processedAt: new Date(), reference: reference || undefined },
+    });
+    if (claimed.count === 0) throw new Error("NOT_ACTIONABLE");
+
+    const withdrawal = await tx.withdrawal.findUniqueOrThrow({ where: { id: withdrawalId } });
+
+    await tx.walletTransaction.update({
+      where: { id: withdrawal.transactionId },
+      data: { status: "COMPLETED", description: "Withdrawal paid out", reference: reference || undefined },
+    });
+
+    return withdrawal;
+  });
+}
+
+/**
+ * Rejects an open withdrawal and returns the money to the teacher's released
+ * balance — the mirror of cancelWithdrawal, but admin-initiated and with a
+ * reason recorded.
+ */
+export async function rejectWithdrawal(withdrawalId: string, note: string) {
+  return prisma.$transaction(async (tx) => {
+    const claimed = await tx.withdrawal.updateMany({
+      where: { id: withdrawalId, status: { in: ["PENDING", "PROCESSING"] } },
+      data: { status: "REJECTED", processedAt: new Date(), note },
+    });
+    if (claimed.count === 0) throw new Error("NOT_ACTIONABLE");
+
+    const withdrawal = await tx.withdrawal.findUniqueOrThrow({ where: { id: withdrawalId } });
+
+    await tx.walletTransaction.update({
+      where: { id: withdrawal.transactionId },
+      data: { status: "FAILED", description: "Withdrawal rejected — amount returned" },
+    });
+
+    await tx.wallet.update({
+      where: { id: withdrawal.walletId },
+      data: { releasedBalance: { increment: withdrawal.amount } },
+    });
+
+    return withdrawal;
+  });
+}
+
 /**
  * Everything the wallet screen needs: balances, recent activity, money still on
  * hold, withdrawal history, and whether payouts are set up.
@@ -478,6 +598,21 @@ export async function payBookingFromWallet(userId: string, bookingId: string) {
 
   // Hold the money in the teacher's wallet until the class is over.
   await creditBookingToWallet(booking.id);
+
+  await createNotification({
+    userId: booking.studentId,
+    type: "PAYMENT_SUCCESS",
+    title: "Payment successful",
+    message: "Your wallet paid for the class and it's now confirmed.",
+    metadata: { bookingId: booking.id },
+  });
+  await createNotification({
+    userId: booking.teacherId,
+    type: "BOOKING_CONFIRMED",
+    title: "New booking confirmed",
+    message: "A student paid for a class — it's now confirmed on your schedule.",
+    metadata: { bookingId: booking.id },
+  });
 
   return { paid: true, amount, currency };
 }

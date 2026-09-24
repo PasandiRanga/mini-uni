@@ -14,7 +14,6 @@ import {
   Calendar,
   Wallet,
   Settings,
-  Bell,
   LogOut,
   Plus,
   Clock,
@@ -39,6 +38,7 @@ import ExploreContent from "@/components/explore/ExploreContent";
 import TeacherPosts from "@/components/teacher/TeacherPosts";
 import TeacherInquiries from "@/components/teacher/TeacherInquiries";
 import TeacherWallet from "@/components/teacher/TeacherWallet";
+import NotificationBell from "@/components/notifications/NotificationBell";
 
 const greeting = () => {
   const h = new Date().getHours();
@@ -211,14 +211,7 @@ const TeacherDashboard = () => {
               </h1>
             </div>
             <div className="flex items-center gap-2.5">
-              <Button variant="ghost" size="icon" className="relative rounded-full border border-border/70 bg-card">
-                <Bell className="h-[18px] w-[18px]" />
-                {unreadCount > 0 && (
-                  <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
-                    {unreadCount}
-                  </span>
-                )}
-              </Button>
+              <NotificationBell />
               <Button variant="hero" className="gap-2" onClick={() => openCreatePost()} disabled={verification?.verificationStatus !== 'APPROVED'}>
                 <Plus className="h-4 w-4" />
                 <span className="hidden sm:inline">Create Post</span>

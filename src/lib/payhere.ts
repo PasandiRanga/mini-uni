@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { Prisma } from "@prisma/client";
 import prisma from "./prisma";
 import { completeTopUp, creditBookingToWallet, failTopUp } from "./wallet";
+import { createNotification } from "./notifications";
 
 /**
  * PayHere
@@ -210,9 +211,26 @@ export async function applyPayHereResult(params: {
         metadata: { gateway: "PAYHERE", method: params.method ?? null },
       },
     });
-    await prisma.booking.update({
+    const booking = await prisma.booking.update({
       where: { id: payment.bookingId },
       data: { status: "CONFIRMED" },
+    });
+
+    // First-time completion only (guarded by the status check above), so a
+    // repeated gateway notification won't re-notify.
+    await createNotification({
+      userId: booking.studentId,
+      type: "PAYMENT_SUCCESS",
+      title: "Payment successful",
+      message: "Your payment went through and your class is confirmed.",
+      metadata: { bookingId: booking.id },
+    });
+    await createNotification({
+      userId: booking.teacherId,
+      type: "BOOKING_CONFIRMED",
+      title: "New booking confirmed",
+      message: "A student paid for a class — it's now confirmed on your schedule.",
+      metadata: { bookingId: booking.id },
     });
   }
 

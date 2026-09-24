@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getSessionFromRequest } from "@/lib/auth";
 import { refundBookingToStudent } from "@/lib/wallet";
+import { createNotification } from "@/lib/notifications";
 
 /**
  * Cancels a booking. Either side can cancel a class that hasn't happened yet;
@@ -56,6 +57,18 @@ export async function POST(
         await prisma.timeSlot.update({
             where: { id: booking.timeSlotId },
             data: { status: "AVAILABLE" },
+        });
+
+        // Notify whoever didn't press cancel.
+        const otherPartyId = userId === booking.studentId ? booking.teacherId : booking.studentId;
+        await createNotification({
+            userId: otherPartyId,
+            type: "BOOKING_CANCELLED",
+            title: "Class cancelled",
+            message: reason
+                ? `A booked class was cancelled: ${reason}`
+                : "A booked class was cancelled.",
+            metadata: { bookingId, refunded: refund.refunded },
         });
 
         return NextResponse.json({ ...cancelled, refunded: refund.refunded });
