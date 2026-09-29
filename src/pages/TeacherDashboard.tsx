@@ -19,6 +19,7 @@ import {
   Clock,
   Users,
   DollarSign,
+  CheckCircle2,
   ChevronRight,
   ArrowUpRight,
   Search,
@@ -53,8 +54,16 @@ const todayLabel = () =>
 const TeacherDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [moreOpen, setMoreOpen] = useState(false);
+  // Approval is a one-time confirmation — remember once it's been dismissed.
+  const [approvedDismissed, setApprovedDismissed] = useState<boolean>(() => {
+    try {
+      return typeof window !== "undefined" && localStorage.getItem("miniuni:approvedBannerDismissed") === "1";
+    } catch {
+      return false;
+    }
+  });
   const [verification, setVerification] = useState<any>({ canStartClasses: false, progress: 0 });
-  const [completion, setCompletion] = useState<{ percent: number; verificationStatus?: string } | null>(null);
+  const [completion, setCompletion] = useState<{ percent: number; verificationStatus?: string; rejectionReason?: string | null } | null>(null);
   const [bookings, setBookings] = useState<any[]>([]);
   const [inquiries, setInquiries] = useState<any[]>([]);
   const [wallet, setWallet] = useState<any>(null);
@@ -303,12 +312,45 @@ const TeacherDashboard = () => {
                   <p className="mt-0.5 text-sm text-muted-foreground">
                     Your profile couldn&apos;t be approved. Please review your details and documents, then resubmit.
                   </p>
+                  {completion.rejectionReason && (
+                    <p className="mt-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                      <span className="font-medium">Reason:</span> {completion.rejectionReason}
+                    </p>
+                  )}
                 </div>
                 <span className="inline-flex items-center gap-1 text-sm font-medium text-destructive">
                   Review profile <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
                 </span>
               </div>
             </button>
+          )}
+
+          {/* Approved — one-time confirmation the teacher can dismiss */}
+          {completion && completion.verificationStatus === 'APPROVED' && !approvedDismissed && (
+            <div className="mb-8 overflow-hidden rounded-3xl border border-primary/40 bg-primary/[0.07] p-5 sm:p-6">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+                  <CheckCircle2 className="h-[18px] w-[18px]" strokeWidth={1.75} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium">
+                    You&apos;re <span className="font-serif italic">verified</span> — you can now create classes.
+                  </p>
+                  <p className="mt-0.5 text-sm text-muted-foreground">
+                    Your profile has been approved. Post a class to start getting booked.
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setApprovedDismissed(true);
+                    try { localStorage.setItem("miniuni:approvedBannerDismissed", "1"); } catch { /* ignore */ }
+                  }}
+                  className="shrink-0 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
           )}
 
           {/* Separated stat tiles */}

@@ -13,6 +13,7 @@ import {
   BookOpen,
   Wallet,
   Settings,
+  MessageSquare,
   LogOut,
   Plus,
   MoreHorizontal,
@@ -70,6 +71,7 @@ const DashboardLayout: React.FC<PropsWithChildren> = ({ children }) => {
     { id: "explore", label: "Explore", icon: Search },
     { id: "schedule", label: "Schedule", icon: Calendar },
     { id: "classes", label: "Classes", icon: BookOpen },
+    { id: "inquiries", label: "Inquiries", icon: MessageSquare },
     { id: "wallet", label: "Wallet", icon: Wallet },
     { id: "settings", label: "Settings", icon: Settings },
   ];

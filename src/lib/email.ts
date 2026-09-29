@@ -57,6 +57,43 @@ export async function sendEmail({ to, subject, html, text }: SendEmailArgs): Pro
   return true;
 }
 
+/** Builds the teacher verification-decision email (approved or rejected). */
+export function buildVerificationStatusEmail(
+  status: "APPROVED" | "REJECTED",
+  firstName?: string,
+  reason?: string
+) {
+  const greeting = firstName ? `Hi ${firstName},` : "Hi there,";
+
+  if (status === "APPROVED") {
+    return {
+      subject: "You're verified on MiniUni 🎉",
+      text: `${greeting}\n\nGreat news — your teacher profile has been approved. You can now post classes and start getting booked.\n\nHead to your dashboard to create your first class.`,
+      html: `
+        <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; color: #1a1a24;">
+          <h1 style="font-size: 20px; margin: 0 0 16px;">You're verified 🎉</h1>
+          <p style="color: #55555f; line-height: 1.6; margin: 0 0 16px;">${greeting} great news — your teacher profile has been <strong>approved</strong>.</p>
+          <p style="color: #55555f; line-height: 1.6; margin: 0 0 24px;">You can now post classes and start getting booked. Head to your dashboard to create your first class.</p>
+        </div>
+      `,
+    };
+  }
+
+  const reasonLine = reason ? ` Reason: ${reason}` : "";
+  return {
+    subject: "Your MiniUni verification needs attention",
+    text: `${greeting}\n\nYour teacher profile wasn't approved yet.${reasonLine}\n\nPlease review your details and documents, then resubmit from your dashboard.`,
+    html: `
+      <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; color: #1a1a24;">
+        <h1 style="font-size: 20px; margin: 0 0 16px;">Verification needs attention</h1>
+        <p style="color: #55555f; line-height: 1.6; margin: 0 0 16px;">${greeting} your teacher profile wasn't approved yet.</p>
+        ${reason ? `<div style="background: #fbeaea; border-radius: 12px; padding: 16px; margin-bottom: 20px; color: #7a2020;"><strong>Reason:</strong> ${reason}</div>` : ""}
+        <p style="color: #55555f; line-height: 1.6; margin: 0;">Please review your details and documents, then resubmit from your dashboard.</p>
+      </div>
+    `,
+  };
+}
+
 /** Builds the OTP verification email content. */
 export function buildOtpEmail(code: string, firstName?: string) {
   const greeting = firstName ? `Hi ${firstName},` : "Hi there,";

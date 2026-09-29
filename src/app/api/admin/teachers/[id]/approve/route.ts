@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getAdminSession } from "@/lib/adminAuth";
 import { createNotification } from "@/lib/notifications";
+import { sendEmail, buildVerificationStatusEmail } from "@/lib/email";
 
 /**
  * Approves a teacher: marks the profile APPROVED and stamps every uploaded
@@ -18,7 +19,12 @@ export async function POST(request: Request, { params }: { params: { id: string 
   try {
     const profile = await prisma.teacherProfile.findUnique({
       where: { userId: params.id },
-      select: { id: true, userId: true, verificationStatus: true },
+      select: {
+        id: true,
+        userId: true,
+        verificationStatus: true,
+        user: { select: { email: true, firstName: true } },
+      },
     });
 
     if (!profile) {
@@ -51,6 +57,14 @@ export async function POST(request: Request, { params }: { params: { id: string 
         "Your teacher profile has been approved. You can now post classes and start getting booked.",
       metadata: { status: "APPROVED" },
     });
+
+    // Email too — best-effort, never block the decision on it.
+    if (profile.user?.email) {
+      const mail = buildVerificationStatusEmail("APPROVED", profile.user.firstName);
+      sendEmail({ to: profile.user.email, ...mail }).catch((e) =>
+        console.error("Failed to send approval email:", e)
+      );
+    }
 
     return NextResponse.json({ ok: true, verificationStatus: "APPROVED" });
   } catch (error) {

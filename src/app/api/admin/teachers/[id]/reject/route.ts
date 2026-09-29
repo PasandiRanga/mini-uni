@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getAdminSession } from "@/lib/adminAuth";
 import { createNotification } from "@/lib/notifications";
+import { sendEmail, buildVerificationStatusEmail } from "@/lib/email";
 
 /**
  * Rejects a teacher with a reason. Marks the profile REJECTED and records the
@@ -26,7 +27,11 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
     const profile = await prisma.teacherProfile.findUnique({
       where: { userId: params.id },
-      select: { id: true, userId: true },
+      select: {
+        id: true,
+        userId: true,
+        user: { select: { email: true, firstName: true } },
+      },
     });
 
     if (!profile) {
@@ -58,6 +63,13 @@ export async function POST(request: Request, { params }: { params: { id: string 
       message: `Your teacher profile wasn't approved: ${reason} Please update your details and re-submit.`,
       metadata: { status: "REJECTED", reason },
     });
+
+    if (profile.user?.email) {
+      const mail = buildVerificationStatusEmail("REJECTED", profile.user.firstName, reason);
+      sendEmail({ to: profile.user.email, ...mail }).catch((e) =>
+        console.error("Failed to send rejection email:", e)
+      );
+    }
 
     return NextResponse.json({ ok: true, verificationStatus: "REJECTED" });
   } catch (error) {
