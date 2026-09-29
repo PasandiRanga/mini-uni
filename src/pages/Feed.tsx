@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCreatePostModal } from "@/contexts/CreatePostModalContext";
+import { applyPostChange, onPostChanged } from "@/lib/postEvents";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -77,6 +78,11 @@ const Feed = () => {
     };
 
     fetchPosts();
+    // Reflect create/edit/delete instantly across the feed and My Posts.
+    return onPostChanged((c) => {
+      setPosts((prev) => applyPostChange(prev, c));
+      setMyPosts((prev) => applyPostChange(prev, c));
+    });
   }, []);
 
   useEffect(() => {
@@ -260,7 +266,7 @@ const Feed = () => {
 
         {/* Feed Content */}
         <div className="container mx-auto px-4 py-8">
-          <div className={`${viewType === 'grid' ? 'max-w-6xl' : 'max-w-3xl'} mx-auto transition-all duration-300`}>
+          <div className="max-w-3xl mx-auto transition-all duration-300">
             {/* Post Type Toggle */}
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
               <div className="flex bg-muted rounded-xl p-1 overflow-x-auto w-full md:w-auto">
@@ -329,7 +335,7 @@ const Feed = () => {
             </div>
 
             {/* Posts */}
-            <div className={viewType === 'grid' ? "grid grid-cols-1 md:grid-cols-2 gap-6" : "space-y-4"}>
+            <div className={viewType === 'grid' ? "grid grid-cols-1 gap-6" : "space-y-4"}>
               {filteredPosts.map((post) => {
                 const authorName = post.user ? `${post.user.firstName} ${post.user.lastName}` : 'Member';
                 const subjectTag = post.subject ? [post.subject] : [];

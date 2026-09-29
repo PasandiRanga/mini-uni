@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getSessionFromRequest } from "@/lib/auth";
+import { createNotification } from "@/lib/notifications";
 
 export async function POST(request: Request) {
     const session = await getSessionFromRequest(request);
@@ -30,6 +31,15 @@ export async function POST(request: Request) {
                     },
                 }),
             },
+        });
+
+        // Let the post owner know someone reached out.
+        await createNotification({
+            userId: post.userId,
+            type: "INQUIRY_RECEIVED",
+            title: "New inquiry",
+            message: `You have a new inquiry on "${post.title}".`,
+            metadata: { inquiryId: inquiry.id, postId },
         });
 
         return NextResponse.json(inquiry, { status: 201 });

@@ -13,12 +13,13 @@ import {
   BookOpen,
   Wallet,
   Settings,
-  Bell,
+  MessageSquare,
   LogOut,
   Plus,
   MoreHorizontal,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import NotificationBell from "@/components/notifications/NotificationBell";
 
 type DashboardContextType = {
   activeTab: string;
@@ -70,6 +71,7 @@ const DashboardLayout: React.FC<PropsWithChildren> = ({ children }) => {
     { id: "explore", label: "Explore", icon: Search },
     { id: "schedule", label: "Schedule", icon: Calendar },
     { id: "classes", label: "Classes", icon: BookOpen },
+    { id: "inquiries", label: "Inquiries", icon: MessageSquare },
     { id: "wallet", label: "Wallet", icon: Wallet },
     { id: "settings", label: "Settings", icon: Settings },
   ];
@@ -150,10 +152,7 @@ const DashboardLayout: React.FC<PropsWithChildren> = ({ children }) => {
                 </h1>
               </div>
               <div className="flex items-center gap-2.5">
-                <Button variant="ghost" size="icon" className="relative rounded-full border border-border/70 bg-card">
-                  <Bell className="h-[18px] w-[18px]" />
-                  <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-secondary text-[10px] font-semibold text-secondary-foreground">3</span>
-                </Button>
+                <NotificationBell />
                 {user?.role === "STUDENT" && (
                   <Button variant="hero" className="gap-2" asChild>
                     <Link href="/teachers">

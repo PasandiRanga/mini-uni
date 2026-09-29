@@ -14,7 +14,12 @@ const RootRedirect: React.FC = () => {
 
   React.useEffect(() => {
     if (!isLoading && isAuthenticated && user) {
-      const dashboardPath = user.role === 'TEACHER' ? '/teacher/dashboard' : '/student/dashboard';
+      const dashboardPath =
+        user.role === 'TEACHER'
+          ? '/teacher/dashboard'
+          : user.role === 'ADMIN'
+            ? '/admin'
+            : '/student/dashboard';
       router.replace(dashboardPath);
     }
   }, [isAuthenticated, user, isLoading, router]);

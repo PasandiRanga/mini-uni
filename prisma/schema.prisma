@@ -68,10 +68,21 @@ enum PaymentStatus {
 }
 
 enum WalletTransactionType {
-  DEPOSIT
-  WITHDRAWAL
-  RELEASE
-  REFUND
+  DEPOSIT    // teacher: a paid booking lands in escrow
+  WITHDRAWAL // teacher: money requested out to a bank account
+  RELEASE    // teacher: escrow clears into the withdrawable balance
+  REVERSAL   // teacher: escrow taken back when a booking is cancelled
+  TOP_UP     // student: money added to the wallet by card
+  PAYMENT    // student: wallet balance spent on a class
+  REFUND     // student: a cancelled booking's money returned to the wallet
+}
+
+enum WithdrawalStatus {
+  PENDING    // requested by the teacher, awaiting payout
+  PROCESSING // payout initiated
+  PAID       // money sent
+  REJECTED   // refused — amount returned to the wallet
+  CANCELLED  // withdrawn by the teacher — amount returned to the wallet
 }
 
 enum NotificationType {
@@ -327,7 +338,7 @@ model Booking {
   teacher   User      @relation("TeacherBooking", fields: [teacherId], references: [id], onDelete: Cascade)
   timeSlot  TimeSlot  @relation(fields: [timeSlotId], references: [id], onDelete: Cascade)
   payment   Payment?
-  walletTransaction WalletTransaction?
+  walletTransactions WalletTransaction[]
 
   @@index([studentId])
   @@index([teacherId])
@@ -339,7 +350,7 @@ model Booking {
 model Payment {
   id            String        @id @default(cuid())
   bookingId     String        @unique
-  stripePaymentId String?     @unique
+  gatewayPaymentId String?    @unique // PayHere's payment_id, once the payment settles
   amount        Decimal       @db.Decimal(10, 2)
   status        PaymentStatus @default(PENDING)
   currency      String        @default("LKR")
@@ -350,7 +361,7 @@ model Payment {
   booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
   @@index([bookingId])
-  @@index([stripePaymentId])
+  @@index([gatewayPaymentId])
   @@index([status])
   @@map("payments")
 }
@@ -358,14 +369,16 @@ model Payment {
 model Wallet {
   id              String   @id @default(cuid())
   userId          String   @unique
-  pendingBalance  Decimal  @default(0) @db.Decimal(10, 2)
-  releasedBalance Decimal  @default(0) @db.Decimal(10, 2)
-  totalEarnings   Decimal  @default(0) @db.Decimal(10, 2)
+  pendingBalance  Decimal  @default(0) @db.Decimal(10, 2) // teacher: held in escrow until the class is over
+  releasedBalance Decimal  @default(0) @db.Decimal(10, 2) // spendable balance — withdrawable for a teacher, usable at checkout for a student
+  totalEarnings   Decimal  @default(0) @db.Decimal(10, 2) // teacher: lifetime released earnings
+  totalSpent      Decimal  @default(0) @db.Decimal(10, 2) // student: lifetime spent from the wallet on classes
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   transactions WalletTransaction[]
+  withdrawals  Withdrawal[]
 
   @@index([userId])
   @@map("wallets")
@@ -374,22 +387,57 @@ model Wallet {
 model WalletTransaction {
   id            String                @id @default(cuid())
   walletId      String
-  bookingId     String?               @unique
+  bookingId     String?
   type          WalletTransactionType
   amount        Decimal               @db.Decimal(10, 2)
   description   String?               @db.Text
   status        String                @default("PENDING") // PENDING, COMPLETED, FAILED
+  reference     String?               @unique // gateway id for money moving in, e.g. the PayHere payment behind a top-up
   createdAt     DateTime              @default(now())
   updatedAt     DateTime              @updatedAt
 
-  wallet  Wallet   @relation(fields: [walletId], references: [id], onDelete: Cascade)
-  booking Booking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  wallet     Wallet      @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  booking    Booking?    @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  withdrawal Withdrawal?
 
+  // One entry of each kind per booking *per wallet* — this is what makes
+  // crediting, releasing, paying and refunding safe to retry. Scoping it to the
+  // wallet lets both sides of a booking keep their own entries.
+  @@unique([walletId, bookingId, type])
   @@index([walletId])
   @@index([bookingId])
   @@index([type])
   @@index([status])
   @@map("wallet_transactions")
+}
+
+model Withdrawal {
+  id            String           @id @default(cuid())
+  walletId      String
+  transactionId String           @unique // the WITHDRAWAL wallet entry this request debited
+  amount        Decimal          @db.Decimal(10, 2)
+  currency      String           @default("LKR")
+  status        WithdrawalStatus @default(PENDING)
+
+  // Payout destination, snapshotted at request time so later edits to the
+  // teacher's bank details don't rewrite past requests.
+  bankAccountName   String?
+  bankAccountNumber String?
+  bankName          String?
+  bankBranch        String?
+
+  reference   String?   // payout/transfer reference once paid
+  note        String?   @db.Text // rejection reason or admin note
+  processedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  wallet      Wallet            @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  transaction WalletTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  @@index([walletId])
+  @@index([status])
+  @@map("withdrawals")
 }
 
 model Notification {

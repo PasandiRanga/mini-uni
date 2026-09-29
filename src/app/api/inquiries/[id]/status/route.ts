@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getSessionFromRequest } from "@/lib/auth";
+import { createNotification } from "@/lib/notifications";
 
 export async function PATCH(
     request: Request,
@@ -39,6 +40,17 @@ export async function PATCH(
             where: { id: inquiryId },
             data: { status },
         });
+
+        // Tell the sender when the teacher accepts — that's their cue to book.
+        if (status === "ACCEPTED") {
+            await createNotification({
+                userId: inquiry.senderId,
+                type: "SLOT_CONFIRMED",
+                title: "Inquiry accepted",
+                message: `Your inquiry on "${inquiry.post.title}" was accepted. You can now book the class.`,
+                metadata: { inquiryId, postId: inquiry.postId },
+            });
+        }
 
         return NextResponse.json(updated);
     } catch (error: any) {

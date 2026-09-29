@@ -48,7 +48,13 @@ const Auth = () => {
         // to "student" and otherwise sends teachers to the wrong dashboard).
         const loggedInUser = await login(formData.email, formData.password, role.toUpperCase());
         toast({ title: "Welcome back!", description: "Redirecting to your dashboard..." });
-        router.replace(loggedInUser?.role === "TEACHER" ? "/teacher/dashboard" : "/student/dashboard");
+        const dest =
+          loggedInUser?.role === "TEACHER"
+            ? "/teacher/dashboard"
+            : loggedInUser?.role === "ADMIN"
+              ? "/admin"
+              : "/student/dashboard";
+        router.replace(dest);
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);

@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getSessionFromRequest } from "@/lib/auth";
-import { releaseEscrow } from "@/lib/wallet";
+import { releaseBookingEscrow } from "@/lib/wallet";
+import { createNotification } from "@/lib/notifications";
 
 export async function POST(
     request: Request,
@@ -46,11 +47,20 @@ export async function POST(
                 },
             });
 
-            await releaseEscrow(
-                completedBooking.teacherId,
-                completedBooking.fee,
-                completedBooking.id
-            );
+            // Both sides agree the class happened — clear the escrow now rather
+            // than waiting for the slot's end time to pass.
+            await releaseBookingEscrow(completedBooking.id);
+
+            // Let both sides know the class is marked complete.
+            for (const uid of [booking.studentId, booking.teacherId]) {
+                await createNotification({
+                    userId: uid,
+                    type: "CLASS_COMPLETION",
+                    title: "Class completed",
+                    message: "Your class is marked complete. Teacher earnings have been released from escrow.",
+                    metadata: { bookingId },
+                });
+            }
 
             return NextResponse.json(completedBooking);
         }

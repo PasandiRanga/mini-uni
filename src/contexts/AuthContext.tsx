@@ -5,7 +5,7 @@ interface User {
   email: string;
   firstName: string;
   lastName: string;
-  role: 'STUDENT' | 'TEACHER';
+  role: 'STUDENT' | 'TEACHER' | 'ADMIN';
   isActive: boolean;
   emailVerified?: boolean;
   currency?: string;

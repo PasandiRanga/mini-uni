@@ -14,12 +14,12 @@ import {
   Calendar,
   Wallet,
   Settings,
-  Bell,
   LogOut,
   Plus,
   Clock,
   Users,
   DollarSign,
+  CheckCircle2,
   ChevronRight,
   ArrowUpRight,
   Search,
@@ -35,9 +35,11 @@ import TeacherSettings from "@/components/teacher/TeacherSettings";
 import ScheduleCalendar from "@/components/calendar/ScheduleCalendar";
 import MiniCalendar from "@/components/calendar/MiniCalendar";
 import TeacherStudents from "@/components/teacher/TeacherStudents";
-import TeacherExplore from "@/components/teacher/TeacherExplore";
+import ExploreContent from "@/components/explore/ExploreContent";
 import TeacherPosts from "@/components/teacher/TeacherPosts";
 import TeacherInquiries from "@/components/teacher/TeacherInquiries";
+import TeacherWallet from "@/components/teacher/TeacherWallet";
+import NotificationBell from "@/components/notifications/NotificationBell";
 
 const greeting = () => {
   const h = new Date().getHours();
@@ -52,8 +54,16 @@ const todayLabel = () =>
 const TeacherDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [moreOpen, setMoreOpen] = useState(false);
+  // Approval is a one-time confirmation — remember once it's been dismissed.
+  const [approvedDismissed, setApprovedDismissed] = useState<boolean>(() => {
+    try {
+      return typeof window !== "undefined" && localStorage.getItem("miniuni:approvedBannerDismissed") === "1";
+    } catch {
+      return false;
+    }
+  });
   const [verification, setVerification] = useState<any>({ canStartClasses: false, progress: 0 });
-  const [completion, setCompletion] = useState<{ percent: number; verificationStatus?: string } | null>(null);
+  const [completion, setCompletion] = useState<{ percent: number; verificationStatus?: string; rejectionReason?: string | null } | null>(null);
   const [bookings, setBookings] = useState<any[]>([]);
   const [inquiries, setInquiries] = useState<any[]>([]);
   const [wallet, setWallet] = useState<any>(null);
@@ -122,6 +132,7 @@ const TeacherDashboard = () => {
     { id: "explore", label: "Explore", icon: Search },
     { id: "posts", label: "My Posts", icon: FileText },
     { id: "inquiries", label: "Inquiries", icon: MessageSquare },
+    { id: "classes", label: "My Classes", icon: GraduationCap },
     { id: "schedule", label: "Schedule", icon: Calendar },
     { id: "students", label: "Students", icon: Users },
     { id: "wallet", label: "Wallet", icon: Wallet },
@@ -209,14 +220,7 @@ const TeacherDashboard = () => {
               </h1>
             </div>
             <div className="flex items-center gap-2.5">
-              <Button variant="ghost" size="icon" className="relative rounded-full border border-border/70 bg-card">
-                <Bell className="h-[18px] w-[18px]" />
-                {unreadCount > 0 && (
-                  <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
-                    {unreadCount}
-                  </span>
-                )}
-              </Button>
+              <NotificationBell />
               <Button variant="hero" className="gap-2" onClick={() => openCreatePost()} disabled={verification?.verificationStatus !== 'APPROVED'}>
                 <Plus className="h-4 w-4" />
                 <span className="hidden sm:inline">Create Post</span>
@@ -234,11 +238,15 @@ const TeacherDashboard = () => {
           ) : activeTab === "students" ? (
             <TeacherStudents />
           ) : activeTab === "explore" ? (
-            <TeacherExplore />
+            <ExploreContent />
           ) : activeTab === "posts" ? (
             <TeacherPosts />
           ) : activeTab === "inquiries" ? (
             <TeacherInquiries />
+          ) : activeTab === "classes" ? (
+            <MyClasses />
+          ) : activeTab === "wallet" ? (
+            <TeacherWallet onOpenSettings={() => goTab("settings")} />
           ) : (
           <>
           <EmailVerificationBanner />
@@ -304,12 +312,45 @@ const TeacherDashboard = () => {
                   <p className="mt-0.5 text-sm text-muted-foreground">
                     Your profile couldn&apos;t be approved. Please review your details and documents, then resubmit.
                   </p>
+                  {completion.rejectionReason && (
+                    <p className="mt-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                      <span className="font-medium">Reason:</span> {completion.rejectionReason}
+                    </p>
+                  )}
                 </div>
                 <span className="inline-flex items-center gap-1 text-sm font-medium text-destructive">
                   Review profile <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
                 </span>
               </div>
             </button>
+          )}
+
+          {/* Approved — one-time confirmation the teacher can dismiss */}
+          {completion && completion.verificationStatus === 'APPROVED' && !approvedDismissed && (
+            <div className="mb-8 overflow-hidden rounded-3xl border border-primary/40 bg-primary/[0.07] p-5 sm:p-6">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+                  <CheckCircle2 className="h-[18px] w-[18px]" strokeWidth={1.75} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium">
+                    You&apos;re <span className="font-serif italic">verified</span> — you can now create classes.
+                  </p>
+                  <p className="mt-0.5 text-sm text-muted-foreground">
+                    Your profile has been approved. Post a class to start getting booked.
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setApprovedDismissed(true);
+                    try { localStorage.setItem("miniuni:approvedBannerDismissed", "1"); } catch { /* ignore */ }
+                  }}
+                  className="shrink-0 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
           )}
 
           {/* Separated stat tiles */}
@@ -341,9 +382,9 @@ const TeacherDashboard = () => {
           </div>
 
           <div className="grid gap-6 lg:grid-cols-3">
-            {/* Upcoming + Past class tiles (provided by MyClasses) */}
+            {/* Upcoming classes preview — "View all" opens the My Classes tab */}
             <div className="lg:col-span-2">
-              <MyClasses />
+              <MyClasses preview onViewAll={() => goTab("classes")} />
             </div>
 
             {/* Right column: inquiries + mini calendar */}
@@ -411,7 +452,12 @@ const TeacherDashboard = () => {
                 </div>
               </div>
               <div className="flex w-full flex-col gap-3 lg:w-72">
-                <Button className="w-full bg-background text-foreground hover:bg-background/90">Withdraw Funds</Button>
+                <Button
+                  className="w-full bg-background text-foreground hover:bg-background/90"
+                  onClick={() => goTab("wallet")}
+                >
+                  Withdraw Funds
+                </Button>
                 <div className="rounded-2xl border border-background/15 bg-background/5 p-4 text-sm">
                   <p className="font-medium text-background/90">Recent transactions</p>
                   <div className="mt-3 space-y-2.5">

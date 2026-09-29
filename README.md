@@ -15,7 +15,7 @@ A complete, production-ready, role-based web application that connects teachers 
 - **PostgreSQL** database
 - **Prisma** ORM
 - **JWT** authentication
-- **Stripe** for payments
+- **PayHere** for payments
 - **Google Meet API** for meeting links
 - **Redis** for caching and notifications
 
@@ -55,8 +55,8 @@ A complete, production-ready, role-based web application that connects teachers 
 - **Posts**: Students post requests, teachers post offerings
 - **Inquiries**: Private messaging between students and teachers
 - **Booking System**: Time slot selection and confirmation
-- **Payment Escrow**: Secure payment processing through Stripe
-- **Virtual Wallet**: Teacher wallet with pending and released balances
+- **Payment Escrow**: Secure payment processing through PayHere
+- **Virtual Wallet**: Teacher wallet with pending and released balances; student wallet for refunds, top-ups and paying for classes
 - **Google Meet Integration**: Auto-generated meeting links
 - **Location-Based Recommendations**: Prioritize nearby posts
 - **Notifications**: In-app and email notifications
@@ -72,7 +72,7 @@ MiniUni/
 │   │   ├── posts/         # Post management
 │   │   ├── inquiries/     # Inquiry handling
 │   │   ├── bookings/      # Booking management
-│   │   ├── payments/      # Stripe integration
+│   │   ├── payments/      # PayHere integration
 │   │   ├── wallets/       # Wallet management
 │   │   ├── notifications/ # Notification system
 │   │   ├── teachers/      # Teacher-specific features
@@ -150,8 +150,8 @@ The application uses PostgreSQL with Prisma ORM. Key models include:
 - **Inquiry**: Communication between users
 - **TimeSlot**: Available time slots
 - **Booking**: Confirmed class bookings
-- **Payment**: Stripe payment records
-- **Wallet**: Teacher virtual wallet
+- **Payment**: PayHere payment records
+- **Wallet**: Virtual wallet (teacher earnings / student balance)
 - **WalletTransaction**: Transaction history
 - **Notification**: User notifications
 
@@ -182,12 +182,17 @@ The application uses PostgreSQL with Prisma ORM. Key models include:
 - `PUT /api/bookings/:id/confirm` - Confirm completion
 
 ### Payments
-- `POST /api/payments/create-intent` - Create payment intent
-- `POST /api/payments/webhook` - Stripe webhook
+- `POST /api/payments/payhere/checkout` - Start a PayHere checkout for a class
+- `POST /api/payments/payhere/notify` - PayHere server notification (settles the payment)
+- `GET /api/payments/payhere/status/:orderId` - Where a payment has got to
+- `POST /api/payments/wallet` - Pay for a class from the student's wallet balance
 
 ### Wallets
-- `GET /api/wallets/me` - Get wallet
-- `GET /api/wallets/transactions` - Get transactions
+- `GET /api/wallets/me` - Get wallet (teacher earnings view / student balance view)
+- `POST /api/wallets/topup` - Start a PayHere top-up
+- `DELETE /api/wallets/topup/:transactionId` - Drop an abandoned top-up
+- `POST /api/wallets/withdraw` - Request a payout (teachers)
+- `POST /api/wallets/withdrawals/:id/cancel` - Cancel a pending payout
 
 See full API documentation at `/api/docs` when the backend is running.
 
@@ -197,8 +202,9 @@ See full API documentation at `/api/docs` when the backend is running.
 ```env
 DATABASE_URL="postgresql://user:password@localhost:5432/miniuni"
 JWT_SECRET="your-secret-key"
-STRIPE_SECRET_KEY="sk_test_..."
-STRIPE_WEBHOOK_SECRET="whsec_..."
+PAYHERE_MERCHANT_ID="122xxxx"
+PAYHERE_MERCHANT_SECRET="..."
+PAYHERE_SANDBOX="true"
 GOOGLE_CLIENT_ID="..."
 GOOGLE_CLIENT_SECRET="..."
 REDIS_HOST="localhost"
@@ -260,7 +266,7 @@ docker-compose exec backend npm run prisma:migrate:deploy
 - JWT-based authentication
 - Role-based access control (RBAC)
 - Password hashing with bcrypt
-- Stripe secure payment processing
+- PayHere secure payment processing (card details never touch our servers)
 - Input validation with class-validator
 - SQL injection protection via Prisma
 

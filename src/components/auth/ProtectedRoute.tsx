@@ -6,8 +6,12 @@ import { useAuth } from '@/contexts/AuthContext';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRole?: 'STUDENT' | 'TEACHER';
+  requiredRole?: 'STUDENT' | 'TEACHER' | 'ADMIN';
 }
+
+// Where each role belongs when it lands on a page meant for someone else.
+const homeForRole = (role: string) =>
+  role === 'TEACHER' ? '/teacher/dashboard' : role === 'ADMIN' ? '/admin' : '/student/dashboard';
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
@@ -23,7 +27,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       } else if (requiredRole && user.role !== requiredRole) {
         // Wrong role for this page — send them to their own dashboard, not home,
         // so a teacher never lingers on a student page (and vice versa).
-        router.replace(user.role === 'TEACHER' ? '/teacher/dashboard' : '/student/dashboard');
+        router.replace(homeForRole(user.role));
       }
     }
   }, [isLoading, isAuthenticated, user, requiredRole, router]);

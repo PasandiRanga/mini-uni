@@ -1,11 +1,21 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Calendar, Clock, Video, User, CheckCircle, ChevronRight, RefreshCw } from 'lucide-react';
-import Link from 'next/link';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Calendar, Clock, Video, User, CheckCircle, XCircle, ChevronRight, RefreshCw, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { formatMoney } from '@/lib/currency';
+import { slotDurationLabel } from '@/components/post/postCardBits';
 
 interface Booking {
   id: string;
@@ -18,17 +28,56 @@ interface Booking {
   fee?: number;
 }
 
-const PREVIEW_COUNT = 3;
-const UPCOMING_STATUSES = ['CONFIRMED', 'IN_PROGRESS'];
-const PAST_STATUSES = ['COMPLETED', 'CANCELLED'];
+type ViewId = 'upcoming' | 'completed' | 'cancelled';
 
-const MyClasses: React.FC = () => {
+const PREVIEW_COUNT = 3;
+
+const VIEWS: {
+  id: ViewId;
+  label: string;
+  statuses: string[];
+  emptyIcon: typeof Calendar;
+  emptyText: string;
+}[] = [
+  {
+    id: 'upcoming',
+    label: 'Upcoming',
+    statuses: ['CONFIRMED', 'IN_PROGRESS'],
+    emptyIcon: Calendar,
+    emptyText: 'No upcoming classes yet. Confirmed classes appear here.',
+  },
+  {
+    id: 'completed',
+    label: 'Completed',
+    statuses: ['COMPLETED'],
+    emptyIcon: CheckCircle,
+    emptyText: 'No completed classes yet. Finished classes appear here.',
+  },
+  {
+    id: 'cancelled',
+    label: 'Cancelled',
+    statuses: ['CANCELLED'],
+    emptyIcon: XCircle,
+    emptyText: 'No cancelled classes.',
+  },
+];
+
+interface MyClassesProps {
+  /** Compact overview tile: upcoming only, no filters, capped at PREVIEW_COUNT. */
+  preview?: boolean;
+  /** "View all" handler for preview mode — usually switches the dashboard to the classes tab. */
+  onViewAll?: () => void;
+}
+
+const MyClasses: React.FC<MyClassesProps> = ({ preview = false, onViewAll }) => {
   const { user } = useAuth();
   const currency = user?.currency;
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(false);
-  const [showAllUpcoming, setShowAllUpcoming] = useState(false);
-  const [showAllPast, setShowAllPast] = useState(false);
+  const [view, setView] = useState<ViewId>('upcoming');
+  const [showAll, setShowAll] = useState(false);
+  const [toCancel, setToCancel] = useState<Booking | null>(null);
+  const [cancelling, setCancelling] = useState(false);
   const { toast } = useToast();
 
   const fetchBookings = useCallback(async () => {
@@ -59,15 +108,17 @@ const MyClasses: React.FC = () => {
 
   const startMs = (b: Booking) => new Date(b.timeSlot?.startTime || 0).getTime();
 
-  // Upcoming: only active classes, soonest first.
-  const upcoming = bookings
-    .filter((b) => UPCOMING_STATUSES.includes((b.status || '').toUpperCase()))
-    .sort((a, b) => startMs(a) - startMs(b));
+  const countFor = (statuses: string[]) =>
+    bookings.filter((b) => statuses.includes((b.status || '').toUpperCase())).length;
 
-  // Past: finished or cancelled, most recent first.
-  const past = bookings
-    .filter((b) => PAST_STATUSES.includes((b.status || '').toUpperCase()))
-    .sort((a, b) => startMs(b) - startMs(a));
+  const activeView = preview ? VIEWS[0] : VIEWS.find((v) => v.id === view)!;
+
+  // Upcoming reads soonest-first; finished and cancelled read most-recent-first.
+  const items = bookings
+    .filter((b) => activeView.statuses.includes((b.status || '').toUpperCase()))
+    .sort((a, b) => (activeView.id === 'upcoming' ? startMs(a) - startMs(b) : startMs(b) - startMs(a)));
+
+  const visible = showAll && !preview ? items : items.slice(0, PREVIEW_COUNT);
 
   const handleJoin = (link?: string | null) => {
     if (!link) {
@@ -75,6 +126,35 @@ const MyClasses: React.FC = () => {
       return;
     }
     window.open(link, '_blank');
+  };
+
+  const handleCancel = async () => {
+    if (!toCancel) return;
+    setCancelling(true);
+    try {
+      const res = await fetch(`/api/bookings/${toCancel.id}/cancel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Failed to cancel the class');
+
+      toast({
+        title: 'Class cancelled',
+        description: data?.refunded
+          ? user?.role === 'STUDENT'
+            ? 'The amount you paid is back in your wallet.'
+            : "The student has been refunded to their wallet."
+          : 'The time slot is free again.',
+      });
+      setToCancel(null);
+      fetchBookings();
+    } catch (err: any) {
+      toast({ title: "Couldn't cancel", description: err?.message || 'Try again', variant: 'destructive' });
+    } finally {
+      setCancelling(false);
+    }
   };
 
   const statusClasses = (status: string) => {
@@ -89,8 +169,9 @@ const MyClasses: React.FC = () => {
 
   const renderBookingCard = (b: Booking) => {
     const start = b.timeSlot?.startTime ? new Date(b.timeSlot.startTime) : null;
-    const end = b.timeSlot?.endTime ? new Date(b.timeSlot.endTime) : null;
-    const duration = start && end ? `${Math.round((end.getTime() - start.getTime()) / 60000)} min` : '—';
+    const duration = b.timeSlot?.startTime && b.timeSlot?.endTime
+      ? slotDurationLabel([{ startTime: b.timeSlot.startTime, endTime: b.timeSlot.endTime }])
+      : null;
     const otherName = user?.role === 'STUDENT'
       ? `${b.teacher?.firstName || ''} ${b.teacher?.lastName || ''}`.trim()
       : `${b.student?.firstName || ''} ${b.student?.lastName || ''}`.trim();
@@ -112,7 +193,7 @@ const MyClasses: React.FC = () => {
               </p>
               <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{start ? start.toLocaleDateString() : '—'}</span>
-                <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{start ? start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'} · {duration}</span>
+                <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{start ? start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'} · {duration || '—'}</span>
                 {b.fee !== undefined && b.fee !== null && <span className="font-medium text-foreground">{formatMoney(b.fee, currency)}</span>}
               </div>
             </div>
@@ -124,86 +205,110 @@ const MyClasses: React.FC = () => {
                 <Video className="h-3.5 w-3.5" /> Join
               </Button>
             )}
+            {isFuture && !preview && ['CONFIRMED', 'PAYMENT_COMPLETED', 'PENDING_PAYMENT'].includes((b.status || '').toUpperCase()) && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-8 text-destructive hover:text-destructive"
+                onClick={() => setToCancel(b)}
+              >
+                <XCircle className="h-3.5 w-3.5" /> Cancel
+              </Button>
+            )}
           </div>
         </div>
       </div>
     );
   };
 
-  const TileContainer = ({
-    title,
-    accent,
-    items,
-    showAll,
-    onToggle,
-    emptyIcon: EmptyIcon,
-    emptyText,
-  }: {
-    title: string;
-    accent: string;
-    items: Booking[];
-    showAll: boolean;
-    onToggle: () => void;
-    emptyIcon: typeof Calendar;
-    emptyText: string;
-  }) => {
-    const visible = showAll ? items : items.slice(0, PREVIEW_COUNT);
-    return (
-      <section className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
-        <div className="flex items-center justify-between border-b border-border/60 px-6 py-5">
-          <h2 className="text-lg font-semibold">
-            {title} <span className="font-serif font-normal">{accent}</span>
-          </h2>
-          <div className="flex items-center gap-1">
-            <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={fetchBookings} disabled={loading}>
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">Refresh</span>
-            </Button>
-            {items.length > PREVIEW_COUNT && (
-              <Button variant="ghost" size="sm" className="text-primary" onClick={onToggle}>
-                {showAll ? 'Show less' : 'View all'}
-                <ChevronRight className="ml-1 h-4 w-4" />
-              </Button>
-            )}
-          </div>
-        </div>
-        <div className="p-6">
-          {loading && items.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
-          ) : items.length === 0 ? (
-            <div className="py-8 text-center">
-              <EmptyIcon className="mx-auto mb-3 h-10 w-10 text-muted-foreground/60" strokeWidth={1.5} />
-              <p className="text-sm text-muted-foreground">{emptyText}</p>
-            </div>
-          ) : (
-            <div className="space-y-3">{visible.map(renderBookingCard)}</div>
-          )}
-        </div>
-      </section>
-    );
-  };
+  const EmptyIcon = activeView.emptyIcon;
 
   return (
-    <div className="space-y-6">
-      <TileContainer
-        title="Upcoming"
-        accent="classes"
-        items={upcoming}
-        showAll={showAllUpcoming}
-        onToggle={() => setShowAllUpcoming((v) => !v)}
-        emptyIcon={Calendar}
-        emptyText="No upcoming classes yet. Confirmed classes appear here."
-      />
-      <TileContainer
-        title="Past"
-        accent="classes"
-        items={past}
-        showAll={showAllPast}
-        onToggle={() => setShowAllPast((v) => !v)}
-        emptyIcon={CheckCircle}
-        emptyText="No past classes yet. Completed and cancelled classes appear here."
-      />
-    </div>
+    <section className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-6 py-5">
+        <h2 className="text-lg font-semibold">
+          {preview ? 'Upcoming' : 'My'} <span className="font-serif font-normal">classes</span>
+        </h2>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={fetchBookings} disabled={loading}>
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">Refresh</span>
+          </Button>
+          {preview && onViewAll && items.length > 0 && (
+            <Button variant="ghost" size="sm" className="text-primary" onClick={onViewAll}>
+              View all
+              <ChevronRight className="ml-1 h-4 w-4" />
+            </Button>
+          )}
+          {!preview && items.length > PREVIEW_COUNT && (
+            <Button variant="ghost" size="sm" className="text-primary" onClick={() => setShowAll((v) => !v)}>
+              {showAll ? 'Show less' : 'View all'}
+              <ChevronRight className="ml-1 h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Status filters */}
+      {!preview && (
+        <div className="flex flex-wrap gap-1.5 border-b border-border/60 px-6 py-3">
+          {VIEWS.map((v) => {
+            const active = v.id === view;
+            const count = countFor(v.statuses);
+            return (
+              <button
+                key={v.id}
+                onClick={() => { setView(v.id); setShowAll(false); }}
+                className={`flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${active
+                  ? 'bg-primary text-primary-foreground shadow-soft'
+                  : 'text-muted-foreground hover:bg-muted/70 hover:text-foreground'
+                  }`}
+              >
+                {v.label}
+                <span className={`rounded-full px-1.5 text-[11px] ${active ? 'bg-primary-foreground/20' : 'bg-muted'}`}>{count}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      <div className="p-6">
+        {loading && items.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Loading…</p>
+        ) : items.length === 0 ? (
+          <div className="py-8 text-center">
+            <EmptyIcon className="mx-auto mb-3 h-10 w-10 text-muted-foreground/60" strokeWidth={1.5} />
+            <p className="text-sm text-muted-foreground">{activeView.emptyText}</p>
+          </div>
+        ) : (
+          <div className="space-y-3">{visible.map(renderBookingCard)}</div>
+        )}
+      </div>
+
+      <AlertDialog open={!!toCancel} onOpenChange={(o) => { if (!o && !cancelling) setToCancel(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel this class?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The time slot is freed up straight away
+              {user?.role === 'STUDENT'
+                ? ", and anything you've already paid goes back to your wallet, ready to spend on another class."
+                : ', and anything the student paid is refunded to their wallet.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={cancelling}>Keep the class</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleCancel(); }}
+              disabled={cancelling}
+            >
+              {cancelling && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Cancel class
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </section>
   );
 };
 
