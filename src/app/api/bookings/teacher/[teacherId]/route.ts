@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { requireSelfOrAdmin } from "@/lib/adminAuth";
 
 export async function GET(
     request: Request,
     { params }: { params: { teacherId: string } }
 ) {
+    const auth = await requireSelfOrAdmin(request, params.teacherId);
+    if (auth.error) return auth.error;
+
     try {
         const { teacherId } = params;
 

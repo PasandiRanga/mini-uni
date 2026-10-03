@@ -10,7 +10,11 @@ export async function GET(
     try {
         const post = await prisma.post.findUnique({
             where: { id: params.id },
-            include: { timeSlots: slotsWithSeats, user: true },
+            include: {
+                timeSlots: slotsWithSeats,
+                // Public fields only: the full row carries the password and OTP hashes.
+                user: { select: { id: true, firstName: true, lastName: true, role: true } },
+            },
         });
 
         if (!post) {

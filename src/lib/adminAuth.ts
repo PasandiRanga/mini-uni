@@ -1,3 +1,4 @@
+import { NextResponse } from "next/server";
 import { getSessionFromRequest } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
@@ -18,4 +19,19 @@ export async function getAdminSession(request: Request) {
 
   if (!user || !user.isActive || user.role !== "ADMIN") return null;
   return session;
+}
+
+/**
+ * Guards a route that returns one user's private data (`/api/.../[userId]`).
+ * Lets through that user themselves or an admin. Returns the session, or a
+ * 401/403 response to send back as-is.
+ */
+export async function requireSelfOrAdmin(request: Request, userId: string) {
+  const session = await getSessionFromRequest(request);
+  if (!session || !session.sub) {
+    return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
+  }
+  if (session.sub === userId) return { session };
+  if (await getAdminSession(request)) return { session };
+  return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
 }
