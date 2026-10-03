@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { slotsWithSeats } from "@/lib/seats";
 import { getSessionFromRequest } from "@/lib/auth";
 
 export async function GET(
@@ -9,7 +10,7 @@ export async function GET(
     try {
         const post = await prisma.post.findUnique({
             where: { id: params.id },
-            include: { timeSlots: true, user: true },
+            include: { timeSlots: slotsWithSeats, user: true },
         });
 
         if (!post) {
@@ -74,6 +75,11 @@ export async function PUT(
             updateData.ratePerHour = data.ratePerHour != null ? Number(data.ratePerHour) : null;
             updateData.thumbnailUrl = data.thumbnailUrl ?? null;
             updateData.maxStudents = data.maxStudents != null ? Number(data.maxStudents) : null;
+            const offersGroup = Array.isArray(data.classTypes)
+                ? data.classTypes.includes("GROUP")
+                : existing.classTypes.includes("GROUP");
+            updateData.groupRatePerHour = offersGroup && data.groupRatePerHour != null ? Number(data.groupRatePerHour) : null;
+            updateData.groupFee = offersGroup && data.groupFee != null ? Number(data.groupFee) : null;
             if (Array.isArray(data.classTypes)) {
                 const valid = ["INDIVIDUAL", "GROUP", "MASS"];
                 updateData.classTypes = data.classTypes.filter((t: string) => valid.includes(t));
@@ -85,12 +91,16 @@ export async function PUT(
             data: updateData,
         });
 
-        // Replace availability for teacher offerings. Only unbooked (AVAILABLE) slots are
-        // swapped out so existing bookings are preserved.
+        // Replace availability for teacher offerings. Only slots nobody has ever
+        // booked are swapped out: deleting a slot cascades to its bookings, and a
+        // group slot with seats taken is still AVAILABLE while it has room.
         if (existing.type === "TEACHER_OFFERING" && Array.isArray(data.availabilitySlots)) {
-            await prisma.timeSlot.deleteMany({ where: { postId, status: "AVAILABLE" } });
+            await prisma.timeSlot.deleteMany({ where: { postId, status: "AVAILABLE", bookings: { none: {} } } });
+            const kept = await prisma.timeSlot.findMany({ where: { postId }, select: { startTime: true, endTime: true } });
+            const isKept = (start: Date, end: Date) =>
+                kept.some((k) => k.startTime.getTime() === start.getTime() && k.endTime.getTime() === end.getTime());
             for (const slot of data.availabilitySlots) {
-                if (slot.start && slot.end) {
+                if (slot.start && slot.end && !isKept(new Date(slot.start), new Date(slot.end))) {
                     await prisma.timeSlot.create({
                         data: { postId, startTime: new Date(slot.start), endTime: new Date(slot.end) },
                     });

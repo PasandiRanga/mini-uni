@@ -8,19 +8,25 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { formatMoney } from "@/lib/currency";
-import { CalendarClock, Wallet, ShieldAlert, Loader2, Check } from "lucide-react";
+import { CalendarClock, Wallet, ShieldAlert, Loader2, Check, User, Users } from "lucide-react";
 
 interface Slot {
   id: string;
   startTime: string;
   endTime: string;
   status?: string;
+  bookedAs?: ClassType | null;
+  _count?: { bookings?: number }; // seats already taken
 }
+type ClassType = "INDIVIDUAL" | "GROUP";
 export interface BookablePost {
   id: string;
   title?: string;
   subject?: string;
-  fee?: number;
+  fee?: number | string;
+  groupFee?: number | string | null;
+  maxStudents?: number | null;
+  classTypes?: string[];
   currency?: string;
   user?: { id?: string; firstName?: string; lastName?: string };
   timeSlots?: Slot[];
@@ -33,36 +39,65 @@ interface BookClassModalProps {
   onBooked?: () => void;
 }
 
+const TYPE_OPTIONS: { id: ClassType; label: string; hint: string; icon: typeof User }[] = [
+  { id: "INDIVIDUAL", label: "Individual", hint: "Just you and the teacher", icon: User },
+  { id: "GROUP", label: "Group", hint: "Share the class with other students", icon: Users },
+];
+
+const seatsTaken = (s: Slot) => s._count?.bookings ?? 0;
+
 const BookClassModal = ({ post, open, onOpenChange, onBooked }: BookClassModalProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const currency = post?.currency || user?.currency;
   const emailVerified = Boolean(user?.emailVerified);
 
+  // Types the student can pick from (Mass isn't bookable seat-by-seat yet).
+  const offered = useMemo<ClassType[]>(() => {
+    const types = (post?.classTypes || []).filter((t): t is ClassType => t === "INDIVIDUAL" || t === "GROUP");
+    return types.length ? types : ["INDIVIDUAL"];
+  }, [post]);
+  const [classType, setClassType] = useState<ClassType>("INDIVIDUAL");
+  const capacity = Math.max(post?.maxStudents ?? 0, 2);
+
   const [slotId, setSlotId] = useState<string | null>(null);
   const [balance, setBalance] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
 
-  // Available future slots only.
+  // Future slots that can still take this type: an individual class needs an
+  // empty slot; a group seat needs a slot that is empty or already a group
+  // with room left.
   const slots = useMemo(() => {
     const now = Date.now();
     return (post?.timeSlots || [])
       .filter((s) => (s.status ? s.status === "AVAILABLE" : true) && new Date(s.startTime).getTime() > now)
+      .filter((s) => {
+        const taken = seatsTaken(s);
+        if (classType === "INDIVIDUAL") return taken === 0;
+        return (taken === 0 || s.bookedAs === "GROUP") && taken < capacity;
+      })
       .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
-  }, [post]);
+  }, [post, classType, capacity]);
+
+  useEffect(() => {
+    if (open) setClassType(offered[0]);
+  }, [open, offered]);
+
+  useEffect(() => {
+    if (open) setSlotId(slots[0]?.id ?? null);
+  }, [open, slots]);
 
   useEffect(() => {
     if (!open) return;
-    setSlotId(slots[0]?.id ?? null);
     fetch("/api/wallets/me")
       .then((r) => (r.ok ? r.json() : null))
       .then((w) => w && setBalance(Number(w.releasedBalance ?? 0)))
       .catch(() => setBalance(null));
-  }, [open, slots]);
+  }, [open]);
 
   if (!post) return null;
 
-  const fee = Number(post.fee ?? 0);
+  const fee = Number((classType === "GROUP" ? post.groupFee ?? post.fee : post.fee) ?? 0);
   const teacher = `${post.user?.firstName || ""} ${post.user?.lastName || ""}`.trim() || "Teacher";
   const insufficient = balance !== null && balance < fee;
   const shortfall = insufficient ? fee - (balance ?? 0) : 0;
@@ -75,7 +110,7 @@ const BookClassModal = ({ post, open, onOpenChange, onBooked }: BookClassModalPr
       const res = await fetch("/api/bookings/direct", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ postId: post.id, timeSlotId: slotId }),
+        body: JSON.stringify({ postId: post.id, timeSlotId: slotId, classType }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -115,6 +150,33 @@ const BookClassModal = ({ post, open, onOpenChange, onBooked }: BookClassModalPr
             {post.subject ? ` · ${post.subject}` : ""}
           </p>
 
+          {/* Individual vs group, when the teacher offers both */}
+          {offered.length > 1 && (
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Class type</p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {TYPE_OPTIONS.filter((o) => offered.includes(o.id)).map((o) => {
+                  const active = o.id === classType;
+                  const price = Number((o.id === "GROUP" ? post.groupFee ?? post.fee : post.fee) ?? 0);
+                  return (
+                    <button
+                      key={o.id}
+                      type="button"
+                      onClick={() => setClassType(o.id)}
+                      className={`flex items-start gap-3 rounded-xl border p-3 text-left transition-colors ${active ? "border-primary bg-primary/[0.06]" : "border-border/70 hover:bg-muted/50"}`}
+                    >
+                      <o.icon className={`mt-0.5 h-4 w-4 shrink-0 ${active ? "text-primary" : "text-muted-foreground"}`} />
+                      <span className="min-w-0">
+                        <span className="block text-sm font-medium">{o.label} · {formatMoney(price, currency)}</span>
+                        <span className="block text-xs text-muted-foreground">{o.hint}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Slot selection */}
           <div className="space-y-2">
             <p className="flex items-center gap-1.5 text-sm font-medium"><CalendarClock className="h-4 w-4 text-primary" /> Choose a time</p>
@@ -135,7 +197,12 @@ const BookClassModal = ({ post, open, onOpenChange, onBooked }: BookClassModalPr
                         <span className="font-medium">{format(new Date(s.startTime), "EEE, MMM d")}</span>
                         <span className="text-muted-foreground"> · {format(new Date(s.startTime), "h:mm a")}–{format(new Date(s.endTime), "h:mm a")}</span>
                       </span>
-                      {active && <Check className="h-4 w-4 text-primary" />}
+                      <span className="flex items-center gap-2">
+                        {classType === "GROUP" && (
+                          <span className="text-xs text-muted-foreground">{capacity - seatsTaken(s)} of {capacity} seats left</span>
+                        )}
+                        {active && <Check className="h-4 w-4 text-primary" />}
+                      </span>
                     </button>
                   );
                 })}
@@ -146,7 +213,7 @@ const BookClassModal = ({ post, open, onOpenChange, onBooked }: BookClassModalPr
           {/* Price + wallet */}
           <div className="space-y-1.5 rounded-2xl border border-border/70 bg-muted/30 p-4 text-sm">
             <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Price</span>
+              <span className="text-muted-foreground">Price{offered.length > 1 ? ` (${classType === "GROUP" ? "group seat" : "individual"})` : ""}</span>
               <span className="font-semibold">{formatMoney(fee, currency)}</span>
             </div>
             <div className="flex items-center justify-between">

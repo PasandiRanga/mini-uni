@@ -224,6 +224,8 @@ model Post {
   experience  Int?     // for teacher offerings
   classTypes  ClassType[]                 // INDIVIDUAL | GROUP | MASS (teacher may offer several)
   maxStudents Int?                         // optional cap for GROUP classes
+  groupRatePerHour Decimal? @db.Decimal(10, 2) // per-student hourly rate for GROUP seats
+  groupFee    Decimal? @db.Decimal(10, 2)  // per-student price of one GROUP class (= group rate × duration)
   thumbnailUrl String? @db.Text           // optional class thumbnail (data URL or URL)
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
@@ -302,13 +304,14 @@ model TimeSlot {
   inquiryId   String?
   startTime   DateTime
   endTime     DateTime
-  status      TimeSlotStatus  @default(AVAILABLE)
+  status      TimeSlotStatus  @default(AVAILABLE) // AVAILABLE while it can still take a booking (a seat, for groups)
+  bookedAs    ClassType?      // set by the first booking: an INDIVIDUAL booking takes the whole slot, GROUP bookings share it
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 
-  post    Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
-  inquiry Inquiry? @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
-  booking Booking?
+  post     Post?     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  inquiry  Inquiry?  @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  bookings Booking[]
 
   @@index([postId])
   @@index([inquiryId])
@@ -322,7 +325,8 @@ model Booking {
   inquiryId         String        @unique
   studentId         String
   teacherId         String
-  timeSlotId        String        @unique
+  timeSlotId        String        // several bookings share a GROUP slot, one per student
+  classType         ClassType     @default(INDIVIDUAL)
   status            BookingStatus @default(PENDING_PAYMENT)
   fee               Decimal       @db.Decimal(10, 2)
   googleMeetLink    String?

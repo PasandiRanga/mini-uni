@@ -85,7 +85,7 @@ const MyClasses: React.FC<MyClassesProps> = ({ preview = false, onViewAll }) => 
     setLoading(true);
     try {
       const url = user.role === 'STUDENT'
-        ? `/api/bookings/student/${user.id}/upcoming`
+        ? `/api/bookings/student/${user.id}/upcoming?scope=all`
         : `/api/bookings/teacher/${user.id}`;
 
       const res = await fetch(url, { headers: { 'Content-Type': 'application/json' } });

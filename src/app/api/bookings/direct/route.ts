@@ -2,16 +2,18 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getSessionFromRequest } from "@/lib/auth";
+import { SeatError, bookableClassTypes, claimSeat, feeFor, seatErrorMessage } from "@/lib/seats";
+import type { ClassType } from "@prisma/client";
 
 /**
  * Direct booking of a teacher's class offering (no prior inquiry needed).
  * Creates a synthetic ACCEPTED inquiry (Booking.inquiryId is required), a
- * PENDING_PAYMENT booking, and marks the chosen slot BOOKED. The caller then
- * pays via POST /api/payments/wallet.
+ * PENDING_PAYMENT booking, and claims a seat on the chosen slot. The caller
+ * then pays via POST /api/payments/wallet.
  *
- * Note: one booking per time slot (Booking.timeSlotId is unique), so this
- * covers individual classes. Group/mass multi-student slots need the separate
- * schema rework.
+ * `classType` picks Individual or Group when the post offers both; it defaults
+ * to the only type on offer. An individual booking takes the whole slot, while
+ * group bookings share it up to the post's max students (see lib/seats).
  */
 export async function POST(request: Request) {
   const session = await getSessionFromRequest(request);
@@ -20,7 +22,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { postId, timeSlotId } = await request.json();
+    const { postId, timeSlotId, classType: requestedType } = await request.json();
     if (!postId || !timeSlotId) {
       return NextResponse.json({ error: "postId and timeSlotId are required" }, { status: 400 });
     }
@@ -54,17 +56,19 @@ export async function POST(request: Request) {
     if (slot.status !== "AVAILABLE") {
       return NextResponse.json({ error: "That time slot is no longer available" }, { status: 409 });
     }
+
+    const offered = bookableClassTypes(post);
+    const classType: ClassType = requestedType ?? offered[0];
+    if (!offered.includes(classType)) {
+      return NextResponse.json({ error: "This class isn't offered as that type" }, { status: 400 });
+    }
     if (new Date(slot.startTime).getTime() <= Date.now()) {
       return NextResponse.json({ error: "That time slot has already started" }, { status: 400 });
     }
 
     const booking = await prisma.$transaction(async (tx) => {
-      // Guard against a concurrent booking claiming the slot first.
-      const claimed = await tx.timeSlot.updateMany({
-        where: { id: slot.id, status: "AVAILABLE" },
-        data: { status: "BOOKED" },
-      });
-      if (claimed.count === 0) throw new Error("SLOT_TAKEN");
+      // Locks the slot, so a concurrent booking can't take the same seat.
+      await claimSeat(tx, { slotId: slot.id, studentId: user.id, classType, post });
 
       const inquiry = await tx.inquiry.create({
         data: {
@@ -84,15 +88,16 @@ export async function POST(request: Request) {
           teacherId: post.userId,
           timeSlotId: slot.id,
           status: "PENDING_PAYMENT",
-          fee: post.fee ?? 0,
+          classType,
+          fee: feeFor(post, classType),
         },
       });
     });
 
-    return NextResponse.json({ bookingId: booking.id, fee: booking.fee }, { status: 201 });
+    return NextResponse.json({ bookingId: booking.id, fee: booking.fee, classType }, { status: 201 });
   } catch (error: any) {
-    if (error?.message === "SLOT_TAKEN") {
-      return NextResponse.json({ error: "That time slot was just booked by someone else" }, { status: 409 });
+    if (error instanceof SeatError) {
+      return NextResponse.json({ error: seatErrorMessage(error.message) }, { status: 409 });
     }
     console.error("Error creating direct booking:", error);
     return NextResponse.json({ error: error.message || "Failed to book" }, { status: 400 });

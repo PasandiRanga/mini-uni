@@ -26,6 +26,7 @@ const StudentDashboard = () => {
     enrolledCourses,
     studyHours,
     completedCount,
+    subjectCount,
     recommendations,
     calendarEvents,
     user,
@@ -80,7 +81,7 @@ const StudentDashboard = () => {
     const stats = [
       { icon: Calendar, label: "Classes completed", value: completedCount },
       { icon: Clock, label: "Learning time", value: `${studyHours} hrs` },
-      { icon: BookOpen, label: "Subjects studied", value: 5 },
+      { icon: BookOpen, label: "Subjects studied", value: subjectCount },
       { icon: Wallet, label: "Wallet balance", value: formatMoney((wallet as any)?.releasedBalance, currency) },
     ];
 

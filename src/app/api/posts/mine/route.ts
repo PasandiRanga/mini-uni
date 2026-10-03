@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { slotsWithSeats } from "@/lib/seats";
 import { getSessionFromRequest } from "@/lib/auth";
 
 export async function GET(request: Request) {
@@ -14,7 +15,7 @@ export async function GET(request: Request) {
         const posts = await prisma.post.findMany({
             where: { userId: session.sub },
             orderBy: { createdAt: "desc" },
-            include: { timeSlots: true },
+            include: { timeSlots: slotsWithSeats },
         });
 
         return NextResponse.json(posts);

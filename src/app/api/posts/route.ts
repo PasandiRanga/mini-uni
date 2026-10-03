@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { slotsWithSeats } from "@/lib/seats";
 
 export async function GET(request: Request) {
     try {
@@ -21,7 +22,7 @@ export async function GET(request: Request) {
                 user: {
                     select: { id: true, firstName: true, lastName: true, role: true },
                 },
-                timeSlots: true,
+                timeSlots: slotsWithSeats,
             },
             take: 50,
         });
@@ -93,6 +94,9 @@ async function createPost(request: Request) {
             payload.currency = teacherCurrency;
             payload.thumbnailUrl = data.thumbnailUrl || null;
             payload.maxStudents = data.maxStudents != null ? Number(data.maxStudents) : null;
+            const offersGroup = Array.isArray(data.classTypes) && data.classTypes.includes("GROUP");
+            payload.groupRatePerHour = offersGroup && data.groupRatePerHour != null ? Number(data.groupRatePerHour) : null;
+            payload.groupFee = offersGroup && data.groupFee != null ? Number(data.groupFee) : null;
             if (Array.isArray(data.classTypes) && data.classTypes.length > 0) {
                 const valid = ["INDIVIDUAL", "GROUP", "MASS"];
                 payload.classTypes = data.classTypes.filter((t: string) => valid.includes(t));

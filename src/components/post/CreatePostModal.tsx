@@ -136,6 +136,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, e
   const [classTypes, setClassTypes] = useState<string[]>(['INDIVIDUAL']);
   const [maxStudents, setMaxStudents] = useState<number | ''>('');
   const [ratePerHour, setRatePerHour] = useState<number | ''>('');
+  const [groupRatePerHour, setGroupRatePerHour] = useState<number | ''>('');
   const [durationMin, setDurationMin] = useState<number>(60);
   const [slots, setSlots] = useState<PickerSlot[]>([]);
   const [busy, setBusy] = useState<{ start: string; end: string; title?: string }[]>([]);
@@ -178,8 +179,13 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, e
 
   // All required fields must be filled before the post can be submitted.
   const groupSelected = classTypes.includes('GROUP');
+  // Offering both lets students choose, so group seats get their own per-student
+  // rate. A group-only post just uses the main rate.
+  const needsGroupRate = groupSelected && classTypes.includes('INDIVIDUAL');
+  const groupPricePerClass = needsGroupRate && groupRatePerHour !== '' ? Number(groupRatePerHour) * (durationMin / 60) : null;
+  const groupRateOk = !needsGroupRate || (groupRatePerHour !== '' && Number(groupRatePerHour) > 0);
   const canSubmit = isTeacher
-    ? subject.trim() !== '' && description.trim() !== '' && classTypes.length > 0 && ratePerHour !== '' && Number(ratePerHour) > 0 && slots.length > 0 && (!groupSelected || (maxStudents !== '' && Number(maxStudents) >= 2))
+    ? subject.trim() !== '' && description.trim() !== '' && classTypes.length > 0 && ratePerHour !== '' && Number(ratePerHour) > 0 && groupRateOk && slots.length > 0 && (!groupSelected || (maxStudents !== '' && Number(maxStudents) >= 2))
     : subject.trim() !== '' && description.trim() !== '' && grade.trim() !== '';
 
   // Clear every field back to its default.
@@ -191,6 +197,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, e
     setClassTypes(['INDIVIDUAL']);
     setMaxStudents('');
     setRatePerHour('');
+    setGroupRatePerHour('');
     setDurationMin(60);
     setSlots([]);
     setGrade('');
@@ -212,6 +219,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, e
     setClassTypes(Array.isArray(p.classTypes) && p.classTypes.length ? p.classTypes : ['INDIVIDUAL']);
     setMaxStudents(p.maxStudents != null ? Number(p.maxStudents) : '');
     setRatePerHour(p.ratePerHour != null ? Number(p.ratePerHour) : '');
+    setGroupRatePerHour(p.groupRatePerHour != null ? Number(p.groupRatePerHour) : '');
     const sl: PickerSlot[] = (p.timeSlots || []).map((t: { startTime: string; endTime: string }) => ({ start: new Date(t.startTime), end: new Date(t.endTime) }));
     setSlots(sl);
     if (sl.length) setDurationMin(Math.max(15, Math.round((sl[0].end.getTime() - sl[0].start.getTime()) / 60000)));
@@ -250,6 +258,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, e
       if (slots.length === 0) { toast({ title: 'Add at least one time slot', variant: 'destructive' }); return; }
       if (ratePerHour === '' || Number(ratePerHour) <= 0) { toast({ title: 'Enter an hourly rate', variant: 'destructive' }); return; }
       if (classTypes.includes('GROUP') && (maxStudents === '' || Number(maxStudents) < 2)) { toast({ title: 'Set max students for the group', variant: 'destructive' }); return; }
+      if (!groupRateOk) { toast({ title: 'Enter a group rate per student', variant: 'destructive' }); return; }
     }
     setSubmitting(true);
     try {
@@ -265,6 +274,8 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, e
             ratePerHour: Number(ratePerHour),
             durationMin,
             fee: Number(pricePerClass.toFixed(2)),
+            groupRatePerHour: needsGroupRate ? Number(groupRatePerHour) : null,
+            groupFee: groupPricePerClass != null ? Number(groupPricePerClass.toFixed(2)) : null,
             thumbnailUrl: thumbnail,
             availabilitySlots: slots.map((s) => ({ start: s.start.toISOString(), end: s.end.toISOString() })),
           }
@@ -299,6 +310,8 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, e
         description,
         fee: isTeacher ? Number(pricePerClass.toFixed(2)) : null,
         ratePerHour: isTeacher && ratePerHour !== '' ? Number(ratePerHour) : null,
+        groupRatePerHour: isTeacher && needsGroupRate ? Number(groupRatePerHour) : null,
+        groupFee: isTeacher && groupPricePerClass != null ? Number(groupPricePerClass.toFixed(2)) : null,
         currency,
         classTypes: isTeacher ? classTypes : [],
         maxStudents: isTeacher && classTypes.includes('GROUP') && maxStudents !== '' ? Number(maxStudents) : null,
@@ -423,12 +436,23 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, e
                         <Input id="maxStudents" type="number" required min={2} value={maxStudents} onChange={(e) => setMaxStudents(e.target.value ? Number(e.target.value) : '')} placeholder="e.g. 10" className="max-w-[180px]" />
                       </div>
                     )}
+                    {needsGroupRate && (
+                      <div className="space-y-1.5 pt-2">
+                        <Label htmlFor="groupRate">Group rate per hour, per student<Req /></Label>
+                        <div className="flex flex-wrap items-center gap-3">
+                          <Input id="groupRate" type="number" required min={0} value={groupRatePerHour} onChange={(e) => setGroupRatePerHour(e.target.value ? Number(e.target.value) : '')} placeholder="0.00" className="max-w-[180px]" />
+                          {groupPricePerClass != null && (
+                            <span className="text-sm text-muted-foreground">{formatMoney(groupPricePerClass, currency)} per student, per class</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Rate + duration + computed price */}
                   <div className="grid gap-5 sm:grid-cols-3">
                     <div className="space-y-1.5">
-                      <Label htmlFor="rate">Rate per hour<Req /></Label>
+                      <Label htmlFor="rate">{needsGroupRate ? 'Individual rate per hour' : 'Rate per hour'}<Req /></Label>
                       <Input id="rate" type="number" min={0} value={ratePerHour} onChange={(e) => setRatePerHour(e.target.value ? Number(e.target.value) : '')} placeholder="0.00" />
                     </div>
                     <div className="space-y-1.5">
