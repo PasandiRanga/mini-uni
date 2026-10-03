@@ -1,6 +1,7 @@
 import { Prisma, WithdrawalStatus } from "@prisma/client";
 import prisma from "./prisma";
 import { createNotification } from "./notifications";
+import { splitCommission, commissionPercent } from "./commission";
 
 /**
  * Escrow model
@@ -83,8 +84,11 @@ export async function creditBookingToWallet(bookingId: string) {
 }
 
 /**
- * Moves one booking's escrow from pending to released. Idempotent for the same
- * reason as the deposit above.
+ * Moves one booking's escrow from pending to released, keeping the platform's
+ * commission back. The full amount leaves pending; the teacher's share lands in
+ * the released balance, and the fee is recorded as its own COMMISSION entry so
+ * the ledger shows gross, fee and net. Idempotent for the same reason as the
+ * deposit above.
  */
 export async function releaseBookingEscrow(bookingId: string) {
   const deposit = await prisma.walletTransaction.findFirst({
@@ -92,6 +96,8 @@ export async function releaseBookingEscrow(bookingId: string) {
   });
   // Nothing was ever escrowed for this booking (unpaid, or paid outside the wallet).
   if (!deposit || deposit.status !== "COMPLETED") return { released: false };
+
+  const { fee, net, percent } = splitCommission(deposit.amount);
 
   try {
     await prisma.$transaction([
@@ -105,16 +111,30 @@ export async function releaseBookingEscrow(bookingId: string) {
           description: "Class completed — earnings available to withdraw",
         },
       }),
+      ...(fee.gt(0)
+        ? [
+            prisma.walletTransaction.create({
+              data: {
+                walletId: deposit.walletId,
+                bookingId,
+                type: "COMMISSION",
+                amount: fee,
+                status: "COMPLETED",
+                description: `MiniUni service fee (${percent}%)`,
+              },
+            }),
+          ]
+        : []),
       prisma.wallet.update({
         where: { id: deposit.walletId },
         data: {
           pendingBalance: { decrement: deposit.amount },
-          releasedBalance: { increment: deposit.amount },
-          totalEarnings: { increment: deposit.amount },
+          releasedBalance: { increment: net },
+          totalEarnings: { increment: net },
         },
       }),
     ]);
-    return { released: true };
+    return { released: true, fee, net };
   } catch (err) {
     if (isUniqueViolation(err)) return { released: false }; // already released
     throw err;
@@ -172,6 +192,8 @@ export async function getPendingHolds(userId: string) {
   return holds.map((h) => ({
     bookingId: h.id,
     amount: h.fee,
+    // What the teacher will actually receive once the platform fee comes off.
+    netAmount: splitCommission(h.fee).net,
     releasesAt: h.timeSlot?.endTime ?? null,
     startTime: h.timeSlot?.startTime ?? null,
     title: h.inquiry?.post?.title || h.inquiry?.post?.subject || "Class",
@@ -432,6 +454,7 @@ export async function getWalletSnapshot(userId: string) {
     holds,
     bankDetails,
     hasBankDetails,
+    commissionPercent: commissionPercent(),
   };
 }
 
