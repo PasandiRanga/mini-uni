@@ -75,6 +75,7 @@ enum WalletTransactionType {
   TOP_UP     // student: money added to the wallet by card
   PAYMENT    // student: wallet balance spent on a class
   REFUND     // student: a cancelled booking's money returned to the wallet
+  COMMISSION // teacher: platform fee kept back when escrow releases
 }
 
 enum WithdrawalStatus {

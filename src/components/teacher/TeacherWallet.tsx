@@ -29,7 +29,7 @@ import {
   X,
 } from "lucide-react";
 
-type TxType = "DEPOSIT" | "RELEASE" | "WITHDRAWAL" | "REFUND" | "REVERSAL" | "TOP_UP" | "PAYMENT";
+type TxType = "DEPOSIT" | "RELEASE" | "COMMISSION" | "WITHDRAWAL" | "REFUND" | "REVERSAL" | "TOP_UP" | "PAYMENT";
 
 interface Transaction {
   id: string;
@@ -58,6 +58,7 @@ interface Withdrawal {
 interface Hold {
   bookingId: string;
   amount: string | number;
+  netAmount: string | number;
   releasesAt: string | null;
   startTime: string | null;
   title: string;
@@ -73,6 +74,7 @@ interface WalletData {
   transactions: Transaction[];
   withdrawals: Withdrawal[];
   holds: Hold[];
+  commissionPercent: number;
   hasBankDetails: boolean;
   bankDetails?: {
     bankAccountName?: string | null;
@@ -85,6 +87,7 @@ interface WalletData {
 const TX_LABELS: Record<TxType, string> = {
   DEPOSIT: "Payment received",
   RELEASE: "Earnings released",
+  COMMISSION: "Service fee",
   WITHDRAWAL: "Withdrawal",
   REFUND: "Refund",
   REVERSAL: "Class cancelled",
@@ -97,6 +100,7 @@ const TX_LABELS: Record<TxType, string> = {
 const TX_ICONS: Record<TxType, typeof ArrowDownLeft> = {
   DEPOSIT: Clock,
   RELEASE: ArrowDownLeft,
+  COMMISSION: ArrowUpRight,
   WITHDRAWAL: ArrowUpRight,
   REFUND: ArrowDownLeft,
   REVERSAL: ArrowUpRight,
@@ -168,7 +172,7 @@ const TeacherWallet: React.FC<TeacherWalletProps> = ({ onOpenSettings }) => {
 
   const transactions = useMemo(() => {
     const all = wallet?.transactions || [];
-    if (filter === "earnings") return all.filter((t) => t.type === "DEPOSIT" || t.type === "RELEASE" || t.type === "REVERSAL");
+    if (filter === "earnings") return all.filter((t) => t.type === "DEPOSIT" || t.type === "RELEASE" || t.type === "COMMISSION" || t.type === "REVERSAL");
     if (filter === "withdrawals") return all.filter((t) => t.type === "WITHDRAWAL" || t.type === "REFUND");
     return all;
   }, [wallet?.transactions, filter]);
@@ -316,7 +320,9 @@ const TeacherWallet: React.FC<TeacherWalletProps> = ({ onOpenSettings }) => {
               On <span className="font-serif font-normal">hold</span>
               <span className="ml-2 text-sm font-normal text-muted-foreground">({wallet?.holds.length})</span>
             </h3>
-            <p className="text-xs text-muted-foreground">Released when the class ends</p>
+            <p className="text-xs text-muted-foreground">
+              Released when the class ends, less the {wallet?.commissionPercent ?? 0}% service fee
+            </p>
           </div>
           <div className="divide-y divide-border/60">
             {wallet?.holds.map((h) => {
@@ -339,7 +345,8 @@ const TeacherWallet: React.FC<TeacherWalletProps> = ({ onOpenSettings }) => {
                     </p>
                   </div>
                   <div className="shrink-0 text-right">
-                    <p className="font-semibold">{formatMoney(h.amount, currency)}</p>
+                    <p className="font-semibold">{formatMoney(h.netAmount ?? h.amount, currency)}</p>
+                    <p className="text-xs text-muted-foreground">of {formatMoney(h.amount, currency)}</p>
                     <p className="flex items-center justify-end gap-1 text-xs text-muted-foreground">
                       <Clock className="h-3 w-3" /> Held
                     </p>
@@ -430,7 +437,7 @@ const TeacherWallet: React.FC<TeacherWalletProps> = ({ onOpenSettings }) => {
             <div className="space-y-3">
               {transactions.map((t) => {
                 const Icon = TX_ICONS[t.type] ?? Receipt;
-                const outgoing = t.type === "WITHDRAWAL" || t.type === "REVERSAL";
+                const outgoing = t.type === "WITHDRAWAL" || t.type === "REVERSAL" || t.type === "COMMISSION";
                 return (
                   <div key={t.id} className="flex items-center gap-4 rounded-2xl border border-border/70 bg-background/40 p-4">
                     <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${outgoing ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary"}`}>
