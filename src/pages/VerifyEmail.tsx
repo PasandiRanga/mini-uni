@@ -19,6 +19,14 @@ const VerifyEmail = () => {
   const [phase, setPhase] = useState<Phase>("loading");
   const [code, setCode] = useState("");
   const [email, setEmail] = useState<string>("");
+  // Seconds until another code can be requested.
+  const [cooldown, setCooldown] = useState(0);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [cooldown]);
 
   const dashboardPath = user?.role === "TEACHER" ? "/teacher/dashboard" : "/student/dashboard";
 
@@ -52,8 +60,15 @@ const VerifyEmail = () => {
     try {
       const res = await fetch("/api/auth/send-otp", { method: "POST" });
       const data = await res.json();
+      if (res.status === 429 && data.retryAfter) {
+        // A code was sent moments ago: keep it usable and show the wait.
+        setCooldown(data.retryAfter);
+        setPhase("code-sent");
+        return;
+      }
       if (!res.ok) throw new Error(data.error || "Failed to send code");
 
+      setCooldown(data.retryAfter ?? 60);
       setPhase("code-sent");
       if (data.devCode) {
         toast({ title: "Dev mode — code not emailed", description: `Your code is ${data.devCode}` });
@@ -162,9 +177,15 @@ const VerifyEmail = () => {
                       <Loader2 className="h-4 w-4 animate-spin" /> Verifying…
                     </span>
                   ) : (
-                    <button onClick={sendCode} className="text-sm font-medium text-primary hover:underline">
-                      Didn&apos;t get it? Resend code
-                    </button>
+                    cooldown > 0 ? (
+                      <span className="text-sm text-muted-foreground" aria-live="polite">
+                        Didn&apos;t get it? You can resend in {cooldown}s
+                      </span>
+                    ) : (
+                      <button onClick={sendCode} className="text-sm font-medium text-primary hover:underline">
+                        Didn&apos;t get it? Resend code
+                      </button>
+                    )
                   )}
                 </div>
               ) : (
