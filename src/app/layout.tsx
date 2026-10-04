@@ -1,4 +1,13 @@
 import type { Metadata } from "next";
+// Poppins is bundled with the app (self-hosted), not fetched from Google at
+// page load: no render-blocking third-party request, and it works offline.
+import "@fontsource/poppins/400.css";
+import "@fontsource/poppins/500.css";
+import "@fontsource/poppins/600.css";
+import "@fontsource/poppins/700.css";
+import "@fontsource/poppins/400-italic.css";
+import "@fontsource/poppins/500-italic.css";
+import "@fontsource/poppins/600-italic.css";
 import "@/index.css";
 import { Providers } from "./providers";
 import { Toaster } from "@/components/ui/toaster";

@@ -30,7 +30,8 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import MyClasses from '@/components/classes/MyClasses';
 import EmailVerificationBanner from "@/components/auth/EmailVerificationBanner";
-import { formatMoney } from "@/lib/currency";
+import { formatMoney, formatMoneyCompact } from "@/lib/currency";
+import { formatDistanceToNow } from "date-fns";
 import TeacherSettings from "@/components/teacher/TeacherSettings";
 import ScheduleCalendar from "@/components/calendar/ScheduleCalendar";
 import MiniCalendar from "@/components/calendar/MiniCalendar";
@@ -40,6 +41,8 @@ import TeacherPosts from "@/components/teacher/TeacherPosts";
 import TeacherInquiries from "@/components/teacher/TeacherInquiries";
 import TeacherWallet from "@/components/teacher/TeacherWallet";
 import NotificationBell from "@/components/notifications/NotificationBell";
+import AppSidebar, { type SidebarSection } from "@/components/layout/AppSidebar";
+import { CustomizeWidgets, useWidgetPrefs, type WidgetDef } from "@/components/dashboard/CustomizeWidgets";
 
 const greeting = () => {
   const h = new Date().getHours();
@@ -50,6 +53,14 @@ const greeting = () => {
 
 const todayLabel = () =>
   new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+
+const TEACHER_WIDGETS: WidgetDef[] = [
+  { id: "stats", label: "Key numbers", description: "Balance, earnings and classes" },
+  { id: "classes", label: "Upcoming classes" },
+  { id: "inquiries", label: "Inquiries" },
+  { id: "calendar", label: "Calendar" },
+  { id: "wallet", label: "Wallet summary" },
+];
 
 const TeacherDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -144,68 +155,42 @@ const TeacherDashboard = () => {
   };
 
   const unreadCount = inquiries.filter(i => !i.read).length;
+
+  // Overview widgets the teacher can switch on and off.
+  const widgetPrefs = useWidgetPrefs("miniuni.widgets.teacher");
+  const show = widgetPrefs.isVisible;
+  const showRight = show("inquiries") || show("calendar");
+
+  // Same links as the mobile dock, grouped for the desktop sidebar.
+  const byId = (id: string) => navItems.find((i) => i.id === id)!;
+  const sidebarSections: SidebarSection[] = [
+    { items: [byId("overview")] },
+    { label: "Teaching", items: [byId("posts"), byId("classes"), byId("schedule"), byId("students")] },
+    { label: "Community", items: [byId("explore"), { ...byId("inquiries"), badge: unreadCount }] },
+    { label: "Account", items: [byId("wallet"), byId("settings")] },
+  ];
+
   const completedCount = bookings.filter(b => b.status === 'COMPLETED').length;
   const currency = user?.currency;
 
   const stats = [
-    { icon: Wallet, label: "Available balance", value: formatMoney(wallet?.releasedBalance, currency) },
+    { icon: Wallet, label: "Available balance", value: formatMoneyCompact(wallet?.releasedBalance, currency) },
     { icon: GraduationCap, label: "Classes completed", value: completedCount },
-    { icon: DollarSign, label: "Total earnings", value: formatMoney(wallet?.totalEarnings, currency) },
-    { icon: Clock, label: "On hold", value: formatMoney(wallet?.pendingBalance, currency) },
+    { icon: DollarSign, label: "Total earnings", value: formatMoneyCompact(wallet?.totalEarnings, currency) },
+    { icon: Clock, label: "On hold", value: formatMoneyCompact(wallet?.pendingBalance, currency) },
   ];
 
   return (
     <div className="min-h-screen bg-background lg:flex">
-      {/* Desktop — floating studio sidebar */}
-      <aside className="hidden lg:flex sticky top-0 h-screen w-[252px] shrink-0 flex-col p-4">
-        <div className="relative flex h-full flex-col overflow-hidden rounded-3xl border border-border/70 bg-card/80 shadow-card backdrop-blur-xl grain">
-          <div className="p-6 pb-4">
-            <Link href="/" className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full gradient-hero">
-                <GraduationCap className="h-5 w-5 text-primary-foreground" />
-              </div>
-              <span className="text-lg font-semibold tracking-tight">
-                Mini<span className="font-serif italic font-normal">Uni</span>
-              </span>
-            </Link>
-          </div>
-
-          <nav className="flex-1 space-y-1 px-3">
-            {navItems.map((item) => {
-              const active = activeTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => goTab(item.id)}
-                  className={`group relative flex w-full items-center gap-3 rounded-2xl px-4 py-2.5 text-sm transition-all duration-300 ${active
-                    ? "bg-primary text-primary-foreground shadow-soft"
-                    : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
-                    }`}
-                >
-                  <item.icon className={`h-[18px] w-[18px] transition-transform duration-300 ${active ? "" : "group-hover:-translate-y-0.5"}`} strokeWidth={1.75} />
-                  <span className="font-medium">{item.label}</span>
-                  {active && <span className="absolute right-3.5 h-1.5 w-1.5 rounded-full bg-accent" />}
-                </button>
-              );
-            })}
-          </nav>
-
-          <div className="p-4">
-            <div className="flex items-center gap-3 rounded-2xl border border-border/60 bg-background/60 p-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full gradient-hero text-sm font-semibold text-primary-foreground">
-                {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{user?.firstName} {user?.lastName}</p>
-                <p className="text-xs text-muted-foreground">Teacher</p>
-              </div>
-              <button onClick={handleLogout} className="text-muted-foreground transition-colors hover:text-destructive" title="Logout">
-                <LogOut className="h-[18px] w-[18px]" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </aside>
+      {/* Desktop sidebar (phones use the bottom dock below) */}
+      <AppSidebar
+        sections={sidebarSections}
+        activeId={activeTab}
+        onSelect={goTab}
+        user={user}
+        roleLabel="Teacher"
+        onLogout={handleLogout}
+      />
 
       {/* Main column */}
       <main className="flex min-w-0 flex-1 flex-col pb-24 lg:pb-0">
@@ -276,7 +261,8 @@ const TeacherDashboard = () => {
           <EmailVerificationBanner />
 
           {/* Complete-your-profile banner — fills as the teacher completes the wizard steps */}
-          {completion && completion.percent < 100 && (
+          {/* Hidden once approved: an approved teacher is already live, so it would contradict the "verified" banner. */}
+          {completion && completion.percent < 100 && completion.verificationStatus !== 'APPROVED' && (
             <button
               onClick={() => router.push('/teacher/profile-completion')}
               className="group mb-8 block w-full overflow-hidden rounded-3xl border border-primary/40 bg-primary/[0.07] p-5 text-left transition-all duration-300 hover:border-primary/70 hover:bg-primary/10 sm:p-6"
@@ -334,7 +320,7 @@ const TeacherDashboard = () => {
                     Verification <span className="font-serif italic">needs changes</span>
                   </p>
                   <p className="mt-0.5 text-sm text-muted-foreground">
-                    Your profile couldn&apos;t be approved. Please review your details and documents, then resubmit.
+                    Your profile couldn&apos;t be approved yet. Update your details, then press &ldquo;Resubmit for review&rdquo;.
                   </p>
                   {completion.rejectionReason && (
                     <p className="mt-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
@@ -343,7 +329,7 @@ const TeacherDashboard = () => {
                   )}
                 </div>
                 <span className="inline-flex items-center gap-1 text-sm font-medium text-destructive">
-                  Review profile <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
+                  Fix &amp; resubmit <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
                 </span>
               </div>
             </button>
@@ -377,7 +363,12 @@ const TeacherDashboard = () => {
             </div>
           )}
 
+          <div className="mb-4 flex justify-end">
+            <CustomizeWidgets widgets={TEACHER_WIDGETS} {...widgetPrefs} />
+          </div>
+
           {/* Separated stat tiles */}
+          {show("stats") && (
           <div className="animate-fade-up mb-10 grid grid-cols-2 auto-rows-fr gap-4 lg:grid-cols-4 lg:gap-5" style={{ animationDelay: "0.1s" }}>
             {stats.map((stat, i) => {
               const featured = i === 0;
@@ -398,22 +389,28 @@ const TeacherDashboard = () => {
                       <ArrowUpRight className="h-3.5 w-3.5" />
                     </span>
                   </div>
-                  <p className="mt-auto truncate font-serif text-2xl leading-none sm:text-3xl lg:text-4xl">{stat.value}</p>
+                  <p className="mt-auto truncate font-serif text-2xl leading-none tabular-nums sm:text-[1.75rem] xl:text-3xl" title={String(stat.value)}>{stat.value}</p>
                   <p className={`mt-2 min-h-[2rem] text-xs uppercase leading-tight tracking-[0.14em] ${featured ? "text-primary-foreground/70" : "text-muted-foreground"}`}>{stat.label}</p>
                 </div>
               );
             })}
           </div>
+          )}
 
-          <div className="grid gap-6 lg:grid-cols-3">
+          {(show("classes") || showRight) && (
+          <div className={`grid gap-6 [&>*]:min-w-0 ${show("classes") && showRight ? "lg:grid-cols-3" : ""}`}>
             {/* Upcoming classes preview — "View all" opens the My Classes tab */}
-            <div className="lg:col-span-2">
+            {show("classes") && (
+            <div className={showRight ? "lg:col-span-2" : ""}>
               <MyClasses preview onViewAll={() => goTab("classes")} />
             </div>
+            )}
 
             {/* Right column: inquiries + mini calendar */}
-            <div className="space-y-6">
+            {showRight && (
+            <div className={`space-y-6 ${show("classes") ? "" : "grid gap-6 space-y-0 lg:grid-cols-2"}`}>
             {/* Recent Inquiries */}
+            {show("inquiries") && (
             <section className="flex flex-col overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
               <div className="flex items-center justify-between border-b border-border/60 px-6 py-5">
                 <h2 className="text-lg font-semibold">
@@ -431,18 +428,20 @@ const TeacherDashboard = () => {
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-medium">{inq.sender ? `${inq.sender.firstName} ${inq.sender.lastName}` : 'Student'}</p>
                       <p className="truncate text-sm text-muted-foreground">{inq.post?.title || inq.post?.subject || ''}</p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">{new Date(inq.createdAt).toLocaleString()}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">{formatDistanceToNow(new Date(inq.createdAt), { addSuffix: true })}</p>
                     </div>
-                    <Button variant="ghost" size="sm" className="shrink-0">Reply</Button>
+                    <Button variant="ghost" size="sm" className="shrink-0" onClick={() => goTab("inquiries")}>Reply</Button>
                   </div>
                 ))}
               </div>
               <div className="border-t border-border/60 p-4">
-                <Button variant="outline" className="w-full">View All Messages</Button>
+                <Button variant="outline" className="w-full" onClick={() => goTab("inquiries")}>View all inquiries</Button>
               </div>
             </section>
+            )}
 
             {/* Mini calendar — click a date to open the full schedule */}
+            {show("calendar") && (
             <section className="rounded-3xl border border-border/70 bg-card p-6 shadow-soft">
               <h3 className="mb-4 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">This month</h3>
               <MiniCalendar
@@ -450,27 +449,31 @@ const TeacherDashboard = () => {
                 onSelectDate={() => setActiveTab('schedule')}
               />
             </section>
+            )}
             </div>
+            )}
           </div>
+          )}
 
           {/* Wallet — ink card */}
+          {show("wallet") && (
           <div className="relative mt-6 overflow-hidden rounded-3xl bg-foreground p-7 text-background shadow-elevated grain sm:p-9">
             <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-primary/20 blur-3xl" />
             <div className="relative flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
               <div>
                 <p className="mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-background/50">Your wallet</p>
                 <h3 className="mb-6 font-serif text-2xl italic text-background/90">Secure, escrow-based payments.</h3>
-                <div className="grid grid-cols-3 gap-6 sm:gap-10">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-10">
                   <div>
-                    <p className="font-serif text-3xl italic sm:text-4xl">{formatMoney(wallet?.releasedBalance, currency)}</p>
+                    <p className="font-serif text-2xl italic tabular-nums xl:text-3xl">{formatMoneyCompact(wallet?.releasedBalance, currency)}</p>
                     <p className="mt-1 text-xs uppercase tracking-[0.14em] text-background/60">Available</p>
                   </div>
                   <div>
-                    <p className="font-serif text-3xl italic sm:text-4xl">{formatMoney(wallet?.pendingBalance, currency)}</p>
+                    <p className="font-serif text-2xl italic tabular-nums xl:text-3xl">{formatMoneyCompact(wallet?.pendingBalance, currency)}</p>
                     <p className="mt-1 text-xs uppercase tracking-[0.14em] text-background/60">Pending</p>
                   </div>
                   <div>
-                    <p className="font-serif text-3xl italic sm:text-4xl">{formatMoney(wallet?.totalEarnings, currency)}</p>
+                    <p className="font-serif text-2xl italic tabular-nums xl:text-3xl">{formatMoneyCompact(wallet?.totalEarnings, currency)}</p>
                     <p className="mt-1 text-xs uppercase tracking-[0.14em] text-background/60">All time</p>
                   </div>
                 </div>
@@ -499,6 +502,7 @@ const TeacherDashboard = () => {
               </div>
             </div>
           </div>
+          )}
           </>
           )}
         </div>
@@ -550,6 +554,21 @@ const TeacherDashboard = () => {
                     </button>
                   );
                 })}
+              </div>
+              {/* The sidebar (and its logout) is hidden on phones, so offer it here. */}
+              <div className="flex items-center justify-between gap-3 border-t border-border/60 pt-4">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium">{`${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim() || "Signed in"}</p>
+                  <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0 gap-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  onClick={() => { setMoreOpen(false); handleLogout(); }}
+                >
+                  <LogOut className="h-4 w-4" /> Log out
+                </Button>
               </div>
             </SheetContent>
           </Sheet>

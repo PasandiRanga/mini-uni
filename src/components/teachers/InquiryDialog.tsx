@@ -1,3 +1,4 @@
+import { format } from "date-fns";
 import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -97,7 +98,7 @@ export const InquiryDialog: React.FC<InquiryDialogProps> = ({ isOpen, onClose, t
                                 <option value="">-- Optional: Select a slot --</option>
                                 {selectedPost.timeSlots.map((s: any) => (
                                     <option key={s.id} value={s.id}>
-                                        {new Date(s.startTime).toLocaleString()}
+                                        {format(new Date(s.startTime), "EEE, MMM d · h:mm a")}
                                     </option>
                                 ))}
                             </select>

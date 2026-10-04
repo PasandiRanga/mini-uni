@@ -11,7 +11,7 @@ const EDITABLE_FIELDS = [
   // identity
   "idType",
   // academic / professional
-  "employmentStatus", "universityName", "universityCountry", "workingStatus", "profession", "employer",
+  "employmentStatus", "universityName", "universityCountry", "stream", "examYear", "workingStatus", "profession", "employer",
   // bank details
   "bankAccountName", "bankAccountNumber", "bankName", "bankBranch",
 ] as const;

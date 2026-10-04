@@ -364,7 +364,14 @@ const TeacherDetailDialog = ({
               <h3 className="mb-3 text-sm font-semibold">Academic / professional</h3>
               <div className="grid grid-cols-2 gap-4">
                 <Field label="Employment status" value={a?.employmentStatus} />
-                {(a?.employmentStatus === "STUDENT" || a?.employmentStatus === "UNDERGRADUATE") ? (
+                {a?.employmentStatus === "STUDENT" ? (
+                  <>
+                    <Field label="School" value={a?.universityName} />
+                    <Field label="Country" value={a?.universityCountry} />
+                    <Field label="A/L stream" value={a?.stream} />
+                    <Field label="A/L exam year" value={a?.examYear} />
+                  </>
+                ) : a?.employmentStatus === "UNDERGRADUATE" ? (
                   <>
                     <Field label="University" value={a?.universityName} />
                     <Field label="University country" value={a?.universityCountry} />

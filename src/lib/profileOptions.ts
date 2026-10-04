@@ -55,6 +55,20 @@ export const SRI_LANKAN_UNIVERSITIES = [
   "Horizon Campus",
 ] as const;
 
+export const AL_STREAMS = [
+  "Physical Science (Maths)",
+  "Biological Science",
+  "Commerce",
+  "Arts",
+  "Technology",
+] as const;
+
+/** A/L exam years a current school student could be sitting: this year and the next three. */
+export function examYearOptions(now = new Date()): string[] {
+  const year = now.getFullYear();
+  return [0, 1, 2, 3].map((offset) => String(year + offset));
+}
+
 export const WORKING_STATUSES = [
   "Employed full-time",
   "Employed part-time",

@@ -56,6 +56,8 @@ export async function GET(request: Request, { params }: { params: { id: string }
         employmentStatus: profile.employmentStatus,
         universityName: profile.universityName,
         universityCountry: profile.universityCountry,
+        stream: profile.stream,
+        examYear: profile.examYear,
         workingStatus: profile.workingStatus,
         profession: profile.profession,
         employer: profile.employer,

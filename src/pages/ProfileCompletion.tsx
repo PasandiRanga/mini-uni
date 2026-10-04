@@ -4,10 +4,11 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import PersonalDetailsForm from "@/components/teacher/PersonalDetailsForm";
 import IdentityVerificationForm from "@/components/teacher/IdentityVerificationForm";
 import AcademicBackgroundForm from "@/components/teacher/AcademicBackgroundForm";
-import { ArrowLeft, Check, GraduationCap, PartyPopper } from "lucide-react";
+import { ArrowLeft, Check, GraduationCap, PartyPopper, ShieldAlert, Loader2, Send } from "lucide-react";
 
 type StepKey = "personal" | "identity" | "academic";
 type CompletionStep = { key: StepKey; label: string; complete: boolean };
@@ -24,6 +25,10 @@ const ProfileCompletion = () => {
   const [current, setCurrent] = useState<StepKey>("personal");
   const [percent, setPercent] = useState(0);
   const [steps, setSteps] = useState<CompletionStep[]>([]);
+  const [status, setStatus] = useState<string | null>(null);
+  const [rejectionReason, setRejectionReason] = useState<string | null>(null);
+  const [resubmitting, setResubmitting] = useState(false);
+  const { toast } = useToast();
 
   const refresh = useCallback(async () => {
     try {
@@ -32,6 +37,8 @@ const ProfileCompletion = () => {
         const data = await res.json();
         setPercent(data.percent ?? 0);
         setSteps(data.steps ?? []);
+        setStatus(data.verificationStatus ?? null);
+        setRejectionReason(data.rejectionReason ?? null);
         return data;
       }
     } catch {
@@ -61,6 +68,23 @@ const ProfileCompletion = () => {
   };
 
   const allDone = percent === 100;
+  // A rejected profile stays editable, even at 100%, until it's resubmitted.
+  const needsChanges = status === "REJECTED";
+
+  const resubmit = async () => {
+    setResubmitting(true);
+    try {
+      const res = await fetch("/api/teachers/resubmit", { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Couldn't resubmit");
+      toast({ title: "Sent for review", description: "We'll let you know as soon as your profile is approved." });
+      await refresh();
+    } catch (err: unknown) {
+      toast({ title: "Couldn't resubmit", description: err instanceof Error ? err.message : "Try again", variant: "destructive" });
+    } finally {
+      setResubmitting(false);
+    }
+  };
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-background grain">
@@ -108,14 +132,37 @@ const ProfileCompletion = () => {
           </div>
         </div>
 
-        {allDone ? (
+        {needsChanges && (
+          <div className="mb-8 rounded-3xl border border-destructive/40 bg-destructive/[0.06] p-5 sm:p-6">
+            <div className="flex items-start gap-3">
+              <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-destructive/15 text-destructive">
+                <ShieldAlert className="h-[18px] w-[18px]" strokeWidth={1.75} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="font-medium">Your profile needs changes</p>
+                <p className="mt-0.5 text-sm text-muted-foreground">
+                  Update the details below, then resubmit so our team can review them again.
+                </p>
+                {rejectionReason && (
+                  <p className="mt-3 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                    <span className="font-medium">Reason:</span> {rejectionReason}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {allDone && !needsChanges ? (
           <div className="rounded-3xl border border-success/40 bg-success/[0.07] p-8 text-center">
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-success/15 text-success">
               <PartyPopper className="h-7 w-7" strokeWidth={1.75} />
             </div>
-            <h2 className="text-xl font-semibold">Profile complete</h2>
+            <h2 className="text-xl font-semibold">{status === "APPROVED" ? "You're verified" : "Profile complete"}</h2>
             <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-              Your profile has been submitted. Our team will review your documents and update your verification status soon.
+              {status === "APPROVED"
+                ? "Your profile has been approved. You can now post classes and get booked."
+                : "Your profile has been submitted. Our team will review your documents and update your verification status soon."}
             </p>
             <Button variant="hero" className="mt-6" onClick={() => router.push("/teacher/dashboard")}>
               Back to dashboard
@@ -164,6 +211,20 @@ const ProfileCompletion = () => {
               {current === "identity" && <IdentityVerificationForm onSaved={handleSaved} />}
               {current === "academic" && <AcademicBackgroundForm onSaved={handleSaved} />}
             </div>
+
+            {needsChanges && (
+              <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-border/70 bg-card p-5 sm:p-6">
+                <p className="text-sm text-muted-foreground">
+                  {allDone
+                    ? "Done updating? Send your profile back to our team."
+                    : "Finish every step, then resubmit your profile for review."}
+                </p>
+                <Button variant="hero" className="gap-2" onClick={resubmit} disabled={!allDone || resubmitting}>
+                  {resubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  Resubmit for review
+                </Button>
+              </div>
+            )}
           </>
         )}
       </div>

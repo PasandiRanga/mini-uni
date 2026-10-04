@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import NotificationBell from "@/components/notifications/NotificationBell";
+import AppSidebar, { type SidebarSection } from "@/components/layout/AppSidebar";
 
 type DashboardContextType = {
   activeTab: string;
@@ -81,63 +82,27 @@ const DashboardLayout: React.FC<PropsWithChildren> = ({ children }) => {
     router.push(`/student/dashboard?tab=${id}`);
   };
 
+  // Same links as the mobile dock, grouped for the desktop sidebar.
+  const byId = (id: string) => navItems.find((i) => i.id === id)!;
+  const sidebarSections: SidebarSection[] = [
+    { items: [byId("overview")] },
+    { label: "Learning", items: [byId("classes"), byId("schedule")] },
+    { label: "Community", items: [byId("explore"), byId("inquiries")] },
+    { label: "Account", items: [byId("wallet"), byId("settings")] },
+  ];
+
   return (
     <DashboardContext.Provider value={{ activeTab, setActiveTab }}>
       <div className="min-h-screen bg-background lg:flex">
-        {/* Desktop — floating studio sidebar */}
-        <aside className="hidden lg:flex sticky top-0 h-screen w-[252px] shrink-0 flex-col p-4">
-          <div className="flex h-full flex-col rounded-3xl border border-border/70 bg-card/80 shadow-card backdrop-blur-xl grain relative overflow-hidden">
-            <div className="p-6 pb-4">
-              <Link href="/" className="flex items-center gap-2.5">
-                <div className="flex h-9 w-9 items-center justify-center rounded-full gradient-hero">
-                  <GraduationCap className="h-5 w-5 text-primary-foreground" />
-                </div>
-                <span className="text-lg font-semibold tracking-tight">
-                  Mini<span className="font-serif italic font-normal">Uni</span>
-                </span>
-              </Link>
-            </div>
-
-            <nav className="flex-1 space-y-1 px-3">
-              {navItems.map((item) => {
-                const active = activeTab === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => goTab(item.id)}
-                    className={`group relative flex w-full items-center gap-3 rounded-2xl px-4 py-2.5 text-sm transition-all duration-300 ${active
-                      ? "bg-primary text-primary-foreground shadow-soft"
-                      : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
-                      }`}
-                  >
-                    <item.icon className={`h-[18px] w-[18px] transition-transform duration-300 ${active ? "" : "group-hover:-translate-y-0.5"}`} strokeWidth={1.75} />
-                    <span className="font-medium">{item.label}</span>
-                    {active && <span className="absolute right-3.5 h-1.5 w-1.5 rounded-full bg-accent" />}
-                  </button>
-                );
-              })}
-            </nav>
-
-            <div className="p-4">
-              <div className="flex items-center gap-3 rounded-2xl border border-border/60 bg-background/60 p-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full gradient-hero text-sm font-semibold text-primary-foreground">
-                  {user ? `${(user.firstName || "").charAt(0)}${(user.lastName || "").charAt(0)}` : "S"}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{user ? `${user.firstName} ${user.lastName}` : "Student"}</p>
-                  <p className="text-xs text-muted-foreground">Student</p>
-                </div>
-                <button
-                  onClick={handleLogout}
-                  className="text-muted-foreground transition-colors hover:text-destructive"
-                  title="Logout"
-                >
-                  <LogOut className="h-4.5 w-4.5 h-[18px] w-[18px]" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </aside>
+        {/* Desktop sidebar (phones use the bottom dock below) */}
+        <AppSidebar
+          sections={sidebarSections}
+          activeId={activeTab}
+          onSelect={goTab}
+          user={user}
+          roleLabel="Student"
+          onLogout={handleLogout}
+        />
 
         {/* Main column */}
         <div className="flex min-w-0 flex-1 flex-col pb-24 lg:pb-0">
@@ -215,6 +180,21 @@ const DashboardLayout: React.FC<PropsWithChildren> = ({ children }) => {
                       </button>
                     );
                   })}
+                </div>
+                {/* The sidebar (and its logout) is hidden on phones, so offer it here. */}
+                <div className="flex items-center justify-between gap-3 border-t border-border/60 pt-4">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{`${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim() || "Signed in"}</p>
+                    <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0 gap-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    onClick={() => { setMoreOpen(false); handleLogout(); }}
+                  >
+                    <LogOut className="h-4 w-4" /> Log out
+                  </Button>
                 </div>
               </SheetContent>
             </Sheet>

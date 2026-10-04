@@ -34,6 +34,26 @@ export function formatMoney(amount: number | string | null | undefined, currency
   }).format(safe);
 }
 
+/**
+ * Like formatMoney, but drops the cents on whole amounts. Used for headline
+ * figures (stat tiles, wallet totals) where "Rs 12,500" reads better than
+ * "Rs 12,500.00" and fits the space.
+ */
+export function formatMoneyCompact(amount: number | string | null | undefined, currency?: string): string {
+  const code = normalize(currency);
+  const value = typeof amount === "string" ? parseFloat(amount) : amount ?? 0;
+  const safe = Number.isFinite(value as number) ? (value as number) : 0;
+  const whole = Number.isInteger(Math.round(safe * 100) / 100);
+
+  return new Intl.NumberFormat(CURRENCY_META[code].locale, {
+    style: "currency",
+    currency: code,
+    currencyDisplay: code === "LKR" ? "narrowSymbol" : "symbol",
+    minimumFractionDigits: whole ? 0 : 2,
+    maximumFractionDigits: 2,
+  }).format(safe);
+}
+
 /** Human-readable label for a currency, used in the settings selector. */
 export function currencyLabel(currency?: string): string {
   return CURRENCY_META[normalize(currency)].label;
