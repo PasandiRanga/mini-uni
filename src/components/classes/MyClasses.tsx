@@ -15,6 +15,7 @@ import { Calendar, Clock, Video, User, CheckCircle, XCircle, ChevronRight, Refre
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { formatMoney } from '@/lib/currency';
+import { format } from 'date-fns';
 import { slotDurationLabel } from '@/components/post/postCardBits';
 
 interface Booking {
@@ -182,7 +183,7 @@ const MyClasses: React.FC<MyClassesProps> = ({ preview = false, onViewAll }) => 
     return (
       <div key={b.id} className="rounded-2xl border border-border/70 bg-background/40 p-4 transition-colors hover:bg-muted/40">
         <div className="flex items-start justify-between gap-3">
-          <div className="flex items-start gap-3">
+          <div className="flex min-w-0 items-start gap-3">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl gradient-hero text-sm font-semibold text-primary-foreground">
               {initials}
             </div>
@@ -192,8 +193,8 @@ const MyClasses: React.FC<MyClassesProps> = ({ preview = false, onViewAll }) => 
                 <User className="h-3 w-3" /> {otherName || (user?.role === 'STUDENT' ? 'Teacher' : 'Student')}
               </p>
               <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{start ? start.toLocaleDateString() : '—'}</span>
-                <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{start ? start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'} · {duration || '—'}</span>
+                <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{start ? format(start, 'EEE, MMM d') : '—'}</span>
+                <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{start ? format(start, 'h:mm a') : '—'} · {duration || '—'}</span>
                 {b.fee !== undefined && b.fee !== null && <span className="font-medium text-foreground">{formatMoney(b.fee, currency)}</span>}
               </div>
             </div>

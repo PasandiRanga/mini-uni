@@ -30,7 +30,8 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import MyClasses from '@/components/classes/MyClasses';
 import EmailVerificationBanner from "@/components/auth/EmailVerificationBanner";
-import { formatMoney } from "@/lib/currency";
+import { formatMoney, formatMoneyCompact } from "@/lib/currency";
+import { formatDistanceToNow } from "date-fns";
 import TeacherSettings from "@/components/teacher/TeacherSettings";
 import ScheduleCalendar from "@/components/calendar/ScheduleCalendar";
 import MiniCalendar from "@/components/calendar/MiniCalendar";
@@ -148,10 +149,10 @@ const TeacherDashboard = () => {
   const currency = user?.currency;
 
   const stats = [
-    { icon: Wallet, label: "Available balance", value: formatMoney(wallet?.releasedBalance, currency) },
+    { icon: Wallet, label: "Available balance", value: formatMoneyCompact(wallet?.releasedBalance, currency) },
     { icon: GraduationCap, label: "Classes completed", value: completedCount },
-    { icon: DollarSign, label: "Total earnings", value: formatMoney(wallet?.totalEarnings, currency) },
-    { icon: Clock, label: "On hold", value: formatMoney(wallet?.pendingBalance, currency) },
+    { icon: DollarSign, label: "Total earnings", value: formatMoneyCompact(wallet?.totalEarnings, currency) },
+    { icon: Clock, label: "On hold", value: formatMoneyCompact(wallet?.pendingBalance, currency) },
   ];
 
   return (
@@ -276,7 +277,8 @@ const TeacherDashboard = () => {
           <EmailVerificationBanner />
 
           {/* Complete-your-profile banner — fills as the teacher completes the wizard steps */}
-          {completion && completion.percent < 100 && (
+          {/* Hidden once approved: an approved teacher is already live, so it would contradict the "verified" banner. */}
+          {completion && completion.percent < 100 && completion.verificationStatus !== 'APPROVED' && (
             <button
               onClick={() => router.push('/teacher/profile-completion')}
               className="group mb-8 block w-full overflow-hidden rounded-3xl border border-primary/40 bg-primary/[0.07] p-5 text-left transition-all duration-300 hover:border-primary/70 hover:bg-primary/10 sm:p-6"
@@ -398,14 +400,14 @@ const TeacherDashboard = () => {
                       <ArrowUpRight className="h-3.5 w-3.5" />
                     </span>
                   </div>
-                  <p className="mt-auto truncate font-serif text-2xl leading-none sm:text-3xl lg:text-4xl">{stat.value}</p>
+                  <p className="mt-auto truncate font-serif text-2xl leading-none tabular-nums sm:text-[1.75rem] xl:text-3xl" title={String(stat.value)}>{stat.value}</p>
                   <p className={`mt-2 min-h-[2rem] text-xs uppercase leading-tight tracking-[0.14em] ${featured ? "text-primary-foreground/70" : "text-muted-foreground"}`}>{stat.label}</p>
                 </div>
               );
             })}
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-3">
+          <div className="grid gap-6 lg:grid-cols-3 [&>*]:min-w-0">
             {/* Upcoming classes preview — "View all" opens the My Classes tab */}
             <div className="lg:col-span-2">
               <MyClasses preview onViewAll={() => goTab("classes")} />
@@ -431,7 +433,7 @@ const TeacherDashboard = () => {
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-medium">{inq.sender ? `${inq.sender.firstName} ${inq.sender.lastName}` : 'Student'}</p>
                       <p className="truncate text-sm text-muted-foreground">{inq.post?.title || inq.post?.subject || ''}</p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">{new Date(inq.createdAt).toLocaleString()}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">{formatDistanceToNow(new Date(inq.createdAt), { addSuffix: true })}</p>
                     </div>
                     <Button variant="ghost" size="sm" className="shrink-0">Reply</Button>
                   </div>
@@ -460,17 +462,17 @@ const TeacherDashboard = () => {
               <div>
                 <p className="mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-background/50">Your wallet</p>
                 <h3 className="mb-6 font-serif text-2xl italic text-background/90">Secure, escrow-based payments.</h3>
-                <div className="grid grid-cols-3 gap-6 sm:gap-10">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-10">
                   <div>
-                    <p className="font-serif text-3xl italic sm:text-4xl">{formatMoney(wallet?.releasedBalance, currency)}</p>
+                    <p className="font-serif text-2xl italic tabular-nums xl:text-3xl">{formatMoneyCompact(wallet?.releasedBalance, currency)}</p>
                     <p className="mt-1 text-xs uppercase tracking-[0.14em] text-background/60">Available</p>
                   </div>
                   <div>
-                    <p className="font-serif text-3xl italic sm:text-4xl">{formatMoney(wallet?.pendingBalance, currency)}</p>
+                    <p className="font-serif text-2xl italic tabular-nums xl:text-3xl">{formatMoneyCompact(wallet?.pendingBalance, currency)}</p>
                     <p className="mt-1 text-xs uppercase tracking-[0.14em] text-background/60">Pending</p>
                   </div>
                   <div>
-                    <p className="font-serif text-3xl italic sm:text-4xl">{formatMoney(wallet?.totalEarnings, currency)}</p>
+                    <p className="font-serif text-2xl italic tabular-nums xl:text-3xl">{formatMoneyCompact(wallet?.totalEarnings, currency)}</p>
                     <p className="mt-1 text-xs uppercase tracking-[0.14em] text-background/60">All time</p>
                   </div>
                 </div>

@@ -9,7 +9,7 @@ import MyClasses from '@/components/classes/MyClasses';
 import ExploreContent from "@/components/explore/ExploreContent";
 import EmailVerificationBanner from "@/components/auth/EmailVerificationBanner";
 import { CurrencySettings } from "@/components/settings/CurrencySettings";
-import { formatMoney } from "@/lib/currency";
+import { formatMoney, formatMoneyCompact } from "@/lib/currency";
 import ScheduleCalendar from "@/components/calendar/ScheduleCalendar";
 import MiniCalendar from "@/components/calendar/MiniCalendar";
 import StudentWallet from "@/components/student/StudentWallet";
@@ -81,7 +81,7 @@ const DashboardContent = () => {
     { icon: Calendar, label: "Classes completed", value: completedCount },
     { icon: Clock, label: "Learning time", value: `${studyHours} hrs` },
     { icon: BookOpen, label: "Subjects studied", value: subjectCount },
-    { icon: Wallet, label: "Wallet balance", value: formatMoney((wallet as any)?.releasedBalance, currency) },
+    { icon: Wallet, label: "Wallet balance", value: formatMoneyCompact((wallet as any)?.releasedBalance, currency) },
   ];
 
   return (
@@ -107,14 +107,14 @@ const DashboardContent = () => {
                   <ArrowUpRight className="h-3.5 w-3.5" />
                 </span>
               </div>
-              <p className="mt-auto truncate font-serif text-2xl leading-none sm:text-3xl lg:text-4xl">{stat.value}</p>
+              <p className="mt-auto truncate font-serif text-2xl leading-none tabular-nums sm:text-[1.75rem] xl:text-3xl" title={String(stat.value)}>{stat.value}</p>
               <p className={`mt-2 min-h-[2rem] text-xs uppercase leading-tight tracking-[0.14em] ${featured ? "text-primary-foreground/70" : "text-muted-foreground"}`}>{stat.label}</p>
             </div>
           );
         })}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-6 lg:grid-cols-3 [&>*]:min-w-0">
         {/* Left: Enrolled Courses & secondary panels */}
         <div className="space-y-6 lg:col-span-2">
           <section className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">

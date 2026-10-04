@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { format } from "date-fns";
 
 export const useStudentDashboard = () => {
     const [user, setUser] = useState<any>(null);
@@ -32,18 +33,22 @@ export const useStudentDashboard = () => {
                 const meRes = await fetch(`/api/users/me`);
                 const me = meRes.ok ? await meRes.json() : null;
 
-                // fetch teachers for 'Your Teachers' and recommendations
-                const tRes = await fetch(`/api/teachers`);
-                if (tRes.ok) {
-                    const teachers = await tRes.json();
-                    setRecentTeachers(teachers.slice(0, 6));
-                }
-
                 // fetch bookings (upcoming & history)
                 const bRes = await fetch(`/api/bookings/student/${authUser.id}/upcoming?scope=all`);
                 if (bRes.ok) {
                     const bookings = await bRes.json();
                     const live = bookings.filter((b: any) => b.status !== 'CANCELLED');
+
+                    // Your teachers: the people this student has actually booked, most recent first.
+                    const teachers = new Map<string, any>();
+                    for (const b of live) {
+                        if (!b.teacher?.id || teachers.has(b.teacher.id)) continue;
+                        teachers.set(b.teacher.id, {
+                            ...b.teacher,
+                            teacherProfile: { subjects: [b.inquiry?.post?.subject].filter(Boolean) },
+                        });
+                    }
+                    setRecentTeachers(Array.from(teachers.values()).slice(0, 6));
 
                     // Enrolled Courses: confirmed / in-progress
                     const enrolled = bookings.filter((b: any) => ['CONFIRMED', 'IN_PROGRESS', 'PAYMENT_COMPLETED'].includes(b.status));
@@ -63,8 +68,8 @@ export const useStudentDashboard = () => {
                         id: b.id,
                         teacher: b.teacher ? `${b.teacher.firstName} ${b.teacher.lastName}` : 'Teacher',
                         subject: b.inquiry?.post?.subject || b.inquiry?.post?.title || '',
-                        date: b.timeSlot?.startTime ? new Date(b.timeSlot.startTime).toLocaleDateString() : '',
-                        time: b.timeSlot?.startTime ? new Date(b.timeSlot.startTime).toLocaleTimeString() : '',
+                        date: b.timeSlot?.startTime ? format(new Date(b.timeSlot.startTime), 'EEE, MMM d') : '',
+                        time: b.timeSlot?.startTime ? format(new Date(b.timeSlot.startTime), 'h:mm a') : '',
                         googleMeetLink: b.googleMeetLink || null,
                         status: b.status,
                     }));
@@ -122,7 +127,9 @@ export const useStudentDashboard = () => {
                     const pRes = await fetch(`/api/posts`);
                     if (pRes.ok) recs = await pRes.json();
                 }
-                const unique = Array.from(new Map(recs.map((r: any) => [r.id, r])).values()).slice(0, 6);
+                // Only classes a student can take — not other students' requests, and never their own posts.
+                const offerings = recs.filter((r: any) => r.type === 'TEACHER_OFFERING' && r.userId !== authUser.id);
+                const unique = Array.from(new Map(offerings.map((r: any) => [r.id, r])).values()).slice(0, 6);
                 setRecommendations(unique);
 
                 // wallet for student
