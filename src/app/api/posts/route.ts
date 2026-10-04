@@ -69,7 +69,7 @@ async function createPost(request: Request) {
                 select: { currency: true, teacherProfile: { select: { verificationStatus: true } } },
             });
             if (!user?.teacherProfile || user.teacherProfile.verificationStatus !== "APPROVED") {
-                return NextResponse.json({ error: "Teacher account not verified to create offerings" }, { status: 403 });
+                return NextResponse.json({ error: "Your teacher profile is awaiting admin approval. You can post classes once it's approved.", code: "TEACHER_NOT_APPROVED" }, { status: 403 });
             }
             teacherCurrency = user.currency || "LKR";
         }

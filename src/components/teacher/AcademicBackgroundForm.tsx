@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Check, GraduationCap, BookOpen, Briefcase } from "lucide-react";
+import { SuggestInput } from "@/components/ui/suggest-input";
+import { COUNTRIES, DEFAULT_COUNTRY, PROFESSIONS, SRI_LANKAN_UNIVERSITIES, WORKING_STATUSES } from "@/lib/profileOptions";
 
 type Employment = "STUDENT" | "UNDERGRADUATE" | "GRADUATE";
 
@@ -51,7 +53,7 @@ const AcademicBackgroundForm = ({ onSaved }: AcademicBackgroundFormProps) => {
         if (active && d) setData({ ...EMPTY, ...{
           employmentStatus: d.employmentStatus || "",
           universityName: d.universityName || "",
-          universityCountry: d.universityCountry || "",
+          universityCountry: d.universityCountry || DEFAULT_COUNTRY,
           workingStatus: d.workingStatus || "",
           profession: d.profession || "",
           employer: d.employer || "",
@@ -68,6 +70,7 @@ const AcademicBackgroundForm = ({ onSaved }: AcademicBackgroundFormProps) => {
 
   const isStudent = data.employmentStatus === "STUDENT" || data.employmentStatus === "UNDERGRADUATE";
   const isGraduate = data.employmentStatus === "GRADUATE";
+  const notWorking = data.workingStatus === "Not currently working";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,8 +82,12 @@ const AcademicBackgroundForm = ({ onSaved }: AcademicBackgroundFormProps) => {
       toast({ title: "Missing details", description: "University name and country are required.", variant: "destructive" });
       return;
     }
-    if (isGraduate && (!data.workingStatus.trim() || !data.profession.trim() || !data.employer.trim())) {
-      toast({ title: "Missing details", description: "Working status, profession and employer are required.", variant: "destructive" });
+    if (isGraduate && (!data.workingStatus.trim() || !data.profession.trim() || (!notWorking && !data.employer.trim()))) {
+      toast({
+        title: "Missing details",
+        description: notWorking ? "Working status and profession are required." : "Working status, profession and employer are required.",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -119,6 +126,22 @@ const AcademicBackgroundForm = ({ onSaved }: AcademicBackgroundFormProps) => {
     </div>
   );
 
+  // Pick from common answers, or type your own.
+  const suggest = (id: keyof Academic, label: string, options: readonly string[], placeholder: string) => (
+    <div className="space-y-1.5">
+      <Label htmlFor={id}>
+        {label} <span className="text-primary">*</span>
+      </Label>
+      <SuggestInput
+        id={id}
+        value={data[id]}
+        onChange={(value) => setData((d) => ({ ...d, [id]: value }))}
+        options={options}
+        placeholder={placeholder}
+      />
+    </div>
+  );
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-2.5">
@@ -150,17 +173,43 @@ const AcademicBackgroundForm = ({ onSaved }: AcademicBackgroundFormProps) => {
 
       {isStudent && (
         <div className="grid gap-5 sm:grid-cols-2">
-          {field("universityName", "University name", "University of Colombo")}
-          {field("universityCountry", "University country", "Sri Lanka")}
+          {data.employmentStatus === "STUDENT"
+            ? field("universityName", "School name", "Royal College, Colombo")
+            : suggest("universityName", "University", SRI_LANKAN_UNIVERSITIES, "Select your university")}
+          {suggest("universityCountry", "Country", COUNTRIES, "Select a country")}
         </div>
       )}
 
       {isGraduate && (
         <div className="space-y-5">
-          {field("workingStatus", "Working status", "Employed full-time")}
+          <div className="space-y-2.5">
+            <Label>
+              Working status <span className="text-primary">*</span>
+            </Label>
+            <div className="flex flex-wrap gap-2">
+              {WORKING_STATUSES.map((status) => {
+                const active = data.workingStatus === status;
+                return (
+                  <button
+                    key={status}
+                    type="button"
+                    onClick={() => setData((d) => ({ ...d, workingStatus: status }))}
+                    className={`rounded-full border px-4 py-2 text-sm transition-colors ${
+                      active
+                        ? "border-primary bg-primary/[0.08] font-medium text-foreground"
+                        : "border-border/70 text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                    }`}
+                  >
+                    {status}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
           <div className="grid gap-5 sm:grid-cols-2">
-            {field("profession", "Profession", "Software Engineer")}
-            {field("employer", "Employer", "Acme Corp")}
+            {suggest("profession", "Profession", PROFESSIONS, "Select your profession")}
+            {!notWorking &&
+              field("employer", "Employer", data.workingStatus === "Self-employed" || data.workingStatus === "Freelance" ? "Your business name, or “Self”" : "Acme Corp")}
           </div>
         </div>
       )}

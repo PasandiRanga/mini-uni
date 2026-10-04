@@ -8,7 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2, Check, CheckCircle2, ShieldAlert } from "lucide-react";
+import { Loader2, Check, CheckCircle2, ShieldAlert, Sparkles } from "lucide-react";
+import { SuggestInput } from "@/components/ui/suggest-input";
+import { COUNTRIES, initialsFromFullName } from "@/lib/profileOptions";
 
 type Details = {
   email: string;
@@ -44,13 +46,22 @@ const PersonalDetailsForm = ({ onSaved }: PersonalDetailsFormProps) => {
   const [data, setData] = useState<Details>(EMPTY);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  // Fields the server filled in from sign-up, shown as a hint to confirm them.
+  const [prefilled, setPrefilled] = useState<string[]>([]);
+  // Name with initials follows the full name until the teacher edits it themselves.
+  const [initialsEdited, setInitialsEdited] = useState(false);
 
   useEffect(() => {
     let active = true;
     fetch("/api/teachers/profile")
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
-        if (active && d) setData({ ...EMPTY, ...d });
+        if (!active || !d) return;
+        setData({ ...EMPTY, ...d });
+        const filled = d.prefilled ? String(d.prefilled).split(",").filter(Boolean) : [];
+        setPrefilled(filled);
+        // Saved initials that don't match the generated ones were typed by hand.
+        setInitialsEdited(Boolean(d.nameWithInitials) && d.nameWithInitials !== initialsFromFullName(d.fullName || ""));
       })
       .finally(() => active && setLoading(false));
     return () => {
@@ -58,11 +69,22 @@ const PersonalDetailsForm = ({ onSaved }: PersonalDetailsFormProps) => {
     };
   }, []);
 
-  const set = (key: keyof Details) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    setData((d) => ({ ...d, [key]: e.target.value }));
+  const set = (key: keyof Details) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (key === "nameWithInitials") setInitialsEdited(true);
+    setData((d) => ({
+      ...d,
+      [key]: value,
+      ...(key === "fullName" && !initialsEdited ? { nameWithInitials: initialsFromFullName(value) } : {}),
+    }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!data.country.trim()) {
+      toast({ title: "Select your country", variant: "destructive" });
+      return;
+    }
     setSaving(true);
     try {
       const res = await fetch("/api/teachers/profile", {
@@ -73,6 +95,7 @@ const PersonalDetailsForm = ({ onSaved }: PersonalDetailsFormProps) => {
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || "Failed to save");
 
+      setPrefilled([]);
       toast({ title: "Saved", description: "Your personal details have been updated." });
       onSaved?.();
     } catch (err: unknown) {
@@ -97,7 +120,15 @@ const PersonalDetailsForm = ({ onSaved }: PersonalDetailsFormProps) => {
   const field = (
     id: keyof Details,
     label: string,
-    opts: { required?: boolean; type?: string; placeholder?: string; readOnly?: boolean; hint?: string } = {},
+    opts: {
+      required?: boolean;
+      type?: string;
+      placeholder?: string;
+      readOnly?: boolean;
+      hint?: string;
+      inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
+      autoComplete?: string;
+    } = {},
   ) => (
     <div className="space-y-1.5">
       <Label htmlFor={id}>
@@ -113,6 +144,8 @@ const PersonalDetailsForm = ({ onSaved }: PersonalDetailsFormProps) => {
         placeholder={opts.placeholder}
         required={opts.required}
         readOnly={opts.readOnly}
+        inputMode={opts.inputMode}
+        autoComplete={opts.autoComplete}
         className={opts.readOnly ? "bg-muted/50 text-muted-foreground" : ""}
       />
       {opts.hint && <p className="text-xs text-muted-foreground">{opts.hint}</p>}
@@ -121,11 +154,30 @@ const PersonalDetailsForm = ({ onSaved }: PersonalDetailsFormProps) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      {prefilled.length > 0 && (
+        <div className="flex items-start gap-3 rounded-2xl border border-primary/20 bg-primary/[0.05] px-4 py-3 text-sm">
+          <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+          <p className="text-muted-foreground">
+            We&apos;ve filled in what you gave us when you signed up. Check it, add the rest, and save.
+          </p>
+        </div>
+      )}
+
       <div className="grid gap-5 sm:grid-cols-2">
-        {field("fullName", "Full name", { required: true, placeholder: "Jane Amara Perera" })}
-        {field("nameWithInitials", "Name with initials", { required: true, placeholder: "J. A. Perera" })}
-        {field("contactNumber", "Primary contact number", { required: true, type: "tel", placeholder: "+94 77 123 4567" })}
-        {field("contactNumber2", "Secondary contact number", { type: "tel", placeholder: "+94 11 234 5678" })}
+        {field("fullName", "Full name", { required: true, placeholder: "Jane Amara Perera", autoComplete: "name" })}
+        {field("nameWithInitials", "Name with initials", {
+          required: true,
+          placeholder: "J. A. Perera",
+          hint: initialsEdited ? undefined : "Filled in from your full name — edit if it's different.",
+        })}
+        {field("contactNumber", "Primary contact number", {
+          required: true,
+          type: "tel",
+          inputMode: "tel",
+          autoComplete: "tel",
+          placeholder: "+94 77 123 4567",
+        })}
+        {field("contactNumber2", "Secondary contact number", { type: "tel", inputMode: "tel", placeholder: "+94 11 234 5678" })}
       </div>
 
       {/* Email — read-only with an inline verification indicator */}
@@ -154,11 +206,28 @@ const PersonalDetailsForm = ({ onSaved }: PersonalDetailsFormProps) => {
         </div>
       </div>
 
-      {field("address", "Address", { required: true, placeholder: "123 Main Street, Colombo" })}
+      {field("address", "Address", { required: true, placeholder: "123 Main Street, Colombo", autoComplete: "street-address" })}
 
       <div className="grid gap-5 sm:grid-cols-2">
-        {field("country", "Country", { required: true, placeholder: "Sri Lanka" })}
-        {field("postalCode", "Postal code", { required: true, placeholder: "00100" })}
+        <div className="space-y-1.5">
+          <Label htmlFor="country">
+            Country<span className="text-primary"> *</span>
+          </Label>
+          <SuggestInput
+            id="country"
+            value={data.country}
+            onChange={(country) => setData((d) => ({ ...d, country }))}
+            options={COUNTRIES}
+            placeholder="Select your country"
+            searchPlaceholder="Search countries…"
+          />
+        </div>
+        {field("postalCode", "Postal code", {
+          required: true,
+          inputMode: "numeric",
+          autoComplete: "postal-code",
+          placeholder: "00100",
+        })}
       </div>
 
       <div className="flex items-center gap-3 pt-2">

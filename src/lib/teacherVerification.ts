@@ -31,7 +31,9 @@ export function computeProfileCompletion(p: ProfileWithDocs) {
   if (p.employmentStatus === "STUDENT" || p.employmentStatus === "UNDERGRADUATE") {
     academicComplete = has(p.universityName) && has(p.universityCountry);
   } else if (p.employmentStatus === "GRADUATE") {
-    academicComplete = has(p.workingStatus) && has(p.profession) && has(p.employer);
+    // Someone not currently working has no employer to give.
+    const needsEmployer = p.workingStatus !== "Not currently working";
+    academicComplete = has(p.workingStatus) && has(p.profession) && (!needsEmployer || has(p.employer));
   }
 
   const steps = [

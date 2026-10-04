@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getSessionFromRequest } from "@/lib/auth";
+import { DEFAULT_COUNTRY, initialsFromFullName } from "@/lib/profileOptions";
 
 // Every editable profile string field, grouped by the section that owns it.
 const EDITABLE_FIELDS = [
@@ -37,6 +38,23 @@ export async function GET(request: Request) {
     for (const field of EDITABLE_FIELDS) {
       out[field] = (p[field] as string) ?? "";
     }
+
+    // Fill blanks from what the teacher already gave us at sign-up, so they
+    // only confirm instead of retyping. Nothing is saved until they submit.
+    const prefilled: string[] = [];
+    const prefill = (field: string, value: string | null | undefined) => {
+      if (!out[field] && value) {
+        out[field] = value;
+        prefilled.push(field);
+      }
+    };
+    prefill("fullName", `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim());
+    prefill("nameWithInitials", initialsFromFullName(out.fullName));
+    prefill("contactNumber", user.phone);
+    prefill("country", DEFAULT_COUNTRY);
+    out.prefilled = prefilled.join(",");
+    out.verificationStatus = user.teacherProfile.verificationStatus;
+
     // Which identity scans are already on file (for the upload UI)
     out.idFrontUploaded = user.teacherProfile.verificationDocs.some((d) => d.documentType === "ID_FRONT") ? "yes" : "";
     out.idBackUploaded = user.teacherProfile.verificationDocs.some((d) => d.documentType === "ID_BACK") ? "yes" : "";
