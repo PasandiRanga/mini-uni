@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCreatePostModal } from "@/contexts/CreatePostModalContext";
+import { useTeacherStatus } from "@/hooks/useTeacherStatus";
 import { applyPostChange, onPostChanged } from "@/lib/postEvents";
 import { formatMoney } from "@/lib/currency";
 import { CLASS_TYPE_LABELS, slotDurationLabel, slotDateLabel, isPostExpired, PostDescription } from "@/components/post/postCardBits";
@@ -97,6 +98,10 @@ const ExploreContent: React.FC = () => {
   const { toast } = useToast();
   const { user, isAuthenticated } = useAuth();
   const { openCreatePost } = useCreatePostModal();
+  // Teachers waiting on admin approval can browse but not post or respond yet.
+  const { isTeacher: viewerIsTeacher, isApproved: teacherApproved } = useTeacherStatus();
+  const teacherLocked = viewerIsTeacher && !teacherApproved;
+  const lockedHint = "Available once your teacher profile is approved";
   const isGuest = !isAuthenticated;
 
   const activeFilterCount = [grade, minPrice, maxPrice, classType].filter((v) => v != null && v !== '').length;
@@ -290,7 +295,7 @@ const ExploreContent: React.FC = () => {
                   <button onClick={() => setViewType('grid')} className={`rounded-full p-2 transition-all ${viewType === 'grid' ? 'bg-card shadow-soft text-primary' : 'text-muted-foreground'}`} title="Grid View"><LayoutGrid className="h-4 w-4" /></button>
                   <button onClick={() => setViewType('compact')} className={`rounded-full p-2 transition-all ${viewType === 'compact' ? 'bg-card shadow-soft text-primary' : 'text-muted-foreground'}`} title="Compact View"><LayoutList className="h-4 w-4" /></button>
                 </div>
-                <Button variant="hero" className="gap-2 rounded-full" onClick={() => { if (isGuest) { toast({ title: 'Create an account', description: 'Please register or log in to create posts.' }); router.push('/auth'); return; } openCreatePost(); }}>
+                <Button variant="hero" className="gap-2 rounded-full" disabled={teacherLocked} title={teacherLocked ? lockedHint : undefined} onClick={() => { if (isGuest) { toast({ title: 'Create an account', description: 'Please register or log in to create posts.' }); router.push('/auth'); return; } openCreatePost(); }}>
                   <Plus className="h-4 w-4" />
                   Create Post
                 </Button>
@@ -456,7 +461,7 @@ const ExploreContent: React.FC = () => {
                           );
 
                           if (userRole === 'TEACHER' && postType === 'STUDENT_REQUEST') return (
-                            <Button size="sm" variant="secondary" className="h-8 px-3 text-xs" onClick={() => toast({ title: 'Interest Sent', description: 'Interested.' })}>
+                            <Button size="sm" variant="secondary" className="h-8 px-3 text-xs" disabled={teacherLocked} title={teacherLocked ? lockedHint : undefined} onClick={() => toast({ title: 'Interest Sent', description: 'Interested.' })}>
                               Respond
                             </Button>
                           );

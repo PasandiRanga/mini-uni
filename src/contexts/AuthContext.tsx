@@ -59,8 +59,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Login failed');
+        const body = await response.json().catch(() => ({}));
+        // The API reports `error` (plus a `code` callers can branch on).
+        throw Object.assign(new Error(body.error || body.message || 'Login failed'), { code: body.code });
       }
 
       const data = await response.json();

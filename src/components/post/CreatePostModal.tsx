@@ -17,7 +17,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import SlotPickerCalendar, { type PickerSlot } from '@/components/calendar/SlotPickerCalendar';
 import { formatMoney } from '@/lib/currency';
-import { ImagePlus, Users, User } from 'lucide-react';
+import { ImagePlus, Users, User, Clock, Loader2, ShieldAlert } from 'lucide-react';
+import Link from 'next/link';
+import { useTeacherStatus } from '@/hooks/useTeacherStatus';
 
 const SUBJECTS = ['Mathematics', 'Physics', 'Chemistry', 'Biology', 'English', 'ICT', 'Commerce', 'History', 'Computer Science'];
 const CLASS_TYPES = [
@@ -124,6 +126,13 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, e
   const { isAuthenticated, user } = useAuth();
   const { toast } = useToast();
   const isTeacher = user?.role === 'TEACHER';
+  // Teachers can only post once an admin has approved their profile.
+  const teacherStatus = useTeacherStatus();
+  const { refresh: refreshTeacherStatus } = teacherStatus;
+  useEffect(() => {
+    if (open && isTeacher) refreshTeacherStatus();
+  }, [open, isTeacher, refreshTeacherStatus]);
+  const awaitingApproval = isTeacher && !teacherStatus.isApproved;
   const currency = user?.currency;
 
   // shared
@@ -339,6 +348,40 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, e
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0 gap-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {!isAuthenticated ? (
           <div className="p-8 text-center">Please sign in to create a post.</div>
+        ) : awaitingApproval ? (
+          teacherStatus.loading && !teacherStatus.status ? (
+            <div className="flex items-center justify-center p-12 text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin" />
+            </div>
+          ) : (
+            <div className="space-y-5 p-8 text-center sm:p-10">
+              <DialogHeader className="items-center space-y-3 text-center sm:text-center">
+                <span className={`flex h-12 w-12 items-center justify-center rounded-full ${teacherStatus.status === 'REJECTED' ? 'bg-destructive/10 text-destructive' : 'bg-warning/10 text-warning'}`}>
+                  {teacherStatus.status === 'REJECTED' ? <ShieldAlert className="h-6 w-6" /> : <Clock className="h-6 w-6" />}
+                </span>
+                <DialogTitle className="text-2xl font-semibold">
+                  {teacherStatus.status === 'REJECTED' ? 'Your profile needs changes' : 'Your profile is pending approval'}
+                </DialogTitle>
+                <DialogDescription className="mx-auto max-w-md text-sm text-muted-foreground">
+                  {teacherStatus.status === 'REJECTED'
+                    ? teacherStatus.rejectionReason
+                      ? `Our team asked for changes: ${teacherStatus.rejectionReason} Update your profile and it'll be reviewed again.`
+                      : "Our team asked for changes to your profile. Update it and it'll be reviewed again."
+                    : teacherStatus.percent < 100
+                      ? `Finish your profile (${teacherStatus.percent}% done) so our team can review it. You can post classes once you're approved.`
+                      : "Our team is reviewing your details. You'll be able to post classes as soon as you're approved — we'll email you."}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex flex-wrap justify-center gap-3">
+                <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
+                {(teacherStatus.status === 'REJECTED' || teacherStatus.percent < 100) && (
+                  <Button variant="hero" asChild onClick={() => onOpenChange(false)}>
+                    <Link href="/teacher/profile-completion">Complete profile</Link>
+                  </Button>
+                )}
+              </div>
+            </div>
+          )
         ) : (
           <>
             <DialogHeader className="border-b border-border/60 px-6 py-5 sm:px-8">

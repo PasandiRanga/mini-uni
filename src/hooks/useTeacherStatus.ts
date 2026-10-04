@@ -1,0 +1,71 @@
+'use client';
+
+import { useCallback, useEffect, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+
+export type TeacherStatus = "PENDING" | "APPROVED" | "REJECTED";
+
+interface TeacherStatusState {
+  /** null while loading, and for anyone who isn't a teacher. */
+  status: TeacherStatus | null;
+  /** Profile completion, 0–100. */
+  percent: number;
+  rejectionReason: string | null;
+  loading: boolean;
+  isTeacher: boolean;
+  /** True only for a teacher an admin has approved. */
+  isApproved: boolean;
+  refresh: () => void;
+}
+
+/**
+ * The signed-in teacher's verification state. Anything a teacher may only do
+ * after admin approval (posting classes, responding to requests) checks
+ * `isApproved`. The server enforces the same rule.
+ */
+export function useTeacherStatus(): TeacherStatusState {
+  const { user } = useAuth();
+  const isTeacher = user?.role === "TEACHER";
+  const [status, setStatus] = useState<TeacherStatus | null>(null);
+  const [percent, setPercent] = useState(0);
+  const [rejectionReason, setRejectionReason] = useState<string | null>(null);
+  const [loading, setLoading] = useState(isTeacher);
+  const [tick, setTick] = useState(0);
+
+  const refresh = useCallback(() => setTick((t) => t + 1), []);
+
+  useEffect(() => {
+    if (!isTeacher) {
+      setStatus(null);
+      setLoading(false);
+      return;
+    }
+    let active = true;
+    setLoading(true);
+    fetch("/api/teachers/profile-completion")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!active || !d) return;
+        setStatus(d.verificationStatus ?? "PENDING");
+        setPercent(d.percent ?? 0);
+        setRejectionReason(d.rejectionReason ?? null);
+      })
+      .catch(() => {
+        /* leave the last known state */
+      })
+      .finally(() => active && setLoading(false));
+    return () => {
+      active = false;
+    };
+  }, [isTeacher, user?.id, tick]);
+
+  return {
+    status,
+    percent,
+    rejectionReason,
+    loading,
+    isTeacher,
+    isApproved: isTeacher && status === "APPROVED",
+    refresh,
+  };
+}

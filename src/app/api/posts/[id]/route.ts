@@ -57,7 +57,7 @@ export async function PUT(
                 include: { teacherProfile: { select: { verificationStatus: true } } },
             });
             if (!user?.teacherProfile || user.teacherProfile.verificationStatus !== "APPROVED") {
-                return NextResponse.json({ error: "Teacher account not verified to modify offerings" }, { status: 403 });
+                return NextResponse.json({ error: "Your teacher profile is awaiting admin approval. You can edit classes once it's approved.", code: "TEACHER_NOT_APPROVED" }, { status: 403 });
             }
         }
 

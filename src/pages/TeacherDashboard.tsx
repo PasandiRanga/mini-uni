@@ -218,10 +218,34 @@ const TeacherDashboard = () => {
                 {greeting()},{" "}
                 <span className="font-serif italic font-normal text-gradient">{user?.firstName || "Teacher"}.</span>
               </h1>
+              {verification?.verificationStatus && (
+                <span
+                  className={`mt-3 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${
+                    verification.verificationStatus === 'APPROVED'
+                      ? 'border-success/30 bg-success/10 text-success'
+                      : verification.verificationStatus === 'REJECTED'
+                        ? 'border-destructive/30 bg-destructive/10 text-destructive'
+                        : 'border-warning/30 bg-warning/10 text-warning'
+                  }`}
+                >
+                  <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                  {verification.verificationStatus === 'APPROVED'
+                    ? 'Verified teacher'
+                    : verification.verificationStatus === 'REJECTED'
+                      ? 'Changes needed'
+                      : 'Pending approval'}
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-2.5">
               <NotificationBell />
-              <Button variant="hero" className="gap-2" onClick={() => openCreatePost()} disabled={verification?.verificationStatus !== 'APPROVED'}>
+              <Button
+                variant="hero"
+                className="gap-2"
+                onClick={() => openCreatePost()}
+                disabled={verification?.verificationStatus !== 'APPROVED'}
+                title={verification?.verificationStatus !== 'APPROVED' ? 'Available once your profile is approved' : undefined}
+              >
                 <Plus className="h-4 w-4" />
                 <span className="hidden sm:inline">Create Post</span>
                 <span className="sm:hidden">Create</span>

@@ -16,6 +16,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCreatePostModal } from "@/contexts/CreatePostModalContext";
+import { useTeacherStatus } from "@/hooks/useTeacherStatus";
 import { formatMoney } from "@/lib/currency";
 import { applyPostChange, emitPostChanged, onPostChanged } from "@/lib/postEvents";
 import { CLASS_TYPE_LABELS, slotDurationLabel, slotDateLabel, PostDescription } from "@/components/post/postCardBits";
@@ -48,6 +49,9 @@ const TeacherPosts = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const { openCreatePost } = useCreatePostModal();
+  // Posting opens up once an admin approves the teacher's profile.
+  const { isApproved, loading: statusLoading } = useTeacherStatus();
+  const lockedHint = "Available once your profile is approved";
   const [posts, setPosts] = useState<MyPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
@@ -161,7 +165,7 @@ const TeacherPosts = () => {
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             <span className="hidden sm:inline">Refresh</span>
           </Button>
-          <Button variant="hero" size="sm" onClick={() => openCreatePost()}>
+          <Button variant="hero" size="sm" onClick={() => openCreatePost()} disabled={!isApproved} title={isApproved ? undefined : lockedHint}>
             <Plus className="h-4 w-4" /> New
           </Button>
         </div>
@@ -173,8 +177,12 @@ const TeacherPosts = () => {
         ) : posts.length === 0 ? (
           <div className="py-10 text-center">
             <FileText className="mx-auto mb-3 h-10 w-10 text-muted-foreground/60" strokeWidth={1.5} />
-            <p className="mb-4 text-sm text-muted-foreground">You haven&apos;t created any posts yet.</p>
-            <Button variant="hero" onClick={() => openCreatePost()}>
+            <p className="mb-4 text-sm text-muted-foreground">
+              {isApproved || statusLoading
+                ? "You haven't created any posts yet."
+                : "You can create posts once an admin approves your teacher profile."}
+            </p>
+            <Button variant="hero" onClick={() => openCreatePost()} disabled={!isApproved} title={isApproved ? undefined : lockedHint}>
               <Plus className="h-4 w-4" /> Create your first post
             </Button>
           </div>
