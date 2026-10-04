@@ -1,5 +1,7 @@
 'use client';
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { LEVEL_GROUPS, gradeMatches } from "@/lib/classLevels";
+import { SuggestInput } from "@/components/ui/suggest-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -143,7 +145,7 @@ const ExploreContent: React.FC = () => {
           const hay = `${post.title} ${post.description} ${post.subject || ""} ${post.user?.firstName || ""} ${post.user?.lastName || ""}`.toLowerCase();
           if (!hay.includes(q)) return false;
         }
-        if (grade && post.grade && post.grade !== grade) return false;
+        if (grade && !gradeMatches(post.grade, grade)) return false;
 
         if (minPrice != null && (post.fee == null || post.fee < minPrice)) return false;
         if (maxPrice != null && (post.fee == null || post.fee > maxPrice)) return false;
@@ -229,12 +231,13 @@ const ExploreContent: React.FC = () => {
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     <div className="space-y-1.5">
                       <label htmlFor="filter-grade" className="text-xs font-medium text-muted-foreground">Grade / Level</label>
-                      <Input
+                      <SuggestInput
                         id="filter-grade"
-                        className="h-10 rounded-xl"
-                        placeholder="e.g. Grade 10"
                         value={grade || ''}
-                        onChange={(e) => setGrade(e.target.value || null)}
+                        onChange={(v) => setGrade(v || null)}
+                        groups={LEVEL_GROUPS}
+                        placeholder="Any level"
+                        searchPlaceholder="Search levels…"
                       />
                     </div>
 

@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState, useMemo } from "react";
+import { gradeMatches } from "@/lib/classLevels";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { useRouter } from "next/navigation";
@@ -135,7 +136,7 @@ const Feed = () => {
         }
 
         // Grade
-        if (grade && post.grade && post.grade !== grade) return false;
+        if (grade && !gradeMatches(post.grade, grade)) return false;
 
         // Price range
         if (minPrice != null && (post.fee == null || post.fee < minPrice)) return false;

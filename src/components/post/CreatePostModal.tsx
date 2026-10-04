@@ -1,7 +1,7 @@
 'use client';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -21,8 +21,9 @@ import { ImagePlus, Users, User, Clock, Loader2, ShieldAlert } from 'lucide-reac
 import Link from 'next/link';
 import { useTeacherStatus } from '@/hooks/useTeacherStatus';
 import { compressImage } from '@/lib/imageCompress';
+import { SuggestInput } from '@/components/ui/suggest-input';
+import { AL, AL_STREAMS, LEVEL_GROUPS, joinGrade, splitGrade, subjectsFor } from '@/lib/classLevels';
 
-const SUBJECTS = ['Mathematics', 'Physics', 'Chemistry', 'Biology', 'English', 'ICT', 'Commerce', 'History', 'Computer Science'];
 const CLASS_TYPES = [
   { id: 'INDIVIDUAL', label: 'Individual', icon: User, hint: 'One-on-one' },
   { id: 'GROUP', label: 'Group', icon: Users, hint: 'Capped group' },
@@ -30,80 +31,6 @@ const CLASS_TYPES = [
 
 // Red asterisk that marks a required field.
 const Req = () => <span className="text-destructive"> *</span>;
-
-/**
- * Subject field that lets the user either pick from a list or type their own.
- * The input matches the standard Input component and the dropdown panel is
- * styled to match it (same border, radius, background and shadow).
- */
-const SubjectCombobox: React.FC<{ value: string; onChange: (v: string) => void }> = ({ value, onChange }) => {
-  const [open, setOpen] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(0);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  const query = value.trim().toLowerCase();
-  const filtered = query ? SUBJECTS.filter((s) => s.toLowerCase().includes(query)) : SUBJECTS;
-
-  // Close when focus leaves the whole combobox.
-  const onBlur = (e: React.FocusEvent<HTMLDivElement>) => {
-    if (!containerRef.current?.contains(e.relatedTarget as Node)) setOpen(false);
-  };
-
-  const select = (s: string) => {
-    onChange(s);
-    setOpen(false);
-  };
-
-  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setOpen(true);
-      setActiveIndex((i) => Math.min(i + 1, filtered.length - 1));
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setActiveIndex((i) => Math.max(i - 1, 0));
-    } else if (e.key === 'Enter' && open && filtered[activeIndex]) {
-      e.preventDefault();
-      select(filtered[activeIndex]);
-    } else if (e.key === 'Escape') {
-      setOpen(false);
-    }
-  };
-
-  return (
-    <div ref={containerRef} className="relative" onBlur={onBlur}>
-      <Input
-        id="subject"
-        role="combobox"
-        aria-expanded={open}
-        autoComplete="off"
-        value={value}
-        placeholder="Select or type a subject"
-        required
-        onChange={(e) => { onChange(e.target.value); setOpen(true); setActiveIndex(0); }}
-        onFocus={() => setOpen(true)}
-        onKeyDown={onKeyDown}
-      />
-      {open && filtered.length > 0 && (
-        <ul className="absolute z-50 mt-1.5 max-h-60 w-full overflow-auto rounded-xl border border-input bg-card p-1 shadow-soft">
-          {filtered.map((s, i) => (
-            <li key={s}>
-              <button
-                type="button"
-                // Use onMouseDown so the option is chosen before the input blurs.
-                onMouseDown={(e) => { e.preventDefault(); select(s); }}
-                onMouseEnter={() => setActiveIndex(i)}
-                className={`w-full rounded-lg px-4 py-2 text-left text-sm transition-colors ${i === activeIndex ? 'bg-muted text-foreground' : 'text-foreground/90 hover:bg-muted/60'}`}
-              >
-                {s}
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-};
 
 export interface CreatePostModalProps {
   open: boolean;
@@ -145,6 +72,8 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, e
 
   // grade/level — required for a student request, optional on a teacher offering
   const [grade, setGrade] = useState('');
+  // A/L only: the stream narrows the subject list and is saved as "A/L · <stream>".
+  const [stream, setStream] = useState('');
   const [budget, setBudget] = useState<number | ''>('');
 
   const [submitting, setSubmitting] = useState(false);
@@ -182,6 +111,21 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, e
     }
   };
 
+  const isAL = grade === AL;
+  const subjectOptions = subjectsFor(grade, stream);
+  // A subject picked for another level/stream is cleared, typed-in ones are kept.
+  const changeLevel = (next: string) => {
+    if (next === grade) return;
+    if (subject && subjectsFor(grade, stream).includes(subject) && !subjectsFor(next).includes(subject)) setSubject('');
+    setGrade(next);
+    setStream('');
+  };
+  const changeStream = (next: string) => {
+    if (subject && subjectsFor(AL, stream).includes(subject) && !subjectsFor(AL, next).includes(subject)) setSubject('');
+    setStream(next);
+  };
+  const fullGrade = joinGrade(grade, stream);
+
   const pricePerClass = ratePerHour !== '' ? Number(ratePerHour) * (durationMin / 60) : 0;
 
   // All required fields must be filled before the post can be submitted.
@@ -191,7 +135,8 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, e
   const needsGroupRate = groupSelected && classTypes.includes('INDIVIDUAL');
   const groupPricePerClass = needsGroupRate && groupRatePerHour !== '' ? Number(groupRatePerHour) * (durationMin / 60) : null;
   const groupRateOk = !needsGroupRate || (groupRatePerHour !== '' && Number(groupRatePerHour) > 0);
-  const canSubmit = isTeacher
+  const streamOk = !isAL || stream !== '';
+  const canSubmit = !streamOk ? false : isTeacher
     ? subject.trim() !== '' && description.trim() !== '' && classTypes.length > 0 && ratePerHour !== '' && Number(ratePerHour) > 0 && groupRateOk && slots.length > 0 && (!groupSelected || (maxStudents !== '' && Number(maxStudents) >= 2))
     : subject.trim() !== '' && description.trim() !== '' && grade.trim() !== '';
 
@@ -208,6 +153,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, e
     setDurationMin(60);
     setSlots([]);
     setGrade('');
+    setStream('');
     setBudget('');
   };
 
@@ -230,7 +176,9 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, e
     const sl: PickerSlot[] = (p.timeSlots || []).map((t: { startTime: string; endTime: string }) => ({ start: new Date(t.startTime), end: new Date(t.endTime) }));
     setSlots(sl);
     if (sl.length) setDurationMin(Math.max(15, Math.round((sl[0].end.getTime() - sl[0].start.getTime()) / 60000)));
-    setGrade(p.grade || '');
+    const g = splitGrade(p.grade);
+    setGrade(g.level);
+    setStream(g.stream);
     let budgetVal: number | '' = '';
     if (p.syllabus) { try { const s = JSON.parse(p.syllabus); if (s && s.budget != null && s.budget !== '') budgetVal = Number(s.budget); } catch { /* not JSON */ } }
     setBudget(budgetVal);
@@ -274,7 +222,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, e
             type: 'TEACHER_OFFERING',
             title: title.trim() || `${subject} Class`,
             subject,
-            grade: grade.trim() || null,
+            grade: fullGrade || null,
             description,
             classTypes,
             maxStudents: classTypes.includes('GROUP') && maxStudents !== '' ? Number(maxStudents) : null,
@@ -290,7 +238,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, e
             type: 'STUDENT_REQUEST',
             title: `Looking for a Teacher — ${subject}`,
             subject,
-            grade,
+            grade: fullGrade,
             description,
             syllabus: JSON.stringify({ budget }),
           };
@@ -314,7 +262,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, e
         type: payload.type,
         title: payload.title,
         subject,
-        grade: isTeacher ? (grade.trim() || null) : grade,
+        grade: fullGrade || (isTeacher ? null : ''),
         description,
         fee: isTeacher ? Number(pricePerClass.toFixed(2)) : null,
         ratePerHour: isTeacher && ratePerHour !== '' ? Number(ratePerHour) : null,
@@ -401,16 +349,49 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, e
                 </div>
               )}
 
-              {/* Subject */}
-              <div className="space-y-1.5">
-                <Label htmlFor="subject">Subject<Req /></Label>
-                <SubjectCombobox value={subject} onChange={setSubject} />
-              </div>
-
-              {/* Level / grade — required for a student request, optional for a teacher offering */}
+              {/* Level first: it decides which subjects are suggested. */}
               <div className="space-y-1.5">
                 <Label htmlFor="grade">Level / grade{!isTeacher && <Req />}</Label>
-                <Input id="grade" value={grade} onChange={(e) => setGrade(e.target.value)} placeholder={isTeacher ? 'e.g. Grade 11, A/L, Undergraduate' : 'Grade 11 / A/L / University'} />
+                <SuggestInput
+                  id="grade"
+                  value={grade}
+                  onChange={changeLevel}
+                  groups={LEVEL_GROUPS}
+                  placeholder="Select a grade or level"
+                  searchPlaceholder="Search or type a level…"
+                />
+              </div>
+
+              {isAL && (
+                <div className="space-y-2">
+                  <Label>Stream<Req /></Label>
+                  <div className="flex flex-wrap gap-2">
+                    {AL_STREAMS.map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => changeStream(s)}
+                        aria-pressed={stream === s}
+                        className={`rounded-full border px-4 py-1.5 text-sm transition-colors ${stream === s ? 'border-primary bg-primary text-primary-foreground' : 'border-border/70 hover:bg-muted/60'}`}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <Label htmlFor="subject">Subject<Req /></Label>
+                <SuggestInput
+                  id="subject"
+                  value={subject}
+                  onChange={setSubject}
+                  options={subjectOptions}
+                  placeholder={grade ? 'Select a subject' : 'Select or type a subject'}
+                  searchPlaceholder="Search or type a subject…"
+                />
+                {isAL && !stream && <p className="text-xs text-muted-foreground">Pick a stream to see its subjects.</p>}
               </div>
 
               {/* Description */}
@@ -430,7 +411,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, e
                 <>
                   {/* Thumbnail */}
                   <div className="space-y-1.5">
-                    <Label>Thumbnail</Label>
+                    <Label>Thumbnail / post image <span className="font-normal text-muted-foreground">(optional)</span></Label>
                     {thumbnail ? (
                       <div className="relative w-full overflow-hidden rounded-xl border border-input bg-card shadow-soft">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
