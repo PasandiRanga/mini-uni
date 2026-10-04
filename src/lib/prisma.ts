@@ -1,19 +1,19 @@
 import { PrismaClient } from '@prisma/client';
 
 /**
- * Fills in pool settings the connection string leaves out, so a bare Supabase
+ * Fills in pool settings the connection string leaves out, so a bare pooled
  * URL doesn't run into P2024 ("Timed out fetching a new connection from the
  * connection pool").
  *
- * - Supabase's transaction pooler (port 6543) is PgBouncer-compatible and needs
- *   `pgbouncer=true`, which turns off prepared statements so they don't collide
- *   across pooled sessions.
+ * - Pooled URLs go through PgBouncer in transaction mode (Supabase's pooler on
+ *   port 6543, Neon's `-pooler` hosts) and need `pgbouncer=true`, which turns
+ *   off prepared statements so they don't collide across pooled sessions.
  * - `connection_limit` defaults to a small pool instead of Prisma's
  *   cpus * 2 + 1. On a dev machine that default overruns the pooler's per-client
  *   cap, and `connection_limit=1` queues every Promise.all and transaction
  *   behind one connection.
  * - `pool_timeout` gets more headroom than the 10s default, because each round
- *   trip to ap-southeast-1 is slow from a dev machine.
+ *   trip to the database is slow from a dev machine.
  *
  * Values already in the URL win. PRISMA_CONNECTION_LIMIT and
  * PRISMA_POOL_TIMEOUT override the defaults without editing the URL.
@@ -29,7 +29,7 @@ export const withPoolDefaults = (raw: string | undefined) => {
     }
 
     const params = url.searchParams;
-    const isTransactionPooler = url.port === '6543';
+    const isTransactionPooler = url.port === '6543' || url.hostname.includes('-pooler.');
 
     if (isTransactionPooler && !params.has('pgbouncer')) params.set('pgbouncer', 'true');
     if (!params.has('connection_limit')) {
