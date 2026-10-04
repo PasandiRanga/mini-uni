@@ -216,6 +216,21 @@ const DashboardLayout: React.FC<PropsWithChildren> = ({ children }) => {
                     );
                   })}
                 </div>
+                {/* The sidebar (and its logout) is hidden on phones, so offer it here. */}
+                <div className="flex items-center justify-between gap-3 border-t border-border/60 pt-4">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{`${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim() || "Signed in"}</p>
+                    <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0 gap-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    onClick={() => { setMoreOpen(false); handleLogout(); }}
+                  >
+                    <LogOut className="h-4 w-4" /> Log out
+                  </Button>
+                </div>
               </SheetContent>
             </Sheet>
           </div>
