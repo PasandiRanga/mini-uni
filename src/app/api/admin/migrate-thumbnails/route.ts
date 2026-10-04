@@ -33,6 +33,8 @@ export async function POST(request: Request) {
     for (const post of posts) {
       try {
         const url = await storeImage(post.thumbnailUrl, `thumbnails/${post.userId}`);
+        // storeImage falls back to the inline image when the upload fails.
+        if (!url || url.startsWith("data:")) throw new Error("Upload to Blob failed");
         await prisma.post.update({ where: { id: post.id }, data: { thumbnailUrl: url } });
       } catch (err) {
         console.error(`Failed to migrate thumbnail for post ${post.id}:`, err);
