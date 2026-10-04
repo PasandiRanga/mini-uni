@@ -18,19 +18,20 @@ import {
   DollarSign,
   BookOpen,
   GraduationCap,
-  MessageCircle,
-  Heart,
-  Share2,
   ChevronDown,
   Plus,
   LayoutGrid,
   LayoutList
 } from "lucide-react";
 import Link from "next/link";
+import PostActions from "@/components/post/PostActions";
 
 // Data fetched from backend (extend with commonly expected fields)
 type PostItem = {
   id: string;
+  likeCount?: number;
+  commentCount?: number;
+  likedByMe?: boolean;
   type: string; // TEACHER_OFFERING | STUDENT_REQUEST
   title: string;
   description: string;
@@ -386,10 +387,7 @@ const Feed = () => {
                               <span>Online</span>
                             </div>
                             <div className="flex items-center justify-between pt-4 border-t border-border">
-                              <div className="flex gap-2">
-                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => { if (isGuest) { toast({ title: 'Sign in' }); router.push('/auth'); } }}><Heart className="w-4 h-4" /></Button>
-                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0"><Share2 className="w-4 h-4" /></Button>
-                              </div>
+                              <PostActions post={post} />
                               <Button size="sm" variant={post.type === 'TEACHER_OFFERING' ? 'hero' : 'secondary'} onClick={() => {
                                 if (isGuest) router.push('/auth');
                                 else if (post.type === 'TEACHER_OFFERING') router.push(`/teachers/${post.user?.id}`);
@@ -448,16 +446,7 @@ const Feed = () => {
                     </div>
 
                     <div className="flex items-center justify-between pt-4 border-t border-border mt-auto">
-                      <div className="flex gap-2">
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => {
-                          if (isGuest) { toast({ title: 'Sign in to save' }); router.push('/auth'); return; }
-                        }}>
-                          <Heart className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <Share2 className="w-4 h-4" />
-                        </Button>
-                      </div>
+                      <PostActions post={post} />
                       {(() => {
                         const userRole = user?.role?.toUpperCase();
                         const postType = post.type?.toUpperCase();

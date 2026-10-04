@@ -12,13 +12,12 @@ import { applyPostChange, onPostChanged } from "@/lib/postEvents";
 import { formatMoney } from "@/lib/currency";
 import { CLASS_TYPE_LABELS, slotDurationLabel, slotDateLabel, isPostExpired, PostDescription } from "@/components/post/postCardBits";
 import BookClassModal, { type BookablePost } from "@/components/post/BookClassModal";
+import PostActions from "@/components/post/PostActions";
 import {
   Search,
   SlidersHorizontal,
   BookOpen,
   GraduationCap,
-  Heart,
-  Share2,
   Plus,
   LayoutGrid,
   LayoutList,
@@ -30,6 +29,9 @@ import {
 
 type PostItem = {
   id: string;
+  likeCount?: number;
+  commentCount?: number;
+  likedByMe?: boolean;
   type: string;
   title: string;
   description: string;
@@ -81,6 +83,20 @@ const ExploreContent: React.FC = () => {
     // Reflect create/edit/delete instantly.
     return onPostChanged((c) => setPosts((prev) => applyPostChange(prev, c)));
   }, [fetchPosts]);
+
+  // A shared link (/explore?post=<id>) scrolls to that post and highlights it once loaded.
+  const [sharedPostShown, setSharedPostShown] = useState(false);
+  useEffect(() => {
+    if (sharedPostShown || posts.length === 0 || typeof window === "undefined") return;
+    const id = new URLSearchParams(window.location.search).get("post");
+    if (!id) return;
+    const el = document.getElementById(`post-${id}`);
+    if (!el) return;
+    setSharedPostShown(true);
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    el.classList.add("ring-2", "ring-primary", "ring-offset-2");
+    window.setTimeout(() => el.classList.remove("ring-2", "ring-primary", "ring-offset-2"), 2500);
+  }, [posts, sharedPostShown]);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("All Subjects");
@@ -319,6 +335,7 @@ const ExploreContent: React.FC = () => {
                   const isExpanded = expandedId === post.id;
                   return (
                     <article
+                      id={`post-${post.id}`}
                       key={post.id}
                       className={`overflow-hidden rounded-2xl border bg-card transition-all duration-300 ${isExpanded ? 'border-primary/40 shadow-elevated' : 'border-border/70 shadow-card hover:border-primary/30'}`}
                     >
@@ -379,10 +396,7 @@ const ExploreContent: React.FC = () => {
                             </div>
 
                             <div className="mt-5 flex items-center justify-between border-t border-border pt-4">
-                              <div className="flex gap-2">
-                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => { if (isGuest) { toast({ title: 'Sign in to save', description: 'Log in to save posts.' }); router.push('/auth'); return; } }}><Heart className="h-4 w-4" /></Button>
-                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0"><Share2 className="h-4 w-4" /></Button>
-                              </div>
+                              <PostActions post={post} />
                               {isTeacherPost && (
                                 user?.role?.toUpperCase() === 'STUDENT' && user.id !== post.user?.id ? (
                                   <Button size="sm" variant="hero" onClick={() => setBookPost(post as unknown as BookablePost)}>Book a class</Button>
@@ -399,7 +413,7 @@ const ExploreContent: React.FC = () => {
                 }
 
                 return (
-                  <article key={post.id} className="flex flex-col overflow-hidden rounded-2xl bg-card shadow-card transition-all duration-300 hover:shadow-elevated">
+                  <article id={`post-${post.id}`} key={post.id} className="flex flex-col overflow-hidden rounded-2xl bg-card shadow-card transition-all duration-300 hover:shadow-elevated">
                     {/* Banner */}
                     {post.thumbnailUrl && (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -437,10 +451,7 @@ const ExploreContent: React.FC = () => {
                       </div>
 
                       <div className="mt-5 flex items-center justify-between border-t border-border pt-4">
-                        <div className="flex gap-2">
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => { if (isGuest) { toast({ title: 'Sign in to save', description: 'Log in to save posts.' }); router.push('/auth'); return; } }}><Heart className="h-4 w-4" /></Button>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0"><Share2 className="h-4 w-4" /></Button>
-                        </div>
+                        <PostActions post={post} />
                         {(() => {
                           const userRole = user?.role?.toUpperCase();
                           const postType = post.type?.toUpperCase();

@@ -16,6 +16,11 @@ export async function GET(request: Request) {
         if (subject) where.subject = subject;
         if (teacherId) where.userId = teacherId;
 
+        // Optional: a signed-in viewer also learns which posts they've liked.
+        const { getSessionFromRequest } = await import("@/lib/auth");
+        const session = await getSessionFromRequest(request);
+        const viewerId: string | undefined = session?.sub;
+
         const posts = await prisma.post.findMany({
             where,
             orderBy: { createdAt: "desc" },
@@ -24,11 +29,20 @@ export async function GET(request: Request) {
                     select: { id: true, firstName: true, lastName: true, role: true },
                 },
                 timeSlots: slotsWithSeats,
+                _count: { select: { likes: true, comments: true } },
+                ...(viewerId ? { likes: { where: { userId: viewerId }, select: { id: true } } } : {}),
             },
             take: 50,
         });
 
-        return NextResponse.json(posts);
+        return NextResponse.json(
+            posts.map(({ likes, _count, ...post }: any) => ({
+                ...post,
+                likeCount: _count.likes,
+                commentCount: _count.comments,
+                likedByMe: Boolean(likes?.length),
+            }))
+        );
     } catch (error) {
         console.error("Error fetching posts:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
