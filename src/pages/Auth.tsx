@@ -28,6 +28,8 @@ const Auth = () => {
   const [role] = useState<UserRole>((searchParams?.get("role") as UserRole) || "student");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  // Set when the email has no account, to offer sign-up instead of a bare error.
+  const [notRegistered, setNotRegistered] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -40,6 +42,7 @@ const Auth = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setNotRegistered(null);
 
     try {
       if (mode === "login") {
@@ -57,8 +60,12 @@ const Auth = () => {
         router.replace(dest);
       }
     } catch (err: unknown) {
+      if ((err as { code?: string })?.code === 'ACCOUNT_NOT_FOUND') {
+        setNotRegistered(formData.email);
+        return;
+      }
       const message = err instanceof Error ? err.message : String(err);
-      toast({ title: 'Error', description: message || 'Authentication failed', variant: 'destructive' });
+      toast({ title: "Couldn't sign in", description: message || 'Authentication failed', variant: 'destructive' });
     } finally {
       setIsLoading(false);
     }
@@ -112,6 +119,19 @@ const Auth = () => {
           {/* Signup role selection removed - all signups handled on the /signup page */}
 
           {/* Form */}
+          {notRegistered && (
+            <div className="mb-5 rounded-xl border border-border/70 bg-muted/40 p-4 text-sm">
+              <p className="font-medium">No account found for {notRegistered}</p>
+              <p className="mt-1 text-muted-foreground">
+                Check the email for typos, or{' '}
+                <Link href="/signup" className="font-medium text-primary hover:underline">
+                  create an account
+                </Link>
+                .
+              </p>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Inline signup name field removed. Use /signup for new accounts. */}
 
@@ -125,7 +145,10 @@ const Auth = () => {
                   placeholder="you@example.com"
                   className="pl-10 h-12"
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, email: e.target.value });
+                    setNotRegistered(null);
+                  }}
                   required
                 />
               </div>

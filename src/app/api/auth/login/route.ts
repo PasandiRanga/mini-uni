@@ -19,10 +19,18 @@ export async function POST(request: Request) {
             where: { email },
         });
 
-        if (!user || !user.isActive) {
+        // Distinct codes so the login page can point unregistered emails to
+        // sign-up instead of a generic failure.
+        if (!user) {
             return NextResponse.json(
-                { error: "Invalid credentials" },
-                { status: 401 }
+                { error: "No account found with this email.", code: "ACCOUNT_NOT_FOUND" },
+                { status: 404 }
+            );
+        }
+        if (!user.isActive) {
+            return NextResponse.json(
+                { error: "This account has been deactivated.", code: "ACCOUNT_INACTIVE" },
+                { status: 403 }
             );
         }
 
@@ -31,7 +39,7 @@ export async function POST(request: Request) {
 
         if (!isPasswordValid) {
             return NextResponse.json(
-                { error: "Invalid credentials" },
+                { error: "Incorrect password.", code: "WRONG_PASSWORD" },
                 { status: 401 }
             );
         }
