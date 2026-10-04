@@ -6,9 +6,9 @@ export async function GET() {
     try {
         const teachers = await prisma.user.findMany({
             where: { role: "TEACHER", isActive: true },
+            // Public listing: no email or other contact details.
             select: {
                 id: true,
-                email: true,
                 firstName: true,
                 lastName: true,
                 teacherProfile: {
