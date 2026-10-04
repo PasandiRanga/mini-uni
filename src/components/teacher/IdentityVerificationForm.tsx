@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Check, IdCard, CreditCard, BookUser, Upload, CheckCircle2 } from "lucide-react";
+import { compressImage, MAX_RAW_UPLOAD_BYTES } from "@/lib/imageCompress";
 
 type IdType = "NIC" | "LICENSE" | "PASSPORT";
 
@@ -56,12 +57,22 @@ const IdentityVerificationForm = ({ onSaved }: IdentityVerificationFormProps) =>
   const needsBack = selected?.needsBack ?? false;
 
   const upload = async (documentType: string, file: File) => {
-    const documentUrl = await toDataUrl(file);
+    // Photos are shrunk (kept sharp enough to read an ID); PDFs go as-is under a size cap,
+    // since the API rejects requests over 4.5 MB.
+    let documentUrl: string;
+    if (file.type.startsWith("image/")) {
+      documentUrl = await compressImage(file, { maxDimension: 2200, quality: 0.85 });
+    } else if (file.size > MAX_RAW_UPLOAD_BYTES) {
+      throw new Error("PDFs must be 3 MB or smaller. Upload a photo of the document instead.");
+    } else {
+      documentUrl = await toDataUrl(file);
+    }
     const res = await fetch("/api/teachers/upload-document", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ documentType, documentUrl }),
     });
+    if (res.status === 413) throw new Error("That file is too large. Try a smaller photo.");
     if (!res.ok) throw new Error((await res.text()) || "Upload failed");
   };
 

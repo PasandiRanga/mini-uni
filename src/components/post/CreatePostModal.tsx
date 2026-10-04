@@ -20,6 +20,7 @@ import { formatMoney } from '@/lib/currency';
 import { ImagePlus, Users, User, Clock, Loader2, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
 import { useTeacherStatus } from '@/hooks/useTeacherStatus';
+import { compressImage } from '@/lib/imageCompress';
 
 const SUBJECTS = ['Mathematics', 'Physics', 'Chemistry', 'Biology', 'English', 'ICT', 'Commerce', 'History', 'Computer Science'];
 const CLASS_TYPES = [
@@ -29,14 +30,6 @@ const CLASS_TYPES = [
 
 // Red asterisk that marks a required field.
 const Req = () => <span className="text-destructive"> *</span>;
-
-const toDataUrl = (file: File) =>
-  new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
 
 /**
  * Subject field that lets the user either pick from a list or type their own.
@@ -181,7 +174,12 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, e
       toast({ title: 'Unsupported file', description: 'Use a JPG, JPEG or PNG image.', variant: 'destructive' });
       return;
     }
-    setThumbnail(await toDataUrl(file));
+    try {
+      // Shrink before upload: a full-size phone photo exceeds the 4.5 MB request limit (HTTP 413).
+      setThumbnail(await compressImage(file, { maxDimension: 1600 }));
+    } catch {
+      toast({ title: "Couldn't read that image", description: 'Try a different JPG or PNG.', variant: 'destructive' });
+    }
   };
 
   const pricePerClass = ratePerHour !== '' ? Number(ratePerHour) * (durationMin / 60) : 0;
@@ -304,6 +302,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, e
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
+        if (res.status === 413) throw new Error('That image is too large. Try a smaller one.');
         throw new Error(j.error || j.message || `HTTP ${res.status}`);
       }
       const saved = await res.json().catch(() => ({}));
