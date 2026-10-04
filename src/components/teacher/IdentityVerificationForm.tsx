@@ -5,7 +5,7 @@ import ProfileLoadError from "@/components/teacher/ProfileLoadError";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Check, IdCard, CreditCard, BookUser, Upload, CheckCircle2 } from "lucide-react";
+import { Loader2, Check, IdCard, CreditCard, BookUser, Upload, CheckCircle2, ShieldCheck } from "lucide-react";
 import { compressImage, MAX_RAW_UPLOAD_BYTES } from "@/lib/imageCompress";
 
 type IdType = "NIC" | "LICENSE" | "PASSPORT";
@@ -40,6 +40,8 @@ const IdentityVerificationForm = ({ onSaved }: IdentityVerificationFormProps) =>
   const [loadFailed, setLoadFailed] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [saving, setSaving] = useState(false);
+  // Approved: the ID was checked by an admin and can't be swapped from here.
+  const [verified, setVerified] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -53,6 +55,7 @@ const IdentityVerificationForm = ({ onSaved }: IdentityVerificationFormProps) =>
       .then((d) => {
         if (!active || !d) return;
         if (d.idType) setIdType(d.idType);
+        setVerified(d.verificationStatus === "APPROVED");
         setFrontOnFile(d.idFrontUploaded === "yes");
         setBackOnFile(d.idBackUploaded === "yes");
       })
@@ -83,7 +86,7 @@ const IdentityVerificationForm = ({ onSaved }: IdentityVerificationFormProps) =>
       body: JSON.stringify({ documentType, documentUrl }),
     });
     if (res.status === 413) throw new Error("That file is too large. Try a smaller photo.");
-    if (!res.ok) throw new Error((await res.text()) || "Upload failed");
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "Upload failed");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -104,11 +107,12 @@ const IdentityVerificationForm = ({ onSaved }: IdentityVerificationFormProps) =>
     setSaving(true);
     try {
       // Save the chosen type, then upload whichever scans were (re)selected
-      await fetch("/api/teachers/profile", {
+      const typeRes = await fetch("/api/teachers/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ idType }),
       });
+      if (!typeRes.ok) throw new Error((await typeRes.json().catch(() => ({}))).error || "Couldn't save the document type");
       if (front) await upload("ID_FRONT", front);
       if (needsBack && back) await upload("ID_BACK", back);
 
@@ -133,6 +137,22 @@ const IdentityVerificationForm = ({ onSaved }: IdentityVerificationFormProps) =>
     return (
       <div className="flex items-center justify-center py-16 text-muted-foreground">
         <Loader2 className="h-5 w-5 animate-spin" />
+      </div>
+    );
+  }
+
+  if (verified) {
+    return (
+      <div className="flex items-start gap-3 rounded-2xl border border-success/30 bg-success/[0.06] px-4 py-4">
+        <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-success" strokeWidth={1.75} />
+        <div className="text-sm">
+          <p className="font-medium">
+            {selected?.label ?? "ID"} verified{needsBack ? " (front & back)" : ""}
+          </p>
+          <p className="mt-0.5 text-muted-foreground">
+            Our team has checked your identity. To change your ID, contact support.
+          </p>
+        </div>
       </div>
     );
   }

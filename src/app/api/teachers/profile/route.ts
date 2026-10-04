@@ -16,6 +16,9 @@ const EDITABLE_FIELDS = [
   "bankAccountName", "bankAccountNumber", "bankName", "bankBranch",
 ] as const;
 
+/** Fields an admin checked against the ID; a verified teacher can't change them alone. */
+const VERIFIED_IDENTITY_FIELDS = ["fullName", "nameWithInitials", "idType"] as const;
+
 // GET — current teacher's full profile (+ account email)
 export async function GET(request: Request) {
   try {
@@ -92,7 +95,26 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "Teacher profile not found" }, { status: 404 });
     }
 
+    // Once approved, the name and ID were matched against the documents: a
+    // change would bypass that review, so it goes through support instead.
+    if (profile.verificationStatus === "APPROVED") {
+      const changed = VERIFIED_IDENTITY_FIELDS.filter(
+        (f) => f in data && data[f] !== ((profile as Record<string, unknown>)[f] ?? "")
+      );
+      if (changed.length > 0) {
+        return NextResponse.json(
+          { error: "Your name and ID are verified. Contact support to change them.", code: "IDENTITY_LOCKED" },
+          { status: 403 }
+        );
+      }
+    }
+
     await prisma.teacherProfile.update({ where: { userId: session.sub }, data });
+
+    // An ID type without a back side (e.g. passport) makes an old back scan stale.
+    if (data.idType && data.idType !== "NIC" && data.idType !== "LICENSE") {
+      await prisma.verificationDocument.deleteMany({ where: { teacherId: profile.id, documentType: "ID_BACK" } });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

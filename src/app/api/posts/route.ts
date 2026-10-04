@@ -21,6 +21,16 @@ export async function GET(request: Request) {
         const session = await getSessionFromRequest(request);
         const viewerId: string | undefined = session?.sub;
 
+        // Classes only go public once their teacher is approved (this also hides
+        // any posted before approval was required). Student requests always
+        // show, and a teacher still sees their own posts.
+        if (!(teacherId && teacherId === viewerId)) {
+            where.OR = [
+                { type: { not: "TEACHER_OFFERING" } },
+                { user: { teacherProfile: { verificationStatus: "APPROVED" } } },
+            ];
+        }
+
         const posts = await prisma.post.findMany({
             where,
             orderBy: { createdAt: "desc" },

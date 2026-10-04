@@ -150,19 +150,20 @@ const TeacherReview = ({ toast }: { toast: any }) => {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<string | null>(null);
+  // A failed load must not look like an empty queue.
+  const [loadError, setLoadError] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
+    setLoadError(false);
     try {
       const res = await fetch(`/api/admin/teachers?status=${status}`);
-      if (res.ok) {
-        const data = await res.json();
-        setItems(data.items || []);
-      } else {
-        setItems([]);
-      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setItems(data.items || []);
     } catch {
       setItems([]);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -197,6 +198,8 @@ const TeacherReview = ({ toast }: { toast: any }) => {
 
       {loading ? (
         <Loading />
+      ) : loadError ? (
+        <LoadFailed onRetry={load} />
       ) : items.length === 0 ? (
         <Empty
           icon={ShieldCheck}
@@ -248,6 +251,35 @@ const TeacherReview = ({ toast }: { toast: any }) => {
   );
 };
 
+/** Shown when a list or detail couldn't be fetched, with a retry. */
+const LoadFailed = ({ onRetry }: { onRetry: () => void }) => (
+  <div className="flex flex-col items-center gap-3 rounded-2xl border border-destructive/30 bg-destructive/[0.04] px-6 py-10 text-center">
+    <p className="text-sm font-medium">Couldn&apos;t load this. It may be a server or database problem.</p>
+    <Button variant="outline" size="sm" className="gap-2" onClick={onRetry}>
+      <RefreshCw className="h-4 w-4" /> Try again
+    </Button>
+  </div>
+);
+
+/**
+ * ID scans are stored as data: URLs, which browsers refuse to open in a new
+ * tab. Turn one into a blob URL first so images and PDFs both open.
+ */
+const openDocument = async (e: React.MouseEvent, url: string) => {
+  if (!url?.startsWith("data:")) return;
+  e.preventDefault();
+  // Open synchronously (inside the click) so pop-up blockers allow it.
+  const win = window.open("", "_blank");
+  try {
+    const blob = await (await fetch(url)).blob();
+    const objectUrl = URL.createObjectURL(blob);
+    if (win) win.location.href = objectUrl;
+    else window.location.href = objectUrl;
+  } catch {
+    win?.close();
+  }
+};
+
 const Field = ({ label, value }: { label: string; value?: string | null }) => (
   <div>
     <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
@@ -271,14 +303,21 @@ const TeacherDetailDialog = ({
   const [rejecting, setRejecting] = useState(false);
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let active = true;
     (async () => {
       setLoading(true);
+      setLoadError(false);
       try {
         const res = await fetch(`/api/admin/teachers/${userId}`);
-        if (res.ok && active) setDetail(await res.json());
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (active) setDetail(data);
+      } catch {
+        if (active) setLoadError(true);
       } finally {
         if (active) setLoading(false);
       }
@@ -286,7 +325,7 @@ const TeacherDetailDialog = ({
     return () => {
       active = false;
     };
-  }, [userId]);
+  }, [userId, reloadKey]);
 
   const act = async (kind: "approve" | "reject") => {
     setSubmitting(true);
@@ -298,6 +337,8 @@ const TeacherDetailDialog = ({
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
+        // Already decided (another admin, or a double click): show the latest state.
+        if (res.status === 409) onReviewed();
         throw new Error(err.error || "Action failed");
       }
       toast({
@@ -330,7 +371,9 @@ const TeacherDetailDialog = ({
           <DialogDescription>Review the submitted details and documents before deciding.</DialogDescription>
         </DialogHeader>
 
-        {loading || !detail ? (
+        {loadError ? (
+          <LoadFailed onRetry={() => setReloadKey((n) => n + 1)} />
+        ) : loading || !detail ? (
           <Loading />
         ) : (
           <div className="space-y-6">
@@ -411,6 +454,7 @@ const TeacherDetailDialog = ({
                       href={d.documentUrl}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={(e) => openDocument(e, d.documentUrl)}
                       className="group relative block overflow-hidden rounded-xl border border-border/70 bg-muted/30"
                     >
                       {/\.(png|jpe?g|gif|webp|avif)$/i.test(d.documentUrl) || d.documentUrl?.startsWith("data:image") ? (
@@ -430,6 +474,13 @@ const TeacherDetailDialog = ({
                 </div>
               )}
             </section>
+
+            {isPending && detail.complete === false && (
+              <p className="rounded-xl border border-warning/40 bg-warning/[0.08] px-4 py-3 text-sm">
+                Not ready to approve: missing{" "}
+                {(detail.steps || []).filter((s: any) => !s.complete).map((s: any) => s.label.toLowerCase()).join(", ")}.
+              </p>
+            )}
 
             {/* Reject reason input */}
             {rejecting && (
@@ -468,7 +519,7 @@ const TeacherDetailDialog = ({
                 <Button variant="outline" onClick={() => setRejecting(true)} disabled={submitting} className="gap-2 text-destructive">
                   <XCircle className="h-4 w-4" /> Reject
                 </Button>
-                <Button onClick={() => act("approve")} disabled={submitting} className="gap-2">
+                <Button onClick={() => act("approve")} disabled={submitting || detail.complete === false} className="gap-2">
                   {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                   Approve
                 </Button>

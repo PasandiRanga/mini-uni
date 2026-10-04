@@ -19,7 +19,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
   try {
     const body = await request.json().catch(() => ({}));
-    const reason = typeof body?.reason === "string" ? body.reason.trim() : "";
+    const reason = typeof body?.reason === "string" ? body.reason.trim().slice(0, 1000) : "";
 
     if (!reason) {
       return NextResponse.json({ error: "A reason is required to reject" }, { status: 400 });
@@ -30,12 +30,19 @@ export async function POST(request: Request, { params }: { params: { id: string 
       select: {
         id: true,
         userId: true,
+        verificationStatus: true,
         user: { select: { email: true, firstName: true } },
       },
     });
 
     if (!profile) {
       return NextResponse.json({ error: "Teacher not found" }, { status: 404 });
+    }
+    if (profile.verificationStatus !== "PENDING") {
+      return NextResponse.json(
+        { error: `This teacher is already ${profile.verificationStatus.toLowerCase()}`, code: "NOT_PENDING" },
+        { status: 409 }
+      );
     }
 
     const reviewedAt = new Date();

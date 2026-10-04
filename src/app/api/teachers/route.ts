@@ -5,7 +5,8 @@ import prisma from "@/lib/prisma";
 export async function GET() {
     try {
         const teachers = await prisma.user.findMany({
-            where: { role: "TEACHER", isActive: true },
+            // Only admin-approved teachers are listed publicly.
+            where: { role: "TEACHER", isActive: true, teacherProfile: { verificationStatus: "APPROVED" } },
             // Public listing: no email or other contact details.
             select: {
                 id: true,

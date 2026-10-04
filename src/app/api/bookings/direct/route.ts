@@ -40,9 +40,14 @@ export async function POST(request: Request) {
 
     const post = await prisma.post.findUnique({
       where: { id: postId },
-      include: { timeSlots: true },
+      include: { timeSlots: true, user: { select: { teacherProfile: { select: { verificationStatus: true } } } } },
     });
-    if (!post || post.type !== "TEACHER_OFFERING" || !post.isActive) {
+    if (
+      !post ||
+      post.type !== "TEACHER_OFFERING" ||
+      !post.isActive ||
+      post.user.teacherProfile?.verificationStatus !== "APPROVED"
+    ) {
       return NextResponse.json({ error: "This class is not available for booking" }, { status: 400 });
     }
     if (post.userId === user.id) {

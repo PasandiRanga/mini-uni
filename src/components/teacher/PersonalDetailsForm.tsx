@@ -54,6 +54,8 @@ const PersonalDetailsForm = ({ onSaved }: PersonalDetailsFormProps) => {
   const [prefilled, setPrefilled] = useState<string[]>([]);
   // Name with initials follows the full name until the teacher edits it themselves.
   const [initialsEdited, setInitialsEdited] = useState(false);
+  // An approved teacher's name was checked against their ID, so it's locked.
+  const [verified, setVerified] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -67,6 +69,7 @@ const PersonalDetailsForm = ({ onSaved }: PersonalDetailsFormProps) => {
       .then((d) => {
         if (!active || !d) return;
         setData({ ...EMPTY, ...d });
+        setVerified(d.verificationStatus === "APPROVED");
         const filled = d.prefilled ? String(d.prefilled).split(",").filter(Boolean) : [];
         setPrefilled(filled);
         // Saved initials that don't match the generated ones were typed by hand.
@@ -176,11 +179,18 @@ const PersonalDetailsForm = ({ onSaved }: PersonalDetailsFormProps) => {
       )}
 
       <div className="grid gap-5 sm:grid-cols-2">
-        {field("fullName", "Full name", { required: true, placeholder: "Jane Amara Perera", autoComplete: "name" })}
+        {field("fullName", "Full name", {
+          required: true,
+          placeholder: "Jane Amara Perera",
+          autoComplete: "name",
+          readOnly: verified,
+          hint: verified ? "Verified against your ID. Contact support to change it." : undefined,
+        })}
         {field("nameWithInitials", "Name with initials", {
           required: true,
           placeholder: "J. A. Perera",
-          hint: initialsEdited ? undefined : "Filled in from your full name — edit if it's different.",
+          readOnly: verified,
+          hint: verified ? undefined : initialsEdited ? undefined : "Filled in from your full name — edit if it's different.",
         })}
         {field("contactNumber", "Primary contact number", {
           required: true,
