@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Check, GraduationCap, BookOpen, Briefcase } from "lucide-react";
 import { SuggestInput } from "@/components/ui/suggest-input";
-import { AL_STREAMS, COUNTRIES, DEFAULT_COUNTRY, PROFESSIONS, SRI_LANKAN_UNIVERSITIES, WORKING_STATUSES, examYearOptions } from "@/lib/profileOptions";
+import { AL_STREAMS, COUNTRIES, DEFAULT_COUNTRY, PROFESSIONS, UNIVERSITY_GROUPS, WORKING_STATUSES, examYearOptions, isSriLankanUniversity } from "@/lib/profileOptions";
 
 type Employment = "STUDENT" | "UNDERGRADUATE" | "GRADUATE";
 
@@ -76,6 +76,8 @@ const AcademicBackgroundForm = ({ onSaved }: AcademicBackgroundFormProps) => {
 
   const isStudent = data.employmentStatus === "STUDENT" || data.employmentStatus === "UNDERGRADUATE";
   const isSchoolStudent = data.employmentStatus === "STUDENT";
+  // Picking a listed Sri Lankan university fixes the country to Sri Lanka.
+  const countryLocked = data.employmentStatus === "UNDERGRADUATE" && isSriLankanUniversity(data.universityName);
   const isGraduate = data.employmentStatus === "GRADUATE";
   const notWorking = data.workingStatus === "Not currently working";
 
@@ -218,8 +220,42 @@ const AcademicBackgroundForm = ({ onSaved }: AcademicBackgroundFormProps) => {
         <div className="grid gap-5 sm:grid-cols-2">
           {data.employmentStatus === "STUDENT"
             ? field("universityName", "School name", "Royal College, Colombo")
-            : suggest("universityName", "University", SRI_LANKAN_UNIVERSITIES, "Select your university")}
-          {suggest("universityCountry", "Country", COUNTRIES, "Select a country")}
+            : (
+              <div className="space-y-1.5">
+                <Label htmlFor="universityName">
+                  University <span className="text-primary">*</span>
+                </Label>
+                <SuggestInput
+                  id="universityName"
+                  value={data.universityName}
+                  // A Sri Lankan university settles the country; anything typed by hand leaves it editable.
+                  onChange={(universityName) =>
+                    setData((d) => ({
+                      ...d,
+                      universityName,
+                      ...(isSriLankanUniversity(universityName) ? { universityCountry: DEFAULT_COUNTRY } : {}),
+                    }))
+                  }
+                  groups={UNIVERSITY_GROUPS}
+                  placeholder="Select your university"
+                  searchPlaceholder="Search, or type one that isn't listed…"
+                />
+              </div>
+            )}
+          <div className="space-y-1.5">
+            <Label htmlFor="universityCountry">
+              Country <span className="text-primary">*</span>
+            </Label>
+            <SuggestInput
+              id="universityCountry"
+              value={data.universityCountry}
+              onChange={(universityCountry) => setData((d) => ({ ...d, universityCountry }))}
+              options={COUNTRIES}
+              placeholder="Select a country"
+              locked={countryLocked}
+            />
+            {countryLocked && <p className="text-xs text-muted-foreground">Set from your university.</p>}
+          </div>
         </div>
       )}
 

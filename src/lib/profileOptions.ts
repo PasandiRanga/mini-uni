@@ -26,7 +26,8 @@ export const COUNTRIES = [
 
 export const DEFAULT_COUNTRY = "Sri Lanka";
 
-export const SRI_LANKAN_UNIVERSITIES = [
+/** State universities, under the University Grants Commission. */
+export const SL_STATE_UNIVERSITIES = [
   "University of Colombo",
   "University of Peradeniya",
   "University of Moratuwa",
@@ -41,19 +42,46 @@ export const SRI_LANKAN_UNIVERSITIES = [
   "Wayamba University of Sri Lanka",
   "Uva Wellassa University",
   "University of the Visual and Performing Arts",
-  "Open University of Sri Lanka",
   "University of Vavuniya",
+  "Open University of Sri Lanka",
   "Gampaha Wickramarachchi University of Indigenous Medicine",
   "General Sir John Kotelawala Defence University",
+  "Buddhist and Pali University of Sri Lanka",
+  "Ocean University of Sri Lanka",
+] as const;
+
+/** Private and non-state degree-awarding institutes. */
+export const SL_PRIVATE_UNIVERSITIES = [
   "Sri Lanka Institute of Information Technology (SLIIT)",
   "Informatics Institute of Technology (IIT)",
   "NSBM Green University",
   "Sri Lanka Technological Campus (SLTC)",
+  "KIU",
   "CINEC Campus",
   "APIIT Sri Lanka",
+  "ICBT Campus",
+  "BCAS Campus",
   "ESOFT Metro Campus",
   "Horizon Campus",
+  "Saegis Campus",
+  "NIBM",
+  "Aquinas College of Higher Studies",
+  "Royal Institute of Colombo",
+  "Imperial Institute of Higher Education (IIHE)",
+  "ACBT",
 ] as const;
+
+export const SRI_LANKAN_UNIVERSITIES: readonly string[] = [...SL_STATE_UNIVERSITIES, ...SL_PRIVATE_UNIVERSITIES];
+
+/** University picker groups: state first, then private. */
+export const UNIVERSITY_GROUPS = [
+  { label: "State universities", options: SL_STATE_UNIVERSITIES },
+  { label: "Private universities & campuses", options: SL_PRIVATE_UNIVERSITIES },
+] as const;
+
+/** True for a university on the Sri Lankan lists (its country is then known). */
+export const isSriLankanUniversity = (name: string) =>
+  SRI_LANKAN_UNIVERSITIES.some((u) => u.toLowerCase() === name.trim().toLowerCase());
 
 export const AL_STREAMS = [
   "Physical Science (Maths)",
