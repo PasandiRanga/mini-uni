@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Check, GraduationCap, BookOpen, Briefcase } from "lucide-react";
 import { SuggestInput } from "@/components/ui/suggest-input";
-import { COUNTRIES, DEFAULT_COUNTRY, PROFESSIONS, SRI_LANKAN_UNIVERSITIES, WORKING_STATUSES } from "@/lib/profileOptions";
+import { AL_STREAMS, COUNTRIES, DEFAULT_COUNTRY, PROFESSIONS, SRI_LANKAN_UNIVERSITIES, WORKING_STATUSES, examYearOptions } from "@/lib/profileOptions";
 
 type Employment = "STUDENT" | "UNDERGRADUATE" | "GRADUATE";
 
@@ -21,6 +21,8 @@ type Academic = {
   employmentStatus: Employment | "";
   universityName: string;
   universityCountry: string;
+  stream: string;
+  examYear: string;
   workingStatus: string;
   profession: string;
   employer: string;
@@ -30,6 +32,8 @@ const EMPTY: Academic = {
   employmentStatus: "",
   universityName: "",
   universityCountry: "",
+  stream: "",
+  examYear: "",
   workingStatus: "",
   profession: "",
   employer: "",
@@ -54,6 +58,8 @@ const AcademicBackgroundForm = ({ onSaved }: AcademicBackgroundFormProps) => {
           employmentStatus: d.employmentStatus || "",
           universityName: d.universityName || "",
           universityCountry: d.universityCountry || DEFAULT_COUNTRY,
+          stream: d.stream || "",
+          examYear: d.examYear || "",
           workingStatus: d.workingStatus || "",
           profession: d.profession || "",
           employer: d.employer || "",
@@ -69,6 +75,7 @@ const AcademicBackgroundForm = ({ onSaved }: AcademicBackgroundFormProps) => {
     setData((d) => ({ ...d, [key]: e.target.value }));
 
   const isStudent = data.employmentStatus === "STUDENT" || data.employmentStatus === "UNDERGRADUATE";
+  const isSchoolStudent = data.employmentStatus === "STUDENT";
   const isGraduate = data.employmentStatus === "GRADUATE";
   const notWorking = data.workingStatus === "Not currently working";
 
@@ -79,7 +86,15 @@ const AcademicBackgroundForm = ({ onSaved }: AcademicBackgroundFormProps) => {
       return;
     }
     if (isStudent && (!data.universityName.trim() || !data.universityCountry.trim())) {
-      toast({ title: "Missing details", description: "University name and country are required.", variant: "destructive" });
+      toast({
+        title: "Missing details",
+        description: isSchoolStudent ? "School name and country are required." : "University and country are required.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (isSchoolStudent && (!data.stream || !data.examYear)) {
+      toast({ title: "Missing details", description: "Pick your A/L stream and exam year.", variant: "destructive" });
       return;
     }
     if (isGraduate && (!data.workingStatus.trim() || !data.profession.trim() || (!notWorking && !data.employer.trim()))) {
@@ -123,6 +138,34 @@ const AcademicBackgroundForm = ({ onSaved }: AcademicBackgroundFormProps) => {
         {label} <span className="text-primary">*</span>
       </Label>
       <Input id={id} value={data[id]} onChange={set(id)} placeholder={placeholder} />
+    </div>
+  );
+
+  // A short, fixed set of answers: one click, no typing.
+  const chips = (id: keyof Academic, label: string, options: readonly string[]) => (
+    <div className="space-y-2.5">
+      <Label>
+        {label} <span className="text-primary">*</span>
+      </Label>
+      <div className="flex flex-wrap gap-2">
+        {options.map((option) => {
+          const active = data[id] === option;
+          return (
+            <button
+              key={option}
+              type="button"
+              onClick={() => setData((d) => ({ ...d, [id]: option }))}
+              className={`rounded-full border px-4 py-2 text-sm transition-colors ${
+                active
+                  ? "border-primary bg-primary/[0.08] font-medium text-foreground"
+                  : "border-border/70 text-muted-foreground hover:border-primary/40 hover:text-foreground"
+              }`}
+            >
+              {option}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 
@@ -177,6 +220,13 @@ const AcademicBackgroundForm = ({ onSaved }: AcademicBackgroundFormProps) => {
             ? field("universityName", "School name", "Royal College, Colombo")
             : suggest("universityName", "University", SRI_LANKAN_UNIVERSITIES, "Select your university")}
           {suggest("universityCountry", "Country", COUNTRIES, "Select a country")}
+        </div>
+      )}
+
+      {isSchoolStudent && (
+        <div className="space-y-5">
+          {chips("stream", "A/L stream", AL_STREAMS)}
+          {chips("examYear", "A/L exam year", examYearOptions())}
         </div>
       )}
 

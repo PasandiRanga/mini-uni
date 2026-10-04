@@ -155,8 +155,10 @@ model TeacherProfile {
 
   // Academic / professional background (profile step 3)
   employmentStatus String?  // STUDENT | UNDERGRADUATE | GRADUATE
-  universityName   String?  // for students/undergraduates
+  universityName   String?  // for undergraduates; for school students, the school's name
   universityCountry String?
+  stream           String?  // school students: A/L stream (Physical Science, Commerce, …)
+  examYear         String?  // school students: A/L exam year
   workingStatus    String?  // for graduates
   profession       String?
   employer         String?

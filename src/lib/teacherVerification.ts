@@ -28,7 +28,10 @@ export function computeProfileCompletion(p: ProfileWithDocs) {
 
   // Step 3 — academic/professional (conditional on employment status)
   let academicComplete = false;
-  if (p.employmentStatus === "STUDENT" || p.employmentStatus === "UNDERGRADUATE") {
+  if (p.employmentStatus === "STUDENT") {
+    // School students: school, country, A/L stream and exam year.
+    academicComplete = has(p.universityName) && has(p.universityCountry) && has(p.stream) && has(p.examYear);
+  } else if (p.employmentStatus === "UNDERGRADUATE") {
     academicComplete = has(p.universityName) && has(p.universityCountry);
   } else if (p.employmentStatus === "GRADUATE") {
     // Someone not currently working has no employer to give.
