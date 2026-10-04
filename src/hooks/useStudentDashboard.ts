@@ -9,6 +9,7 @@ export const useStudentDashboard = () => {
     const [enrolledCourses, setEnrolledCourses] = useState<any[]>([]);
     const [studyHours, setStudyHours] = useState<number>(0);
     const [completedCount, setCompletedCount] = useState<number>(0);
+    const [subjectCount, setSubjectCount] = useState<number>(0);
     const [recommendations, setRecommendations] = useState<any[]>([]);
     const [calendarEvents, setCalendarEvents] = useState<any[]>([]);
     const [wallet, setWallet] = useState<any>(null);
@@ -39,9 +40,10 @@ export const useStudentDashboard = () => {
                 }
 
                 // fetch bookings (upcoming & history)
-                const bRes = await fetch(`/api/bookings/student/${authUser.id}/upcoming`);
+                const bRes = await fetch(`/api/bookings/student/${authUser.id}/upcoming?scope=all`);
                 if (bRes.ok) {
                     const bookings = await bRes.json();
+                    const live = bookings.filter((b: any) => b.status !== 'CANCELLED');
 
                     // Enrolled Courses: confirmed / in-progress
                     const enrolled = bookings.filter((b: any) => ['CONFIRMED', 'IN_PROGRESS', 'PAYMENT_COMPLETED'].includes(b.status));
@@ -55,7 +57,7 @@ export const useStudentDashboard = () => {
                     })));
 
                     // Upcoming Classes: future timeSlots
-                    const upcoming = bookings.filter((b: any) => {
+                    const upcoming = live.filter((b: any) => {
                         const s = b.timeSlot?.startTime; return s && new Date(s) > new Date();
                     }).map((b: any) => ({
                         id: b.id,
@@ -80,8 +82,17 @@ export const useStudentDashboard = () => {
                     setStudyHours(Math.round(hours * 10) / 10);
                     setCompletedCount(completed.length);
 
+                    // Subjects studied: distinct subjects across paid, uncancelled classes.
+                    const subjects = new Set(
+                        bookings
+                            .filter((b: any) => !['CANCELLED', 'PENDING_PAYMENT'].includes(b.status))
+                            .map((b: any) => (b.inquiry?.post?.subject || '').trim().toLowerCase())
+                            .filter(Boolean)
+                    );
+                    setSubjectCount(subjects.size);
+
                     // Calendar events
-                    const events = bookings.map((b: any) => ({
+                    const events = live.map((b: any) => ({
                         id: b.id,
                         title: b.inquiry?.post?.title || (b.teacher ? `${b.teacher.firstName} ${b.teacher.lastName}` : 'Class'),
                         start: b.timeSlot?.startTime,
@@ -133,6 +144,7 @@ export const useStudentDashboard = () => {
         enrolledCourses,
         studyHours,
         completedCount,
+        subjectCount,
         recommendations,
         calendarEvents,
         wallet

@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import { getSessionFromRequest } from "@/lib/auth";
 import { refundBookingToStudent } from "@/lib/wallet";
 import { createNotification } from "@/lib/notifications";
+import { releaseSeat } from "@/lib/seats";
 
 /**
  * Cancels a booking. Either side can cancel a class that hasn't happened yet;
@@ -44,19 +45,19 @@ export async function POST(
         // earnings there is nothing to reverse, and the booking stays as it is.
         const refund = await refundBookingToStudent(bookingId, reason);
 
-        const cancelled = await prisma.booking.update({
-            where: { id: bookingId },
-            data: {
-                status: "CANCELLED",
-                cancelledAt: new Date(),
-                cancellationReason: reason ?? null,
-            },
-        });
-
-        // Put the slot back so the teacher's time isn't blocked out.
-        await prisma.timeSlot.update({
-            where: { id: booking.timeSlotId },
-            data: { status: "AVAILABLE" },
+        // Cancel and give the seat back together, so a group slot's seat count
+        // never disagrees with its bookings.
+        const cancelled = await prisma.$transaction(async (tx) => {
+            const updated = await tx.booking.update({
+                where: { id: bookingId },
+                data: {
+                    status: "CANCELLED",
+                    cancelledAt: new Date(),
+                    cancellationReason: reason ?? null,
+                },
+            });
+            await releaseSeat(tx, booking.timeSlotId);
+            return updated;
         });
 
         // Notify whoever didn't press cancel.

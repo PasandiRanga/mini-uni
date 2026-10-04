@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getSessionFromRequest } from "@/lib/auth";
+import { SeatError, bookableClassTypes, claimSeat, feeFor, seatErrorMessage } from "@/lib/seats";
+import type { ClassType } from "@prisma/client";
 
 export async function POST(request: Request) {
     const session = await getSessionFromRequest(request);
@@ -9,7 +11,7 @@ export async function POST(request: Request) {
     }
 
     try {
-        const { inquiryId } = await request.json();
+        const { inquiryId, classType: requestedType } = await request.json();
 
         const inquiry = await prisma.inquiry.findUnique({
             where: { id: inquiryId },
@@ -35,24 +37,37 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "Time slot is already booked" }, { status: 400 });
         }
 
-        const booking = await prisma.booking.create({
-            data: {
-                inquiryId: inquiry.id,
-                studentId: inquiry.senderId,
-                teacherId: inquiry.receiverId,
-                timeSlotId: timeSlot.id,
-                status: "PENDING_PAYMENT",
-                fee: inquiry.post.fee || 0,
-            },
-        });
+        const offered = bookableClassTypes(inquiry.post);
+        const classType: ClassType = requestedType ?? offered[0];
+        if (!offered.includes(classType)) {
+            return NextResponse.json({ error: "This class isn't offered as that type" }, { status: 400 });
+        }
 
-        await prisma.timeSlot.update({
-            where: { id: timeSlot.id },
-            data: { status: "BOOKED" },
+        const booking = await prisma.$transaction(async (tx) => {
+            await claimSeat(tx, {
+                slotId: timeSlot.id,
+                studentId: inquiry.senderId,
+                classType,
+                post: inquiry.post,
+            });
+            return tx.booking.create({
+                data: {
+                    inquiryId: inquiry.id,
+                    studentId: inquiry.senderId,
+                    teacherId: inquiry.receiverId,
+                    timeSlotId: timeSlot.id,
+                    status: "PENDING_PAYMENT",
+                    classType,
+                    fee: feeFor(inquiry.post, classType),
+                },
+            });
         });
 
         return NextResponse.json(booking, { status: 201 });
     } catch (error: any) {
+        if (error instanceof SeatError) {
+            return NextResponse.json({ error: seatErrorMessage(error.message) }, { status: 409 });
+        }
         console.error("Error creating booking:", error);
         return NextResponse.json({ error: error.message || "Failed to create booking" }, { status: 400 });
     }
