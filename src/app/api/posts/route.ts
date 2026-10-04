@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { slotsWithSeats } from "@/lib/seats";
+import { storeImage } from "@/lib/blob";
 
 export async function GET(request: Request) {
     try {
@@ -92,7 +93,7 @@ async function createPost(request: Request) {
             payload.ratePerHour = data.ratePerHour != null ? Number(data.ratePerHour) : null;
             payload.experience = data.experience != null ? Number(data.experience) : null;
             payload.currency = teacherCurrency;
-            payload.thumbnailUrl = data.thumbnailUrl || null;
+            payload.thumbnailUrl = await storeImage(data.thumbnailUrl, `thumbnails/${userId}`);
             payload.maxStudents = data.maxStudents != null ? Number(data.maxStudents) : null;
             const offersGroup = Array.isArray(data.classTypes) && data.classTypes.includes("GROUP");
             payload.groupRatePerHour = offersGroup && data.groupRatePerHour != null ? Number(data.groupRatePerHour) : null;

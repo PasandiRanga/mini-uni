@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { slotsWithSeats } from "@/lib/seats";
+import { deleteImage, storeImage } from "@/lib/blob";
 import { getSessionFromRequest } from "@/lib/auth";
 
 export async function GET(
@@ -77,7 +78,7 @@ export async function PUT(
             updateData.grade = data.grade || null;
             updateData.fee = data.fee != null ? Number(data.fee) : null;
             updateData.ratePerHour = data.ratePerHour != null ? Number(data.ratePerHour) : null;
-            updateData.thumbnailUrl = data.thumbnailUrl ?? null;
+            updateData.thumbnailUrl = await storeImage(data.thumbnailUrl, `thumbnails/${userId}`);
             updateData.maxStudents = data.maxStudents != null ? Number(data.maxStudents) : null;
             const offersGroup = Array.isArray(data.classTypes)
                 ? data.classTypes.includes("GROUP")
@@ -94,6 +95,11 @@ export async function PUT(
             where: { id: postId },
             data: updateData,
         });
+
+        // A replaced or removed thumbnail leaves its old file behind; clean it up.
+        if (existing.thumbnailUrl && existing.thumbnailUrl !== updated.thumbnailUrl) {
+            await deleteImage(existing.thumbnailUrl);
+        }
 
         // Replace availability for teacher offerings. Only slots nobody has ever
         // booked are swapped out: deleting a slot cascades to its bookings, and a
