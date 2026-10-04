@@ -15,6 +15,8 @@ import { formatMoney } from "@/lib/currency";
 import { CLASS_TYPE_LABELS, slotDurationLabel, slotDateLabel, isPostExpired, PostDescription } from "@/components/post/postCardBits";
 import BookClassModal, { type BookablePost } from "@/components/post/BookClassModal";
 import PostActions from "@/components/post/PostActions";
+import PostDetail, { type DetailPost } from "@/components/post/PostDetail";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import {
   Search,
   SlidersHorizontal,
@@ -45,7 +47,7 @@ type PostItem = {
   classTypes?: string[];
   maxStudents?: number;
   thumbnailUrl?: string;
-  timeSlots?: { startTime: string; endTime: string }[];
+  timeSlots?: { id: string; startTime: string; endTime: string; status?: string; bookedAs?: string | null; _count?: { bookings?: number } }[];
   mode?: "ONLINE";
   createdAt?: string;
   user?: { id: string; firstName: string; lastName: string };
@@ -67,6 +69,13 @@ const ExploreContent: React.FC = () => {
   const [posts, setPosts] = useState<PostItem[]>([]);
   const [isLoadingPosts, setIsLoadingPosts] = useState(false);
   const [bookPost, setBookPost] = useState<BookablePost | null>(null);
+  // The post whose full details are open; `id` alone is enough to load it.
+  const [detailPost, setDetailPost] = useState<(Partial<DetailPost> & { id: string }) | null>(null);
+  // Clicking a card opens its details, except on its own buttons and links.
+  const openDetails = (post: PostItem) => (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest("button, a, input, textarea, [role='dialog']")) return;
+    setDetailPost(post);
+  };
 
   const fetchPosts = useCallback(async () => {
     setIsLoadingPosts(true);
@@ -86,19 +95,12 @@ const ExploreContent: React.FC = () => {
     return onPostChanged((c) => setPosts((prev) => applyPostChange(prev, c)));
   }, [fetchPosts]);
 
-  // A shared link (/explore?post=<id>) scrolls to that post and highlights it once loaded.
-  const [sharedPostShown, setSharedPostShown] = useState(false);
+  // Old shared links (/explore?post=<id>) open that post's details.
   useEffect(() => {
-    if (sharedPostShown || posts.length === 0 || typeof window === "undefined") return;
+    if (typeof window === "undefined") return;
     const id = new URLSearchParams(window.location.search).get("post");
-    if (!id) return;
-    const el = document.getElementById(`post-${id}`);
-    if (!el) return;
-    setSharedPostShown(true);
-    el.scrollIntoView({ behavior: "smooth", block: "center" });
-    el.classList.add("ring-2", "ring-primary", "ring-offset-2");
-    window.setTimeout(() => el.classList.remove("ring-2", "ring-primary", "ring-offset-2"), 2500);
-  }, [posts, sharedPostShown]);
+    if (id) setDetailPost({ id });
+  }, []);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("All Subjects");
@@ -374,7 +376,7 @@ const ExploreContent: React.FC = () => {
                       </button>
 
                       {isExpanded && (
-                        <div className="animate-in fade-in slide-in-from-top-2 border-t border-border/60 duration-300">
+                        <div onClick={openDetails(post)} className="cursor-pointer animate-in fade-in slide-in-from-top-2 border-t border-border/60 duration-300">
                           {post.thumbnailUrl && (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img src={post.thumbnailUrl} alt={post.title} className="h-44 w-full object-cover" />
@@ -416,7 +418,7 @@ const ExploreContent: React.FC = () => {
                 }
 
                 return (
-                  <article id={`post-${post.id}`} key={post.id} className="flex flex-col overflow-hidden rounded-2xl bg-card shadow-card transition-all duration-300 hover:shadow-elevated">
+                  <article id={`post-${post.id}`} key={post.id} onClick={openDetails(post)} className="flex cursor-pointer flex-col overflow-hidden rounded-2xl bg-card shadow-card transition-all duration-300 hover:shadow-elevated">
                     {/* Banner */}
                     {post.thumbnailUrl && (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -435,7 +437,11 @@ const ExploreContent: React.FC = () => {
                         <Badge variant="outline" className="shrink-0 border-primary text-primary">{isTeacherPost ? <GraduationCap className="mr-1 h-3 w-3" /> : <BookOpen className="mr-1 h-3 w-3" />}{isTeacherPost ? 'Teacher' : 'Student'}</Badge>
                       </div>
 
-                      <h3 className="mb-2 text-lg font-semibold">{post.title}</h3>
+                      <h3 className="mb-2 text-lg font-semibold">
+                        <button type="button" onClick={() => setDetailPost(post)} className="text-left hover:text-primary focus-visible:outline-none focus-visible:underline">
+                          {post.title}
+                        </button>
+                      </h3>
 
                       {/* Subject / grade / class types */}
                       <div className="mb-3 flex flex-wrap gap-2">
@@ -491,6 +497,20 @@ const ExploreContent: React.FC = () => {
           </div>
         </div>
       </div>
+      <Dialog open={!!detailPost} onOpenChange={(o) => !o && setDetailPost(null)}>
+        <DialogContent className="max-h-[92vh] max-w-4xl gap-0 overflow-y-auto p-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <DialogTitle className="sr-only">{detailPost?.title || "Post details"}</DialogTitle>
+          <DialogDescription className="sr-only">Full details, times and comments for this post.</DialogDescription>
+          {detailPost && (
+            <PostDetail
+              key={detailPost.id}
+              postId={detailPost.id}
+              initialPost={detailPost.type ? (detailPost as DetailPost) : null}
+              onNavigate={() => setDetailPost(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
       <BookClassModal
         post={bookPost}
         open={!!bookPost}
