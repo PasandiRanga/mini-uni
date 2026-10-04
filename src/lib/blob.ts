@@ -8,7 +8,12 @@ import { del, put } from "@vercel/blob";
  * database's storage quota.
  *
  * Without BLOB_READ_WRITE_TOKEN (local dev, or before the Blob store is
- * connected) images fall back to being stored inline, as before.
+ * connected) images fall back to being stored inline, as before. A failed
+ * upload does the same: a storage problem must never stop a teacher posting.
+ * Inline images left behind can be moved later with the admin
+ * migrate-thumbnails endpoint.
+ *
+ * The store must use public access: thumbnails are shown to every visitor.
  */
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
@@ -47,12 +52,17 @@ export async function storeImage(value: unknown, folder: string): Promise<string
 
   if (!blobEnabled()) return value;
 
-  const blob = await put(`${folder}/image.${ext}`, bytes, {
-    access: "public",
-    contentType: match[1],
-    addRandomSuffix: true,
-  });
-  return blob.url;
+  try {
+    const blob = await put(`${folder}/image.${ext}`, bytes, {
+      access: "public",
+      contentType: match[1],
+      addRandomSuffix: true,
+    });
+    return blob.url;
+  } catch (err) {
+    console.error("Blob upload failed; storing the image inline instead:", err);
+    return value;
+  }
 }
 
 /** Deletes an image we uploaded earlier. Never throws; a stray file is harmless. */
