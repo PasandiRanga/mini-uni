@@ -17,6 +17,16 @@ import StudentInquiries from "@/components/student/StudentInquiries";
 import DashboardLayout, { useDashboard } from '@/components/layout/DashboardLayout';
 
 import { useStudentDashboard } from "@/hooks/useStudentDashboard";
+import { CustomizeWidgets, useWidgetPrefs, type WidgetDef } from "@/components/dashboard/CustomizeWidgets";
+
+const STUDENT_WIDGETS: WidgetDef[] = [
+  { id: "stats", label: "Key numbers", description: "Classes, learning time and wallet" },
+  { id: "enrolled", label: "Enrolled courses" },
+  { id: "upcoming", label: "Upcoming classes" },
+  { id: "calendar", label: "Calendar" },
+  { id: "foryou", label: "For you", description: "Recommended classes" },
+  { id: "teachers", label: "Your teachers" },
+];
 
 // Defined at module level, not inside StudentDashboard: a component declared
 // in another component's body is a new type on every render, so each data
@@ -39,6 +49,11 @@ const DashboardContent = () => {
   const { user: authUser } = useAuth();
   const currency = authUser?.currency;
   const router = useRouter();
+  // Overview widgets the student can switch on and off.
+  const widgetPrefs = useWidgetPrefs("miniuni.widgets.student");
+  const show = widgetPrefs.isVisible;
+  const showLeft = show("enrolled") || show("upcoming") || show("calendar");
+  const showRight = show("foryou") || show("teachers");
 
   if (activeTab === 'explore') return <ExploreContent />;
 
@@ -86,7 +101,12 @@ const DashboardContent = () => {
 
   return (
     <>
+      <div className="mb-4 flex justify-end">
+        <CustomizeWidgets widgets={STUDENT_WIDGETS} {...widgetPrefs} />
+      </div>
+
       {/* Separated stat tiles */}
+      {show("stats") && (
       <div className="animate-fade-up mb-10 grid grid-cols-2 auto-rows-fr gap-4 lg:grid-cols-4 lg:gap-5" style={{ animationDelay: "0.1s" }}>
         {stats.map((stat, i) => {
           const featured = i === 0;
@@ -113,16 +133,20 @@ const DashboardContent = () => {
           );
         })}
       </div>
+      )}
 
-      <div className="grid gap-6 lg:grid-cols-3 [&>*]:min-w-0">
+      {(showLeft || showRight) && (
+      <div className={`grid gap-6 [&>*]:min-w-0 ${showLeft && showRight ? "lg:grid-cols-3" : ""}`}>
         {/* Left: Enrolled Courses & secondary panels */}
-        <div className="space-y-6 lg:col-span-2">
+        {showLeft && (
+        <div className={`space-y-6 ${showRight ? "lg:col-span-2" : ""}`}>
+          {show("enrolled") && (
           <section className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
             <div className="flex items-center justify-between border-b border-border/60 px-6 py-5">
               <h2 className="text-lg font-semibold">
                 Enrolled <span className="font-serif italic font-normal">courses</span>
               </h2>
-              <Button variant="ghost" size="sm" className="text-primary">Manage</Button>
+              <Button variant="ghost" size="sm" className="text-primary" onClick={() => router.push("/student/dashboard?tab=classes")}>Manage</Button>
             </div>
             <div className="divide-y divide-border/60">
               {enrolledCourses.length === 0 && (
@@ -148,8 +172,11 @@ const DashboardContent = () => {
               ))}
             </div>
           </section>
+          )}
 
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          {(show("upcoming") || show("calendar")) && (
+          <div className={`grid grid-cols-1 gap-6 ${show("upcoming") && show("calendar") ? "md:grid-cols-2" : ""}`}>
+            {show("upcoming") && (
             <section className="rounded-3xl border border-border/70 bg-card p-6 shadow-soft">
               <h3 className="mb-4 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Upcoming classes</h3>
               <div className="space-y-4">
@@ -170,7 +197,9 @@ const DashboardContent = () => {
                 ))}
               </div>
             </section>
+            )}
 
+            {show("calendar") && (
             <section className="rounded-3xl border border-border/70 bg-card p-6 shadow-soft">
               <h3 className="mb-4 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">This month</h3>
               <MiniCalendar
@@ -178,17 +207,22 @@ const DashboardContent = () => {
                 onSelectDate={() => router.push('/student/dashboard?tab=schedule')}
               />
             </section>
+            )}
           </div>
+          )}
         </div>
+        )}
 
         {/* Right: Recommendations & Your Teachers */}
-        <div className="space-y-6">
+        {showRight && (
+        <div className={showLeft ? "space-y-6" : "grid gap-6 lg:grid-cols-2"}>
+          {show("foryou") && (
           <section className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
             <div className="flex items-center justify-between border-b border-border/60 px-6 py-5">
               <h2 className="text-lg font-semibold">
                 For <span className="font-serif italic font-normal">you</span>
               </h2>
-              <Button variant="ghost" size="sm">See All</Button>
+              <Button variant="ghost" size="sm" onClick={() => router.push("/student/dashboard?tab=explore")}>See All</Button>
             </div>
             <div className="space-y-5 p-6">
               {recommendations.length === 0 && <p className="text-sm text-muted-foreground">No recommendations yet.</p>}
@@ -201,18 +235,20 @@ const DashboardContent = () => {
                     <p className="truncate font-medium">{r.title}</p>
                     <p className="truncate text-sm text-muted-foreground">{r.subject}</p>
                   </div>
-                  <Button size="sm" variant="outline" className="shrink-0 opacity-70 transition-opacity group-hover:opacity-100">View</Button>
+                  <Button size="sm" variant="outline" className="shrink-0 opacity-70 transition-opacity group-hover:opacity-100" onClick={() => router.push(`/student/dashboard?tab=explore&post=${r.id}`)}>View</Button>
                 </div>
               ))}
             </div>
           </section>
+          )}
 
+          {show("teachers") && (
           <section className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
             <div className="flex items-center justify-between border-b border-border/60 px-6 py-5">
               <h2 className="text-lg font-semibold">
                 Your <span className="font-serif italic font-normal">teachers</span>
               </h2>
-              <Button variant="ghost" size="sm">View All</Button>
+              <Button variant="ghost" size="sm" onClick={() => router.push("/student/dashboard?tab=classes")}>View All</Button>
             </div>
             <div className="space-y-4 p-6">
               {recentTeachers.length === 0 && <p className="text-sm text-muted-foreground">No teachers yet.</p>}
@@ -229,8 +265,11 @@ const DashboardContent = () => {
               ))}
             </div>
           </section>
+          )}
         </div>
+        )}
       </div>
+      )}
     </>
   );
 };

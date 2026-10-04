@@ -42,6 +42,7 @@ import TeacherInquiries from "@/components/teacher/TeacherInquiries";
 import TeacherWallet from "@/components/teacher/TeacherWallet";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import AppSidebar, { type SidebarSection } from "@/components/layout/AppSidebar";
+import { CustomizeWidgets, useWidgetPrefs, type WidgetDef } from "@/components/dashboard/CustomizeWidgets";
 
 const greeting = () => {
   const h = new Date().getHours();
@@ -52,6 +53,14 @@ const greeting = () => {
 
 const todayLabel = () =>
   new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+
+const TEACHER_WIDGETS: WidgetDef[] = [
+  { id: "stats", label: "Key numbers", description: "Balance, earnings and classes" },
+  { id: "classes", label: "Upcoming classes" },
+  { id: "inquiries", label: "Inquiries" },
+  { id: "calendar", label: "Calendar" },
+  { id: "wallet", label: "Wallet summary" },
+];
 
 const TeacherDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -146,6 +155,11 @@ const TeacherDashboard = () => {
   };
 
   const unreadCount = inquiries.filter(i => !i.read).length;
+
+  // Overview widgets the teacher can switch on and off.
+  const widgetPrefs = useWidgetPrefs("miniuni.widgets.teacher");
+  const show = widgetPrefs.isVisible;
+  const showRight = show("inquiries") || show("calendar");
 
   // Same links as the mobile dock, grouped for the desktop sidebar.
   const byId = (id: string) => navItems.find((i) => i.id === id)!;
@@ -349,7 +363,12 @@ const TeacherDashboard = () => {
             </div>
           )}
 
+          <div className="mb-4 flex justify-end">
+            <CustomizeWidgets widgets={TEACHER_WIDGETS} {...widgetPrefs} />
+          </div>
+
           {/* Separated stat tiles */}
+          {show("stats") && (
           <div className="animate-fade-up mb-10 grid grid-cols-2 auto-rows-fr gap-4 lg:grid-cols-4 lg:gap-5" style={{ animationDelay: "0.1s" }}>
             {stats.map((stat, i) => {
               const featured = i === 0;
@@ -376,16 +395,22 @@ const TeacherDashboard = () => {
               );
             })}
           </div>
+          )}
 
-          <div className="grid gap-6 lg:grid-cols-3 [&>*]:min-w-0">
+          {(show("classes") || showRight) && (
+          <div className={`grid gap-6 [&>*]:min-w-0 ${show("classes") && showRight ? "lg:grid-cols-3" : ""}`}>
             {/* Upcoming classes preview — "View all" opens the My Classes tab */}
-            <div className="lg:col-span-2">
+            {show("classes") && (
+            <div className={showRight ? "lg:col-span-2" : ""}>
               <MyClasses preview onViewAll={() => goTab("classes")} />
             </div>
+            )}
 
             {/* Right column: inquiries + mini calendar */}
-            <div className="space-y-6">
+            {showRight && (
+            <div className={`space-y-6 ${show("classes") ? "" : "grid gap-6 space-y-0 lg:grid-cols-2"}`}>
             {/* Recent Inquiries */}
+            {show("inquiries") && (
             <section className="flex flex-col overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
               <div className="flex items-center justify-between border-b border-border/60 px-6 py-5">
                 <h2 className="text-lg font-semibold">
@@ -405,16 +430,18 @@ const TeacherDashboard = () => {
                       <p className="truncate text-sm text-muted-foreground">{inq.post?.title || inq.post?.subject || ''}</p>
                       <p className="mt-0.5 text-xs text-muted-foreground">{formatDistanceToNow(new Date(inq.createdAt), { addSuffix: true })}</p>
                     </div>
-                    <Button variant="ghost" size="sm" className="shrink-0">Reply</Button>
+                    <Button variant="ghost" size="sm" className="shrink-0" onClick={() => goTab("inquiries")}>Reply</Button>
                   </div>
                 ))}
               </div>
               <div className="border-t border-border/60 p-4">
-                <Button variant="outline" className="w-full">View All Messages</Button>
+                <Button variant="outline" className="w-full" onClick={() => goTab("inquiries")}>View all inquiries</Button>
               </div>
             </section>
+            )}
 
             {/* Mini calendar — click a date to open the full schedule */}
+            {show("calendar") && (
             <section className="rounded-3xl border border-border/70 bg-card p-6 shadow-soft">
               <h3 className="mb-4 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">This month</h3>
               <MiniCalendar
@@ -422,10 +449,14 @@ const TeacherDashboard = () => {
                 onSelectDate={() => setActiveTab('schedule')}
               />
             </section>
+            )}
             </div>
+            )}
           </div>
+          )}
 
           {/* Wallet — ink card */}
+          {show("wallet") && (
           <div className="relative mt-6 overflow-hidden rounded-3xl bg-foreground p-7 text-background shadow-elevated grain sm:p-9">
             <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-primary/20 blur-3xl" />
             <div className="relative flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
@@ -471,6 +502,7 @@ const TeacherDashboard = () => {
               </div>
             </div>
           </div>
+          )}
           </>
           )}
         </div>
