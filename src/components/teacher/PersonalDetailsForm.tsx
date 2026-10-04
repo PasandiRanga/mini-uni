@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from "react";
+import ProfileLoadError from "@/components/teacher/ProfileLoadError";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,6 +46,9 @@ const PersonalDetailsForm = ({ onSaved }: PersonalDetailsFormProps) => {
   const emailVerified = Boolean(user?.emailVerified);
   const [data, setData] = useState<Details>(EMPTY);
   const [loading, setLoading] = useState(true);
+  // Set when the saved values failed to load: the form is hidden so blanks are never saved.
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const [saving, setSaving] = useState(false);
   // Fields the server filled in from sign-up, shown as a hint to confirm them.
   const [prefilled, setPrefilled] = useState<string[]>([]);
@@ -53,8 +57,13 @@ const PersonalDetailsForm = ({ onSaved }: PersonalDetailsFormProps) => {
 
   useEffect(() => {
     let active = true;
+    setLoading(true);
+    setLoadFailed(false);
     fetch("/api/teachers/profile")
-      .then((r) => (r.ok ? r.json() : null))
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
       .then((d) => {
         if (!active || !d) return;
         setData({ ...EMPTY, ...d });
@@ -63,11 +72,12 @@ const PersonalDetailsForm = ({ onSaved }: PersonalDetailsFormProps) => {
         // Saved initials that don't match the generated ones were typed by hand.
         setInitialsEdited(Boolean(d.nameWithInitials) && d.nameWithInitials !== initialsFromFullName(d.fullName || ""));
       })
+      .catch(() => active && setLoadFailed(true))
       .finally(() => active && setLoading(false));
     return () => {
       active = false;
     };
-  }, []);
+  }, [reloadKey]);
 
   const set = (key: keyof Details) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -108,6 +118,8 @@ const PersonalDetailsForm = ({ onSaved }: PersonalDetailsFormProps) => {
       setSaving(false);
     }
   };
+
+  if (loadFailed && !loading) return <ProfileLoadError onRetry={() => setReloadKey((n) => n + 1)} />;
 
   if (loading) {
     return (

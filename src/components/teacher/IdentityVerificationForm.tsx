@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from "react";
+import ProfileLoadError from "@/components/teacher/ProfileLoadError";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
@@ -35,23 +36,32 @@ const IdentityVerificationForm = ({ onSaved }: IdentityVerificationFormProps) =>
   const [frontOnFile, setFrontOnFile] = useState(false);
   const [backOnFile, setBackOnFile] = useState(false);
   const [loading, setLoading] = useState(true);
+  // Set when the saved values failed to load: the form is hidden so blanks are never saved.
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     let active = true;
+    setLoading(true);
+    setLoadFailed(false);
     fetch("/api/teachers/profile")
-      .then((r) => (r.ok ? r.json() : null))
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
       .then((d) => {
         if (!active || !d) return;
         if (d.idType) setIdType(d.idType);
         setFrontOnFile(d.idFrontUploaded === "yes");
         setBackOnFile(d.idBackUploaded === "yes");
       })
+      .catch(() => active && setLoadFailed(true))
       .finally(() => active && setLoading(false));
     return () => {
       active = false;
     };
-  }, []);
+  }, [reloadKey]);
 
   const selected = ID_TYPES.find((t) => t.value === idType);
   const needsBack = selected?.needsBack ?? false;
@@ -116,6 +126,8 @@ const IdentityVerificationForm = ({ onSaved }: IdentityVerificationFormProps) =>
       setSaving(false);
     }
   };
+
+  if (loadFailed && !loading) return <ProfileLoadError onRetry={() => setReloadKey((n) => n + 1)} />;
 
   if (loading) {
     return (
