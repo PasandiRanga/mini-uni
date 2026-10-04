@@ -199,9 +199,9 @@ const TeacherDashboard = () => {
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div className="animate-fade-up">
               <p className="mb-1 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">{todayLabel()}</p>
-              <h1 className="text-3xl sm:text-4xl font-semibold leading-tight">
+              <h1 className="text-3xl sm:text-4xl font-normal leading-tight">
                 {greeting()},{" "}
-                <span className="font-serif italic font-normal text-gradient">{user?.firstName || "Teacher"}.</span>
+                <span className="font-serif italic text-gradient font-semibold">{user?.firstName || "Teacher"}.</span>
               </h1>
               {verification?.verificationStatus && (
                 <span
@@ -413,8 +413,8 @@ const TeacherDashboard = () => {
             {show("inquiries") && (
             <section className="flex flex-col overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
               <div className="flex items-center justify-between border-b border-border/60 px-6 py-5">
-                <h2 className="text-lg font-semibold">
-                  <span className="font-serif italic font-normal">Inquiries</span>
+                <h2 className="text-lg font-normal">
+                  <span className="font-serif italic font-semibold">Inquiries</span>
                 </h2>
                 {unreadCount > 0 && (
                   <Badge className="rounded-full bg-primary text-primary-foreground">{unreadCount} new</Badge>

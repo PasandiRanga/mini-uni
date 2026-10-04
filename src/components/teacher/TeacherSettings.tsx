@@ -210,8 +210,8 @@ const TeacherSettings = () => {
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       <div>
-        <h2 className="text-2xl font-semibold sm:text-3xl">
-          <span className="font-serif font-normal text-gradient">Settings</span>
+        <h2 className="text-2xl font-normal sm:text-3xl">
+          <span className="font-serif text-gradient font-semibold">Settings</span>
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Manage your profile, security, notifications and payouts. You can complete your profile here or in the step-by-step flow — both stay in sync.

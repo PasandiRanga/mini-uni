@@ -282,8 +282,8 @@ const StudentWallet: React.FC = () => {
     <div className="mx-auto w-full max-w-4xl space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-semibold sm:text-3xl">
-            Your <span className="font-serif font-normal text-gradient">wallet</span>
+          <h2 className="text-2xl font-normal sm:text-3xl">
+            Your <span className="font-serif text-gradient font-semibold">wallet</span>
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
             Refunds from cancelled classes land here, and you can add money any time to pay for a class without a card.
@@ -346,8 +346,8 @@ const StudentWallet: React.FC = () => {
       {(wallet?.unpaidBookings?.length ?? 0) > 0 && (
         <section className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
           <div className="flex items-center justify-between border-b border-border/60 px-6 py-5">
-            <h3 className="text-lg font-semibold">
-              Awaiting <span className="font-serif font-normal">payment</span>
+            <h3 className="text-lg font-normal">
+              Awaiting <span className="font-serif font-semibold">payment</span>
               <span className="ml-2 text-sm font-normal text-muted-foreground">({wallet?.unpaidBookings.length})</span>
             </h3>
             <p className="hidden text-xs text-muted-foreground sm:block">Pay from your balance</p>
@@ -411,8 +411,8 @@ const StudentWallet: React.FC = () => {
       {/* Activity */}
       <section className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-6 py-5">
-          <h3 className="text-lg font-semibold">
-            Transaction <span className="font-serif font-normal">history</span>
+          <h3 className="text-lg font-normal">
+            Transaction <span className="font-serif font-semibold">history</span>
           </h3>
           <div className="flex flex-wrap gap-1.5">
             {FILTERS.map((f) => (

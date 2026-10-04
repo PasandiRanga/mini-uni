@@ -36,9 +36,9 @@ const HowItWorksSection = () => {
       <div className="container mx-auto px-4">
         <Reveal className="mb-20 max-w-2xl">
           <p className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-accent">The process</p>
-          <h2 className="text-4xl sm:text-5xl font-semibold leading-tight">
+          <h2 className="text-4xl sm:text-5xl font-normal leading-tight">
             Four steps from curiosity
-            <span className="font-serif italic font-normal text-gradient"> to class.</span>
+            <span className="font-serif italic text-gradient font-semibold"> to class.</span>
           </h2>
         </Reveal>
 

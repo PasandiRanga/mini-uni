@@ -167,8 +167,8 @@ const ExploreContent: React.FC = () => {
           <section className="overflow-hidden rounded-3xl border border-border/70 bg-card/80 shadow-card backdrop-blur-xl">
             <div className="px-6 py-8 sm:px-8">
               <div className="mx-auto max-w-3xl text-center">
-                <h1 className="text-3xl font-bold sm:text-4xl">
-                  Explore <span className="font-serif italic text-gradient">Classes</span>
+                <h1 className="text-3xl font-normal sm:text-4xl">
+                  Explore <span className="font-serif italic text-gradient font-semibold">Classes</span>
                 </h1>
                 <p className="mt-2 text-muted-foreground">Browse teacher offerings or student requests. Find your perfect match.</p>
               </div>

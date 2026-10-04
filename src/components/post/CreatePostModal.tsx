@@ -332,8 +332,8 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, e
         ) : (
           <>
             <DialogHeader className="border-b border-border/60 px-6 py-5 sm:px-8">
-              <DialogTitle className="text-2xl font-semibold sm:text-3xl">
-                {isTeacher ? <>Create a <span className="font-serif font-normal text-gradient">class</span></> : <>Request a <span className="font-serif font-normal text-gradient">teacher</span></>}
+              <DialogTitle className="text-2xl font-normal sm:text-3xl">
+                {isTeacher ? <>Create a <span className="font-serif text-gradient font-semibold">class</span></> : <>Request a <span className="font-serif text-gradient font-semibold">teacher</span></>}
               </DialogTitle>
               <DialogDescription className="text-sm text-muted-foreground">
                 {isTeacher ? 'Tell students what you teach and when you’re available.' : 'Describe what you want to learn.'}

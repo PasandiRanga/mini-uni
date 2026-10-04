@@ -143,8 +143,8 @@ const DashboardContent = () => {
           {show("enrolled") && (
           <section className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
             <div className="flex items-center justify-between border-b border-border/60 px-6 py-5">
-              <h2 className="text-lg font-semibold">
-                Enrolled <span className="font-serif italic font-normal">courses</span>
+              <h2 className="text-lg font-normal">
+                Enrolled <span className="font-serif italic font-semibold">courses</span>
               </h2>
               <Button variant="ghost" size="sm" className="text-primary" onClick={() => router.push("/student/dashboard?tab=classes")}>Manage</Button>
             </div>
@@ -219,8 +219,8 @@ const DashboardContent = () => {
           {show("foryou") && (
           <section className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
             <div className="flex items-center justify-between border-b border-border/60 px-6 py-5">
-              <h2 className="text-lg font-semibold">
-                For <span className="font-serif italic font-normal">you</span>
+              <h2 className="text-lg font-normal">
+                For <span className="font-serif italic font-semibold">you</span>
               </h2>
               <Button variant="ghost" size="sm" onClick={() => router.push("/student/dashboard?tab=explore")}>See All</Button>
             </div>
@@ -245,8 +245,8 @@ const DashboardContent = () => {
           {show("teachers") && (
           <section className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
             <div className="flex items-center justify-between border-b border-border/60 px-6 py-5">
-              <h2 className="text-lg font-semibold">
-                Your <span className="font-serif italic font-normal">teachers</span>
+              <h2 className="text-lg font-normal">
+                Your <span className="font-serif italic font-semibold">teachers</span>
               </h2>
               <Button variant="ghost" size="sm" onClick={() => router.push("/student/dashboard?tab=classes")}>View All</Button>
             </div>
