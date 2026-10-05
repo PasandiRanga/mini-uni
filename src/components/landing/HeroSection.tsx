@@ -23,10 +23,10 @@ const HeroSection = () => {
               A quieter way to learn
             </div>
 
-            <h1 className="animate-fade-up text-5xl sm:text-6xl lg:text-[5.25rem] leading-[1.02] font-semibold" style={{ animationDelay: "0.1s" }}>
+            <h1 className="animate-fade-up text-5xl sm:text-6xl lg:text-[5.25rem] leading-[1.02] font-normal" style={{ animationDelay: "0.1s" }}>
               Every subject has
               <br />
-              <span className="font-serif italic font-normal text-gradient">its teacher.</span>
+              <span className="font-serif italic text-gradient font-semibold">its teacher.</span>
             </h1>
 
             <p className="animate-fade-up max-w-lg text-lg leading-relaxed text-muted-foreground" style={{ animationDelay: "0.2s" }}>

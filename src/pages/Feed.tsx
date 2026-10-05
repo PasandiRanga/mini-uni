@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState, useMemo } from "react";
+import { gradeMatches } from "@/lib/classLevels";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { useRouter } from "next/navigation";
@@ -135,7 +136,7 @@ const Feed = () => {
         }
 
         // Grade
-        if (grade && post.grade && post.grade !== grade) return false;
+        if (grade && !gradeMatches(post.grade, grade)) return false;
 
         // Price range
         if (minPrice != null && (post.fee == null || post.fee < minPrice)) return false;
@@ -171,8 +172,8 @@ const Feed = () => {
         <div className="bg-muted/30 border-b border-border">
           <div className="container mx-auto px-4 py-8">
             <div className="max-w-3xl mx-auto text-center mb-8">
-              <h1 className="text-3xl sm:text-4xl font-bold mb-4">
-                Explore <span className="font-serif italic text-gradient">Classes</span>
+              <h1 className="text-3xl sm:text-4xl font-normal mb-4">
+                Explore <span className="font-serif italic text-gradient font-semibold">Classes</span>
               </h1>
               <p className="text-muted-foreground">
                 Browse teacher offerings or student requests. Find your perfect match.

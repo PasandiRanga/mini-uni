@@ -9,12 +9,16 @@ export async function GET(
     { params }: { params: { id: string } }
 ) {
     try {
+        const session = await getSessionFromRequest(request);
+        const viewerId: string | undefined = session?.sub;
         const post = await prisma.post.findUnique({
             where: { id: params.id },
             include: {
-                timeSlots: slotsWithSeats,
+                timeSlots: { ...slotsWithSeats, orderBy: { startTime: "asc" } },
                 // Public fields only: the full row carries the password and OTP hashes.
                 user: { select: { id: true, firstName: true, lastName: true, role: true } },
+                _count: { select: { likes: true, comments: true } },
+                ...(viewerId ? { likes: { where: { userId: viewerId }, select: { id: true } } } : {}),
             },
         });
 
@@ -22,7 +26,13 @@ export async function GET(
             return NextResponse.json({ error: "Post not found" }, { status: 404 });
         }
 
-        return NextResponse.json(post);
+        const { likes, _count, ...rest } = post as typeof post & { likes?: { id: string }[] };
+        return NextResponse.json({
+            ...rest,
+            likeCount: _count.likes,
+            commentCount: _count.comments,
+            likedByMe: Boolean(likes?.length),
+        });
     } catch (error) {
         console.error("Error fetching post:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });

@@ -1,13 +1,14 @@
 'use client';
 
 import { useEffect, useState } from "react";
+import ProfileLoadError from "@/components/teacher/ProfileLoadError";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Check, GraduationCap, BookOpen, Briefcase } from "lucide-react";
 import { SuggestInput } from "@/components/ui/suggest-input";
-import { AL_STREAMS, COUNTRIES, DEFAULT_COUNTRY, PROFESSIONS, SRI_LANKAN_UNIVERSITIES, WORKING_STATUSES, examYearOptions } from "@/lib/profileOptions";
+import { AL_STREAMS, COUNTRIES, DEFAULT_COUNTRY, PROFESSIONS, UNIVERSITY_GROUPS, WORKING_STATUSES, examYearOptions, isSriLankanUniversity } from "@/lib/profileOptions";
 
 type Employment = "STUDENT" | "UNDERGRADUATE" | "GRADUATE";
 
@@ -47,12 +48,20 @@ const AcademicBackgroundForm = ({ onSaved }: AcademicBackgroundFormProps) => {
   const { toast } = useToast();
   const [data, setData] = useState<Academic>(EMPTY);
   const [loading, setLoading] = useState(true);
+  // Set when the saved values failed to load: the form is hidden so blanks are never saved.
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     let active = true;
+    setLoading(true);
+    setLoadFailed(false);
     fetch("/api/teachers/profile")
-      .then((r) => (r.ok ? r.json() : null))
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
       .then((d) => {
         if (active && d) setData({ ...EMPTY, ...{
           employmentStatus: d.employmentStatus || "",
@@ -65,17 +74,20 @@ const AcademicBackgroundForm = ({ onSaved }: AcademicBackgroundFormProps) => {
           employer: d.employer || "",
         } });
       })
+      .catch(() => active && setLoadFailed(true))
       .finally(() => active && setLoading(false));
     return () => {
       active = false;
     };
-  }, []);
+  }, [reloadKey]);
 
   const set = (key: keyof Academic) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setData((d) => ({ ...d, [key]: e.target.value }));
 
   const isStudent = data.employmentStatus === "STUDENT" || data.employmentStatus === "UNDERGRADUATE";
   const isSchoolStudent = data.employmentStatus === "STUDENT";
+  // Picking a listed Sri Lankan university fixes the country to Sri Lanka.
+  const countryLocked = data.employmentStatus === "UNDERGRADUATE" && isSriLankanUniversity(data.universityName);
   const isGraduate = data.employmentStatus === "GRADUATE";
   const notWorking = data.workingStatus === "Not currently working";
 
@@ -123,6 +135,8 @@ const AcademicBackgroundForm = ({ onSaved }: AcademicBackgroundFormProps) => {
       setSaving(false);
     }
   };
+
+  if (loadFailed && !loading) return <ProfileLoadError onRetry={() => setReloadKey((n) => n + 1)} />;
 
   if (loading) {
     return (
@@ -218,8 +232,42 @@ const AcademicBackgroundForm = ({ onSaved }: AcademicBackgroundFormProps) => {
         <div className="grid gap-5 sm:grid-cols-2">
           {data.employmentStatus === "STUDENT"
             ? field("universityName", "School name", "Royal College, Colombo")
-            : suggest("universityName", "University", SRI_LANKAN_UNIVERSITIES, "Select your university")}
-          {suggest("universityCountry", "Country", COUNTRIES, "Select a country")}
+            : (
+              <div className="space-y-1.5">
+                <Label htmlFor="universityName">
+                  University <span className="text-primary">*</span>
+                </Label>
+                <SuggestInput
+                  id="universityName"
+                  value={data.universityName}
+                  // A Sri Lankan university settles the country; anything typed by hand leaves it editable.
+                  onChange={(universityName) =>
+                    setData((d) => ({
+                      ...d,
+                      universityName,
+                      ...(isSriLankanUniversity(universityName) ? { universityCountry: DEFAULT_COUNTRY } : {}),
+                    }))
+                  }
+                  groups={UNIVERSITY_GROUPS}
+                  placeholder="Select your university"
+                  searchPlaceholder="Search, or type one that isn't listed…"
+                />
+              </div>
+            )}
+          <div className="space-y-1.5">
+            <Label htmlFor="universityCountry">
+              Country <span className="text-primary">*</span>
+            </Label>
+            <SuggestInput
+              id="universityCountry"
+              value={data.universityCountry}
+              onChange={(universityCountry) => setData((d) => ({ ...d, universityCountry }))}
+              options={COUNTRIES}
+              placeholder="Select a country"
+              locked={countryLocked}
+            />
+            {countryLocked && <p className="text-xs text-muted-foreground">Set from your university.</p>}
+          </div>
         </div>
       )}
 

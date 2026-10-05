@@ -26,7 +26,8 @@ export async function GET(
             },
         });
 
-        if (!teacher) {
+        // Public profiles exist only for approved teachers.
+        if (!teacher || teacher.teacherProfile?.verificationStatus !== "APPROVED") {
             return NextResponse.json({ error: "Teacher not found" }, { status: 404 });
         }
 

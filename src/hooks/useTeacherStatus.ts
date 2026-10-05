@@ -59,6 +59,14 @@ export function useTeacherStatus(): TeacherStatusState {
     };
   }, [isTeacher, user?.id, tick]);
 
+  // An admin may decide while the tab is open: re-check when the teacher comes back.
+  useEffect(() => {
+    if (!isTeacher) return;
+    const onVisible = () => document.visibilityState === "visible" && refresh();
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [isTeacher, refresh]);
+
   return {
     status,
     percent,

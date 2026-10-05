@@ -227,8 +227,8 @@ const MyClasses: React.FC<MyClassesProps> = ({ preview = false, onViewAll }) => 
   return (
     <section className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-6 py-5">
-        <h2 className="text-lg font-semibold">
-          {preview ? 'Upcoming' : 'My'} <span className="font-serif font-normal">classes</span>
+        <h2 className="text-lg font-normal">
+          {preview ? 'Upcoming' : 'My'} <span className="font-serif font-semibold">classes</span>
         </h2>
         <div className="flex items-center gap-1">
           <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={fetchBookings} disabled={loading}>

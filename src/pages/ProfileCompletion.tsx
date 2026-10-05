@@ -110,8 +110,8 @@ const ProfileCompletion = () => {
         </div>
 
         <div className="mb-2">
-          <h1 className="text-3xl font-semibold sm:text-4xl">
-            Complete your <span className="font-serif italic font-normal text-gradient">profile</span>
+          <h1 className="text-3xl font-normal sm:text-4xl">
+            Complete your <span className="font-serif italic text-gradient font-semibold">profile</span>
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Finish all three steps to start teaching. Your progress is saved as you go.

@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useState } from "react";
+import ProfileLoadError from "@/components/teacher/ProfileLoadError";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Check, IdCard, CreditCard, BookUser, Upload, CheckCircle2 } from "lucide-react";
+import { Loader2, Check, IdCard, CreditCard, BookUser, Upload, CheckCircle2, ShieldCheck } from "lucide-react";
+import { compressImage, MAX_RAW_UPLOAD_BYTES } from "@/lib/imageCompress";
 
 type IdType = "NIC" | "LICENSE" | "PASSPORT";
 
@@ -34,35 +36,57 @@ const IdentityVerificationForm = ({ onSaved }: IdentityVerificationFormProps) =>
   const [frontOnFile, setFrontOnFile] = useState(false);
   const [backOnFile, setBackOnFile] = useState(false);
   const [loading, setLoading] = useState(true);
+  // Set when the saved values failed to load: the form is hidden so blanks are never saved.
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const [saving, setSaving] = useState(false);
+  // Approved: the ID was checked by an admin and can't be swapped from here.
+  const [verified, setVerified] = useState(false);
 
   useEffect(() => {
     let active = true;
+    setLoading(true);
+    setLoadFailed(false);
     fetch("/api/teachers/profile")
-      .then((r) => (r.ok ? r.json() : null))
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
       .then((d) => {
         if (!active || !d) return;
         if (d.idType) setIdType(d.idType);
+        setVerified(d.verificationStatus === "APPROVED");
         setFrontOnFile(d.idFrontUploaded === "yes");
         setBackOnFile(d.idBackUploaded === "yes");
       })
+      .catch(() => active && setLoadFailed(true))
       .finally(() => active && setLoading(false));
     return () => {
       active = false;
     };
-  }, []);
+  }, [reloadKey]);
 
   const selected = ID_TYPES.find((t) => t.value === idType);
   const needsBack = selected?.needsBack ?? false;
 
   const upload = async (documentType: string, file: File) => {
-    const documentUrl = await toDataUrl(file);
+    // Photos are shrunk (kept sharp enough to read an ID); PDFs go as-is under a size cap,
+    // since the API rejects requests over 4.5 MB.
+    let documentUrl: string;
+    if (file.type.startsWith("image/")) {
+      documentUrl = await compressImage(file, { maxDimension: 2200, quality: 0.85 });
+    } else if (file.size > MAX_RAW_UPLOAD_BYTES) {
+      throw new Error("PDFs must be 3 MB or smaller. Upload a photo of the document instead.");
+    } else {
+      documentUrl = await toDataUrl(file);
+    }
     const res = await fetch("/api/teachers/upload-document", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ documentType, documentUrl }),
     });
-    if (!res.ok) throw new Error((await res.text()) || "Upload failed");
+    if (res.status === 413) throw new Error("That file is too large. Try a smaller photo.");
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "Upload failed");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -83,11 +107,12 @@ const IdentityVerificationForm = ({ onSaved }: IdentityVerificationFormProps) =>
     setSaving(true);
     try {
       // Save the chosen type, then upload whichever scans were (re)selected
-      await fetch("/api/teachers/profile", {
+      const typeRes = await fetch("/api/teachers/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ idType }),
       });
+      if (!typeRes.ok) throw new Error((await typeRes.json().catch(() => ({}))).error || "Couldn't save the document type");
       if (front) await upload("ID_FRONT", front);
       if (needsBack && back) await upload("ID_BACK", back);
 
@@ -106,10 +131,28 @@ const IdentityVerificationForm = ({ onSaved }: IdentityVerificationFormProps) =>
     }
   };
 
+  if (loadFailed && !loading) return <ProfileLoadError onRetry={() => setReloadKey((n) => n + 1)} />;
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16 text-muted-foreground">
         <Loader2 className="h-5 w-5 animate-spin" />
+      </div>
+    );
+  }
+
+  if (verified) {
+    return (
+      <div className="flex items-start gap-3 rounded-2xl border border-success/30 bg-success/[0.06] px-4 py-4">
+        <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-success" strokeWidth={1.75} />
+        <div className="text-sm">
+          <p className="font-medium">
+            {selected?.label ?? "ID"} verified{needsBack ? " (front & back)" : ""}
+          </p>
+          <p className="mt-0.5 text-muted-foreground">
+            Our team has checked your identity. To change your ID, contact support.
+          </p>
+        </div>
       </div>
     );
   }

@@ -90,8 +90,8 @@ const ScheduleCalendar = () => {
     <>
       <section className="flex flex-col overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
         <div className="flex items-center justify-between border-b border-border/60 px-6 py-5">
-          <h2 className="text-lg font-semibold">
-            Your <span className="font-serif font-normal">schedule</span>
+          <h2 className="text-lg font-normal">
+            Your <span className="font-serif font-semibold">schedule</span>
           </h2>
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={fetchBookings} disabled={loading}>

@@ -40,9 +40,9 @@ const FeaturesSection = () => {
       <div className="container mx-auto px-4">
         <Reveal className="mx-auto mb-20 max-w-2xl text-center">
           <p className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-accent">Why MiniUni</p>
-          <h2 className="text-4xl sm:text-5xl font-semibold leading-tight">
+          <h2 className="text-4xl sm:text-5xl font-normal leading-tight">
             Built for learning,
-            <span className="font-serif italic font-normal text-gradient"> not friction.</span>
+            <span className="font-serif italic text-gradient font-semibold"> not friction.</span>
           </h2>
         </Reveal>
 

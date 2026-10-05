@@ -15,9 +15,9 @@ const CTASection = () => {
             <div className="relative z-10">
               <p className="mb-6 text-xs font-semibold uppercase tracking-[0.2em] text-accent">For students</p>
 
-              <h3 className="mb-5 text-3xl lg:text-4xl font-semibold leading-tight">
+              <h3 className="mb-5 text-3xl lg:text-4xl font-normal leading-tight">
                 Ready to start
-                <span className="font-serif italic font-normal text-gradient"> learning?</span>
+                <span className="font-serif italic text-gradient font-semibold"> learning?</span>
               </h3>
 
               <p className="mb-10 max-w-md leading-relaxed text-muted-foreground">
@@ -40,9 +40,9 @@ const CTASection = () => {
             <div className="relative z-10">
               <p className="mb-6 text-xs font-semibold uppercase tracking-[0.2em] text-accent">For teachers</p>
 
-              <h3 className="mb-5 text-3xl lg:text-4xl font-semibold leading-tight text-background">
+              <h3 className="mb-5 text-3xl lg:text-4xl font-normal leading-tight text-background">
                 Share your
-                <span className="font-serif italic font-normal"> expertise.</span>
+                <span className="font-serif italic font-semibold"> expertise.</span>
               </h3>
 
               <p className="mb-10 max-w-md leading-relaxed text-background/70">

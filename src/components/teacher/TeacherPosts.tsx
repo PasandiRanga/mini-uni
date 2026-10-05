@@ -156,8 +156,8 @@ const TeacherPosts = () => {
   return (
     <section className="mx-auto w-full max-w-3xl overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
       <div className="flex items-center justify-between border-b border-border/60 px-6 py-5">
-        <h2 className="text-lg font-semibold">
-          My <span className="font-serif font-normal">posts</span>
+        <h2 className="text-lg font-normal">
+          My <span className="font-serif font-semibold">posts</span>
           {posts.length > 0 && <span className="ml-2 text-sm font-normal text-muted-foreground">({posts.length})</span>}
         </h2>
         <div className="flex items-center gap-1">

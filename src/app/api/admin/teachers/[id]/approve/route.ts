@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import { getAdminSession } from "@/lib/adminAuth";
 import { createNotification } from "@/lib/notifications";
 import { sendEmail, buildVerificationStatusEmail } from "@/lib/email";
+import { computeProfileCompletion } from "@/lib/teacherVerification";
 
 /**
  * Approves a teacher: marks the profile APPROVED and stamps every uploaded
@@ -19,16 +20,28 @@ export async function POST(request: Request, { params }: { params: { id: string 
   try {
     const profile = await prisma.teacherProfile.findUnique({
       where: { userId: params.id },
-      select: {
-        id: true,
-        userId: true,
-        verificationStatus: true,
+      include: {
+        verificationDocs: true,
         user: { select: { email: true, firstName: true } },
       },
     });
 
     if (!profile) {
       return NextResponse.json({ error: "Teacher not found" }, { status: 404 });
+    }
+    // Only a submitted profile is decided on. This also makes a double click
+    // a no-op instead of a second notification and email.
+    if (profile.verificationStatus !== "PENDING") {
+      return NextResponse.json(
+        { error: `This teacher is already ${profile.verificationStatus.toLowerCase()}`, code: "NOT_PENDING" },
+        { status: 409 }
+      );
+    }
+    if (!computeProfileCompletion(profile).complete) {
+      return NextResponse.json(
+        { error: "This profile isn't complete yet (missing details or ID scans), so it can't be approved", code: "INCOMPLETE" },
+        { status: 400 }
+      );
     }
 
     const reviewedAt = new Date();

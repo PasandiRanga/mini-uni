@@ -239,8 +239,8 @@ const TeacherWallet: React.FC<TeacherWalletProps> = ({ onOpenSettings }) => {
     <div className="mx-auto w-full max-w-4xl space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-semibold sm:text-3xl">
-            Your <span className="font-serif font-normal text-gradient">wallet</span>
+          <h2 className="text-2xl font-normal sm:text-3xl">
+            Your <span className="font-serif text-gradient font-semibold">wallet</span>
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
             Class payments are held safely until the class is over, then become available to withdraw.
@@ -316,8 +316,8 @@ const TeacherWallet: React.FC<TeacherWalletProps> = ({ onOpenSettings }) => {
       {(wallet?.holds?.length ?? 0) > 0 && (
         <section className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
           <div className="flex items-center justify-between border-b border-border/60 px-6 py-5">
-            <h3 className="text-lg font-semibold">
-              On <span className="font-serif font-normal">hold</span>
+            <h3 className="text-lg font-normal">
+              On <span className="font-serif font-semibold">hold</span>
               <span className="ml-2 text-sm font-normal text-muted-foreground">({wallet?.holds.length})</span>
             </h3>
             <p className="text-xs text-muted-foreground">
@@ -362,8 +362,8 @@ const TeacherWallet: React.FC<TeacherWalletProps> = ({ onOpenSettings }) => {
       {(wallet?.withdrawals?.length ?? 0) > 0 && (
         <section className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
           <div className="border-b border-border/60 px-6 py-5">
-            <h3 className="text-lg font-semibold">
-              Withdrawal <span className="font-serif font-normal">requests</span>
+            <h3 className="text-lg font-normal">
+              Withdrawal <span className="font-serif font-semibold">requests</span>
             </h3>
           </div>
           <div className="divide-y divide-border/60">
@@ -404,8 +404,8 @@ const TeacherWallet: React.FC<TeacherWalletProps> = ({ onOpenSettings }) => {
       {/* Activity */}
       <section className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-6 py-5">
-          <h3 className="text-lg font-semibold">
-            Transaction <span className="font-serif font-normal">history</span>
+          <h3 className="text-lg font-normal">
+            Transaction <span className="font-serif font-semibold">history</span>
           </h3>
           <div className="flex flex-wrap gap-1.5">
             {FILTERS.map((f) => (

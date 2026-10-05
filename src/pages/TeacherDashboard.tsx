@@ -65,20 +65,22 @@ const TEACHER_WIDGETS: WidgetDef[] = [
 const TeacherDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [moreOpen, setMoreOpen] = useState(false);
-  // Approval is a one-time confirmation — remember once it's been dismissed.
-  const [approvedDismissed, setApprovedDismissed] = useState<boolean>(() => {
-    try {
-      return typeof window !== "undefined" && localStorage.getItem("miniuni:approvedBannerDismissed") === "1";
-    } catch {
-      return false;
-    }
-  });
-  const [verification, setVerification] = useState<any>({ canStartClasses: false, progress: 0 });
+  // Approval is a one-time confirmation — remember (per teacher) once it's been dismissed.
+  const [approvedDismissed, setApprovedDismissed] = useState(false);
   const [completion, setCompletion] = useState<{ percent: number; verificationStatus?: string; rejectionReason?: string | null } | null>(null);
   const [bookings, setBookings] = useState<any[]>([]);
   const [inquiries, setInquiries] = useState<any[]>([]);
   const [wallet, setWallet] = useState<any>(null);
   const { user, logout } = useAuth();
+  const dismissKey = `miniuni:approvedBannerDismissed:${user?.id ?? ""}`;
+  useEffect(() => {
+    if (!user?.id) return;
+    try {
+      setApprovedDismissed(localStorage.getItem(dismissKey) === "1");
+    } catch {
+      /* storage unavailable: show it */
+    }
+  }, [user?.id, dismissKey]);
   const { openCreatePost } = useCreatePostModal();
   const router = useRouter();
   const { toast } = useToast();
@@ -86,11 +88,7 @@ const TeacherDashboard = () => {
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        // verification progress
-        const vRes = await fetch(`/api/teachers/verification-progress`);
-        if (vRes.ok) setVerification(await vRes.json());
-
-        // profile completion (drives the "Complete your profile" banner)
+        // Profile completion and verification status (banners, badge, Create Post).
         const cRes = await fetch(`/api/teachers/profile-completion`);
         if (cRes.ok) setCompletion(await cRes.json());
 
@@ -120,6 +118,21 @@ const TeacherDashboard = () => {
 
     fetchAll();
   }, [user?.id]);
+
+  // An admin may approve or reject while this tab is open: re-check on return.
+  useEffect(() => {
+    const recheck = () => {
+      if (document.visibilityState !== "visible") return;
+      fetch(`/api/teachers/profile-completion`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => d && setCompletion(d))
+        .catch(() => {});
+    };
+    document.addEventListener("visibilitychange", recheck);
+    return () => document.removeEventListener("visibilitychange", recheck);
+  }, []);
+
+  const verificationStatus = completion?.verificationStatus;
 
   const handleLogout = async () => {
     try {
@@ -199,24 +212,24 @@ const TeacherDashboard = () => {
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div className="animate-fade-up">
               <p className="mb-1 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">{todayLabel()}</p>
-              <h1 className="text-3xl sm:text-4xl font-semibold leading-tight">
+              <h1 className="text-3xl sm:text-4xl font-normal leading-tight">
                 {greeting()},{" "}
-                <span className="font-serif italic font-normal text-gradient">{user?.firstName || "Teacher"}.</span>
+                <span className="font-serif italic text-gradient font-semibold">{user?.firstName || "Teacher"}.</span>
               </h1>
-              {verification?.verificationStatus && (
+              {verificationStatus && (
                 <span
                   className={`mt-3 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${
-                    verification.verificationStatus === 'APPROVED'
+                    verificationStatus === 'APPROVED'
                       ? 'border-success/30 bg-success/10 text-success'
-                      : verification.verificationStatus === 'REJECTED'
+                      : verificationStatus === 'REJECTED'
                         ? 'border-destructive/30 bg-destructive/10 text-destructive'
                         : 'border-warning/30 bg-warning/10 text-warning'
                   }`}
                 >
                   <span className="h-1.5 w-1.5 rounded-full bg-current" />
-                  {verification.verificationStatus === 'APPROVED'
+                  {verificationStatus === 'APPROVED'
                     ? 'Verified teacher'
-                    : verification.verificationStatus === 'REJECTED'
+                    : verificationStatus === 'REJECTED'
                       ? 'Changes needed'
                       : 'Pending approval'}
                 </span>
@@ -228,8 +241,8 @@ const TeacherDashboard = () => {
                 variant="hero"
                 className="gap-2"
                 onClick={() => openCreatePost()}
-                disabled={verification?.verificationStatus !== 'APPROVED'}
-                title={verification?.verificationStatus !== 'APPROVED' ? 'Available once your profile is approved' : undefined}
+                disabled={verificationStatus !== 'APPROVED'}
+                title={verificationStatus !== 'APPROVED' ? 'Available once your profile is approved' : undefined}
               >
                 <Plus className="h-4 w-4" />
                 <span className="hidden sm:inline">Create Post</span>
@@ -262,7 +275,7 @@ const TeacherDashboard = () => {
 
           {/* Complete-your-profile banner — fills as the teacher completes the wizard steps */}
           {/* Hidden once approved: an approved teacher is already live, so it would contradict the "verified" banner. */}
-          {completion && completion.percent < 100 && completion.verificationStatus !== 'APPROVED' && (
+          {completion && completion.percent < 100 && completion.verificationStatus === 'PENDING' && (
             <button
               onClick={() => router.push('/teacher/profile-completion')}
               className="group mb-8 block w-full overflow-hidden rounded-3xl border border-primary/40 bg-primary/[0.07] p-5 text-left transition-all duration-300 hover:border-primary/70 hover:bg-primary/10 sm:p-6"
@@ -353,7 +366,7 @@ const TeacherDashboard = () => {
                 <button
                   onClick={() => {
                     setApprovedDismissed(true);
-                    try { localStorage.setItem("miniuni:approvedBannerDismissed", "1"); } catch { /* ignore */ }
+                    try { localStorage.setItem(dismissKey, "1"); } catch { /* ignore */ }
                   }}
                   className="shrink-0 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
                 >
@@ -413,8 +426,8 @@ const TeacherDashboard = () => {
             {show("inquiries") && (
             <section className="flex flex-col overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
               <div className="flex items-center justify-between border-b border-border/60 px-6 py-5">
-                <h2 className="text-lg font-semibold">
-                  <span className="font-serif italic font-normal">Inquiries</span>
+                <h2 className="text-lg font-normal">
+                  <span className="font-serif italic font-semibold">Inquiries</span>
                 </h2>
                 {unreadCount > 0 && (
                   <Badge className="rounded-full bg-primary text-primary-foreground">{unreadCount} new</Badge>

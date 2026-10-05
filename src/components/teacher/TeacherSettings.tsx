@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import PersonalDetailsForm from "@/components/teacher/PersonalDetailsForm";
+import ProfileLoadError from "@/components/teacher/ProfileLoadError";
 import IdentityVerificationForm from "@/components/teacher/IdentityVerificationForm";
 import AcademicBackgroundForm from "@/components/teacher/AcademicBackgroundForm";
 import { CurrencySettings } from "@/components/settings/CurrencySettings";
@@ -139,21 +140,39 @@ const BankDetailsForm = () => {
   const { toast } = useToast();
   const [data, setData] = useState({ bankAccountName: "", bankAccountNumber: "", bankName: "", bankBranch: "" });
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const [saving, setSaving] = useState(false);
+  // True when the holder name was filled in from the profile and not yet saved.
+  const [holderPrefilled, setHolderPrefilled] = useState(false);
 
   useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setLoadFailed(false);
     fetch("/api/teachers/profile")
-      .then((r) => (r.ok ? r.json() : null))
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
       .then((d) => {
-        if (d) setData({
-          bankAccountName: d.bankAccountName || "",
+        if (!active) return;
+        // Banks print the name with initials, so suggest that for a new account.
+        const holder = d.bankAccountName || d.nameWithInitials || d.fullName || "";
+        setHolderPrefilled(!d.bankAccountName && Boolean(holder));
+        setData({
+          bankAccountName: holder,
           bankAccountNumber: d.bankAccountNumber || "",
           bankName: d.bankName || "",
           bankBranch: d.bankBranch || "",
         });
       })
-      .finally(() => setLoading(false));
-  }, []);
+      .catch(() => active && setLoadFailed(true))
+      .finally(() => active && setLoading(false));
+    return () => {
+      active = false;
+    };
+  }, [reloadKey]);
 
   const set = (key: keyof typeof data) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setData((d) => ({ ...d, [key]: e.target.value }));
@@ -168,6 +187,7 @@ const BankDetailsForm = () => {
         body: JSON.stringify(data),
       });
       if (!res.ok) throw new Error((await res.json()).error || "Failed");
+      setHolderPrefilled(false);
       toast({ title: "Bank details saved" });
     } catch (err: unknown) {
       toast({ title: "Couldn't save", description: err instanceof Error ? err.message : "Try again", variant: "destructive" });
@@ -177,12 +197,14 @@ const BankDetailsForm = () => {
   };
 
   if (loading) return <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />;
+  if (loadFailed) return <ProfileLoadError onRetry={() => setReloadKey((n) => n + 1)} />;
 
   return (
     <form onSubmit={submit} className="grid gap-5 sm:grid-cols-2">
       <div className="space-y-1.5">
         <Label htmlFor="bankAccountName">Account holder name</Label>
-        <Input id="bankAccountName" value={data.bankAccountName} onChange={set("bankAccountName")} placeholder="Jane A. Perera" />
+        <Input id="bankAccountName" value={data.bankAccountName} onChange={set("bankAccountName")} placeholder="J. A. Perera" />
+        {holderPrefilled && <p className="text-xs text-muted-foreground">From your profile. Change it if your bank uses a different name.</p>}
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="bankAccountNumber">Account number</Label>
@@ -210,8 +232,8 @@ const TeacherSettings = () => {
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       <div>
-        <h2 className="text-2xl font-semibold sm:text-3xl">
-          <span className="font-serif font-normal text-gradient">Settings</span>
+        <h2 className="text-2xl font-normal sm:text-3xl">
+          <span className="font-serif text-gradient font-semibold">Settings</span>
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Manage your profile, security, notifications and payouts. You can complete your profile here or in the step-by-step flow — both stay in sync.
