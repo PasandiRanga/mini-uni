@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireSelfOrAdmin } from "@/lib/adminAuth";
+import { settleFinishedBookings } from "@/lib/bookings";
 
 export async function GET(
     request: Request,
@@ -11,6 +12,8 @@ export async function GET(
 
     try {
         const { teacherId } = params;
+        // Finished classes become COMPLETED (and pay out) before they're listed.
+        await settleFinishedBookings({ teacherId });
 
         const bookings = await prisma.booking.findMany({
             where: { teacherId },

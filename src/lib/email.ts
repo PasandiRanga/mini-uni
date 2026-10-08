@@ -131,6 +131,38 @@ export function buildSuspensionEmail(kind: "SUSPENDED" | "REINSTATED", firstName
   };
 }
 
+/** The "reset your password" link email. */
+export function buildPasswordResetEmail(link: string, firstName?: string) {
+  const greeting = firstName ? `Hi ${firstName},` : "Hi there,";
+  return {
+    subject: "Reset your MiniUni password",
+    text: `${greeting}\n\nWe got a request to reset your password. Open this link within 30 minutes to choose a new one:\n\n${link}\n\nIf you didn't ask for this, ignore this email. Your password won't change.`,
+    html: `
+      <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; color: #1a1a24;">
+        <h1 style="font-size: 20px; margin: 0 0 16px;">Reset your password</h1>
+        <p style="color: #55555f; line-height: 1.6; margin: 0 0 24px;">${escapeHtml(greeting)} we got a request to reset your password. The link works for 30 minutes.</p>
+        <a href="${escapeHtml(link)}" style="display: inline-block; background: #6d3fd6; color: #fff; text-decoration: none; padding: 12px 20px; border-radius: 999px; font-weight: 600;">Choose a new password</a>
+        <p style="color: #8a8a94; font-size: 13px; line-height: 1.6; margin: 24px 0 0;">If you didn't ask for this, ignore this email. Your password won't change.</p>
+      </div>
+    `,
+  };
+}
+
+/** Confirms a password change, so an owner who didn't do it notices. */
+export function buildPasswordChangedEmail(firstName?: string) {
+  const greeting = firstName ? `Hi ${firstName},` : "Hi there,";
+  return {
+    subject: "Your MiniUni password was changed",
+    text: `${greeting}\n\nYour password was just changed. If this wasn't you, reset it again straight away and reply to this email.`,
+    html: `
+      <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; color: #1a1a24;">
+        <h1 style="font-size: 20px; margin: 0 0 16px;">Your password was changed</h1>
+        <p style="color: #55555f; line-height: 1.6; margin: 0;">${escapeHtml(greeting)} your password was just changed. If this wasn't you, reset it again straight away and reply to this email.</p>
+      </div>
+    `,
+  };
+}
+
 /** Builds the teacher verification-decision email (approved or rejected). */
 export function buildVerificationStatusEmail(
   status: "APPROVED" | "REJECTED",

@@ -27,7 +27,8 @@ export async function POST(request: Request) {
     if (user.emailVerified) {
       return NextResponse.json({ verified: true });
     }
-    if (!user.emailOtp || !user.emailOtpExpiry) {
+    // A pending password-reset link isn't a verification code.
+    if (!user.emailOtp || !user.emailOtpExpiry || user.emailOtp.startsWith("reset:")) {
       return NextResponse.json({ error: "No code requested. Please request a new one." }, { status: 400 });
     }
     if (user.emailOtpExpiry < new Date()) {

@@ -70,6 +70,26 @@ interface MyClassesProps {
   onViewAll?: () => void;
 }
 
+/** Plain-language status; a confirmed class that has started reads "In progress". */
+const statusLabel = (b: Booking) => {
+  const status = (b.status || '').toUpperCase();
+  const now = Date.now();
+  const started = b.timeSlot?.startTime && new Date(b.timeSlot.startTime).getTime() <= now;
+  const ended = b.timeSlot?.endTime && new Date(b.timeSlot.endTime).getTime() <= now;
+  if ((status === 'CONFIRMED' || status === 'IN_PROGRESS') && started && !ended) return 'In progress';
+  return (
+    {
+      CONFIRMED: 'Confirmed',
+      PAYMENT_COMPLETED: 'Paid',
+      PENDING_PAYMENT: 'Awaiting payment',
+      IN_PROGRESS: 'In progress',
+      COMPLETED: 'Completed',
+      CANCELLED: 'Cancelled',
+      DISPUTED: 'Disputed',
+    } as Record<string, string>
+  )[status] || status;
+};
+
 const MyClasses: React.FC<MyClassesProps> = ({ preview = false, onViewAll }) => {
   const { user } = useAuth();
   const currency = user?.currency;
@@ -200,7 +220,7 @@ const MyClasses: React.FC<MyClassesProps> = ({ preview = false, onViewAll }) => 
             </div>
           </div>
           <div className="flex shrink-0 flex-col items-end gap-2">
-            <span className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${statusClasses(b.status)}`}>{b.status}</span>
+            <span className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${statusClasses(b.status)}`}>{statusLabel(b)}</span>
             {isFuture && b.googleMeetLink && (
               <Button size="sm" variant="hero" className="h-8" onClick={() => handleJoin(b.googleMeetLink)}>
                 <Video className="h-3.5 w-3.5" /> Join
