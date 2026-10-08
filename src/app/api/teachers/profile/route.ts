@@ -98,7 +98,7 @@ export async function PUT(request: Request) {
 
     // Once approved, the name and ID were matched against the documents: a
     // change would bypass that review, so it goes through support instead.
-    if (profile.verificationStatus === "APPROVED") {
+    if (profile.verificationStatus === "APPROVED" || profile.verificationStatus === "SUSPENDED") {
       const changed = VERIFIED_IDENTITY_FIELDS.filter(
         (f) => f in data && data[f] !== ((profile as Record<string, unknown>)[f] ?? "")
       );

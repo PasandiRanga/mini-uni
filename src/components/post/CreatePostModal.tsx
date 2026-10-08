@@ -303,14 +303,20 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, e
           ) : (
             <div className="space-y-5 p-8 text-center sm:p-10">
               <DialogHeader className="items-center space-y-3 text-center sm:text-center">
-                <span className={`flex h-12 w-12 items-center justify-center rounded-full ${teacherStatus.status === 'REJECTED' ? 'bg-destructive/10 text-destructive' : 'bg-warning/10 text-warning'}`}>
-                  {teacherStatus.status === 'REJECTED' ? <ShieldAlert className="h-6 w-6" /> : <Clock className="h-6 w-6" />}
+                <span className={`flex h-12 w-12 items-center justify-center rounded-full ${teacherStatus.status === 'REJECTED' || teacherStatus.status === 'SUSPENDED' ? 'bg-destructive/10 text-destructive' : 'bg-warning/10 text-warning'}`}>
+                  {teacherStatus.status === 'REJECTED' || teacherStatus.status === 'SUSPENDED' ? <ShieldAlert className="h-6 w-6" /> : <Clock className="h-6 w-6" />}
                 </span>
                 <DialogTitle className="text-2xl font-semibold">
-                  {teacherStatus.status === 'REJECTED' ? 'Your profile needs changes' : 'Your profile is pending approval'}
+                  {teacherStatus.status === 'SUSPENDED'
+                    ? 'Your teaching account is suspended'
+                    : teacherStatus.status === 'REJECTED'
+                      ? 'Your profile needs changes'
+                      : 'Your profile is pending approval'}
                 </DialogTitle>
                 <DialogDescription className="mx-auto max-w-md text-sm text-muted-foreground">
-                  {teacherStatus.status === 'REJECTED'
+                  {teacherStatus.status === 'SUSPENDED'
+                    ? `You can't post classes while suspended.${teacherStatus.suspensionReason ? ` Reason: ${teacherStatus.suspensionReason}` : ''} Contact support if you have questions.`
+                    : teacherStatus.status === 'REJECTED'
                     ? teacherStatus.rejectionReason
                       ? `Our team asked for changes: ${teacherStatus.rejectionReason} Update your profile and it'll be reviewed again.`
                       : "Our team asked for changes to your profile. Update it and it'll be reviewed again."

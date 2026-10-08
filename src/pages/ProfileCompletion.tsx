@@ -27,6 +27,7 @@ const ProfileCompletion = () => {
   const [steps, setSteps] = useState<CompletionStep[]>([]);
   const [status, setStatus] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState<string | null>(null);
+  const [suspensionReason, setSuspensionReason] = useState<string | null>(null);
   const [resubmitting, setResubmitting] = useState(false);
   const { toast } = useToast();
 
@@ -39,6 +40,7 @@ const ProfileCompletion = () => {
         setSteps(data.steps ?? []);
         setStatus(data.verificationStatus ?? null);
         setRejectionReason(data.rejectionReason ?? null);
+        setSuspensionReason(data.suspensionReason ?? null);
         return data;
       }
     } catch {
@@ -154,15 +156,31 @@ const ProfileCompletion = () => {
         )}
 
         {allDone && !needsChanges ? (
-          <div className="rounded-3xl border border-success/40 bg-success/[0.07] p-8 text-center">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-success/15 text-success">
-              <PartyPopper className="h-7 w-7" strokeWidth={1.75} />
+          <div
+            className={`rounded-3xl border p-8 text-center ${
+              status === "SUSPENDED" ? "border-destructive/40 bg-destructive/[0.06]" : "border-success/40 bg-success/[0.07]"
+            }`}
+          >
+            <div
+              className={`mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full ${
+                status === "SUSPENDED" ? "bg-destructive/15 text-destructive" : "bg-success/15 text-success"
+              }`}
+            >
+              {status === "SUSPENDED" ? (
+                <ShieldAlert className="h-7 w-7" strokeWidth={1.75} />
+              ) : (
+                <PartyPopper className="h-7 w-7" strokeWidth={1.75} />
+              )}
             </div>
-            <h2 className="text-xl font-semibold">{status === "APPROVED" ? "You're verified" : "Profile complete"}</h2>
+            <h2 className="text-xl font-semibold">
+              {status === "APPROVED" ? "You're verified" : status === "SUSPENDED" ? "Your account is suspended" : "Profile complete"}
+            </h2>
             <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
               {status === "APPROVED"
                 ? "Your profile has been approved. You can now post classes and get booked."
-                : "Your profile has been submitted. Our team will review your documents and update your verification status soon."}
+                : status === "SUSPENDED"
+                  ? `Your profile is complete, but an admin has suspended your teaching account.${suspensionReason ? ` Reason: ${suspensionReason}` : ""} Contact support if you have questions.`
+                  : "Your profile has been submitted. Our team will review your documents and update your verification status soon."}
             </p>
             <Button variant="hero" className="mt-6" onClick={() => router.push("/teacher/dashboard")}>
               Back to dashboard

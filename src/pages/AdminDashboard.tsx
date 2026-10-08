@@ -34,6 +34,8 @@ import {
   MapPin,
   RefreshCw,
   ExternalLink,
+  Ban,
+  RotateCcw,
 } from "lucide-react";
 
 /* -------------------------------------------------------------------------- */
@@ -53,6 +55,7 @@ const statusTone: Record<string, string> = {
   PENDING: "bg-amber-500/10 text-amber-600 border-amber-500/20",
   APPROVED: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
   REJECTED: "bg-destructive/10 text-destructive border-destructive/20",
+  SUSPENDED: "bg-destructive/10 text-destructive border-destructive/20",
   PROCESSING: "bg-blue-500/10 text-blue-600 border-blue-500/20",
   PAID: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
   CANCELLED: "bg-muted text-muted-foreground border-border",
@@ -178,7 +181,7 @@ const AdminDashboard = () => {
  * Teacher verification queue
  * -------------------------------------------------------------------------- */
 
-const TEACHER_FILTERS = ["PENDING", "APPROVED", "REJECTED"] as const;
+const TEACHER_FILTERS = ["PENDING", "APPROVED", "REJECTED", "SUSPENDED"] as const;
 
 const TeacherReview = ({ toast, onChanged }: { toast: any; onChanged: () => void }) => {
   const [status, setStatus] = useState<(typeof TEACHER_FILTERS)[number]>("PENDING");
@@ -341,6 +344,9 @@ const TeacherDetailDialog = ({
   const [detail, setDetail] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [rejecting, setRejecting] = useState(false);
+  const [suspending, setSuspending] = useState(false);
+  // Cancel and refund the teacher's upcoming classes when suspending (on by default).
+  const [cancelUpcoming, setCancelUpcoming] = useState(true);
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [loadError, setLoadError] = useState(false);
@@ -367,13 +373,18 @@ const TeacherDetailDialog = ({
     };
   }, [userId, reloadKey]);
 
-  const act = async (kind: "approve" | "reject") => {
+  const act = async (kind: "approve" | "reject" | "suspend" | "reinstate") => {
     setSubmitting(true);
     try {
       const res = await fetch(`/api/admin/teachers/${userId}/${kind}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: kind === "reject" ? JSON.stringify({ reason: reason.trim() }) : undefined,
+        body:
+          kind === "reject"
+            ? JSON.stringify({ reason: reason.trim() })
+            : kind === "suspend"
+              ? JSON.stringify({ reason: reason.trim(), cancelUpcoming })
+              : undefined,
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -381,13 +392,19 @@ const TeacherDetailDialog = ({
         if (res.status === 409) onReviewed();
         throw new Error(err.error || "Action failed");
       }
-      toast({
-        title: kind === "approve" ? "Teacher approved" : "Teacher rejected",
-        description:
-          kind === "approve"
-            ? "They can now post classes and take bookings."
-            : "They've been told what to fix and can re-submit.",
-      });
+      const result = await res.json().catch(() => ({}));
+      const messages = {
+        approve: ["Teacher approved", "They can now post classes and take bookings."],
+        reject: ["Teacher rejected", "They've been told what to fix and can re-submit."],
+        suspend: [
+          "Teacher suspended",
+          `Their classes are hidden.${result.cancelled ? ` ${result.cancelled} upcoming class${result.cancelled === 1 ? "" : "es"} cancelled and refunded.` : ""}${
+            result.notCancelled ? ` ${result.notCancelled} couldn't be cancelled (already paid out).` : ""
+          }`,
+        ],
+        reinstate: ["Teacher reinstated", "Their classes are visible again."],
+      } as const;
+      toast({ title: messages[kind][0], description: messages[kind][1] });
       onReviewed();
     } catch (e: any) {
       toast({ title: "Error", description: e?.message || "Something went wrong", variant: "destructive" });
@@ -399,6 +416,8 @@ const TeacherDetailDialog = ({
   const p = detail?.personal;
   const a = detail?.academic;
   const isPending = detail?.verificationStatus === "PENDING";
+  const isApproved = detail?.verificationStatus === "APPROVED";
+  const isSuspended = detail?.verificationStatus === "SUSPENDED";
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
@@ -522,6 +541,46 @@ const TeacherDetailDialog = ({
               </p>
             )}
 
+            {isSuspended && detail.suspensionReason && (
+              <p className="rounded-xl border border-destructive/30 bg-destructive/[0.04] px-4 py-3 text-sm">
+                <span className="font-medium">Suspended:</span> {detail.suspensionReason}
+              </p>
+            )}
+
+            {/* Suspend: reason + what happens to booked classes */}
+            {suspending && (
+              <div className="space-y-3 rounded-xl border border-destructive/30 bg-destructive/[0.04] p-4">
+                <div>
+                  <label className="mb-2 block text-sm font-medium">Reason for suspension</label>
+                  <Textarea
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    placeholder="The teacher will see this…"
+                    rows={3}
+                  />
+                </div>
+                {detail.upcomingBookings > 0 ? (
+                  <label className="flex cursor-pointer items-start gap-2.5 text-sm">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 h-4 w-4 accent-[hsl(var(--destructive))]"
+                      checked={cancelUpcoming}
+                      onChange={(e) => setCancelUpcoming(e.target.checked)}
+                    />
+                    <span>
+                      Cancel their {detail.upcomingBookings} upcoming booked class{detail.upcomingBookings === 1 ? "" : "es"} and refund the
+                      students
+                      <span className="block text-xs text-muted-foreground">
+                        Untick to let those classes go ahead. No new bookings either way.
+                      </span>
+                    </span>
+                  </label>
+                ) : (
+                  <p className="text-xs text-muted-foreground">They have no upcoming booked classes.</p>
+                )}
+              </div>
+            )}
+
             {/* Reject reason input */}
             {rejecting && (
               <div className="rounded-xl border border-destructive/30 bg-destructive/[0.04] p-4">
@@ -535,6 +594,35 @@ const TeacherDetailDialog = ({
               </div>
             )}
           </div>
+        )}
+
+        {detail && isApproved && (
+          <DialogFooter className="gap-2 sm:gap-2">
+            {suspending ? (
+              <>
+                <Button variant="ghost" onClick={() => setSuspending(false)} disabled={submitting}>
+                  Back
+                </Button>
+                <Button variant="destructive" onClick={() => act("suspend")} disabled={submitting || !reason.trim()} className="gap-2">
+                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Ban className="h-4 w-4" />}
+                  Confirm suspension
+                </Button>
+              </>
+            ) : (
+              <Button variant="outline" onClick={() => setSuspending(true)} className="gap-2 text-destructive">
+                <Ban className="h-4 w-4" /> Suspend teacher
+              </Button>
+            )}
+          </DialogFooter>
+        )}
+
+        {detail && isSuspended && (
+          <DialogFooter>
+            <Button onClick={() => act("reinstate")} disabled={submitting} className="gap-2">
+              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
+              Reinstate
+            </Button>
+          </DialogFooter>
         )}
 
         {detail && isPending && (

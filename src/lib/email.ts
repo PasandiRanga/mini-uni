@@ -101,6 +101,36 @@ export function buildTeacherSubmittedEmail(opts: { teacherName: string; resubmit
   };
 }
 
+/** Tells a teacher they were suspended (with the reason) or reinstated. */
+export function buildSuspensionEmail(kind: "SUSPENDED" | "REINSTATED", firstName?: string, reason?: string, cancelledCount = 0) {
+  const greeting = firstName ? `Hi ${firstName},` : "Hi there,";
+  if (kind === "REINSTATED") {
+    return {
+      subject: "Your MiniUni teaching account is active again",
+      text: `${greeting}\n\nYour teacher account has been reinstated. Your classes are visible again and students can book you.`,
+      html: `
+        <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; color: #1a1a24;">
+          <h1 style="font-size: 20px; margin: 0 0 16px;">You're back</h1>
+          <p style="color: #55555f; line-height: 1.6; margin: 0;">${escapeHtml(greeting)} your teacher account has been <strong>reinstated</strong>. Your classes are visible again and students can book you.</p>
+        </div>
+      `,
+    };
+  }
+  const cancelledLine = cancelledCount > 0 ? ` ${cancelledCount} upcoming class${cancelledCount === 1 ? " was" : "es were"} cancelled and the students refunded.` : "";
+  return {
+    subject: "Your MiniUni teaching account has been suspended",
+    text: `${greeting}\n\nYour teacher account has been suspended.${reason ? ` Reason: ${reason}` : ""}${cancelledLine}\n\nYour classes are hidden and you can't take new bookings. Money you've already earned can still be withdrawn. Reply to this email to contact support.`,
+    html: `
+      <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; color: #1a1a24;">
+        <h1 style="font-size: 20px; margin: 0 0 16px;">Your teaching account is suspended</h1>
+        ${reason ? `<div style="background: #fbeaea; border-radius: 12px; padding: 16px; margin-bottom: 20px; color: #7a2020;"><strong>Reason:</strong> ${escapeHtml(reason)}</div>` : ""}
+        <p style="color: #55555f; line-height: 1.6; margin: 0 0 12px;">${escapeHtml(greeting)} your classes are hidden and you can't take new bookings.${escapeHtml(cancelledLine)}</p>
+        <p style="color: #55555f; line-height: 1.6; margin: 0;">Money you've already earned can still be withdrawn. Reply to this email to contact support.</p>
+      </div>
+    `,
+  };
+}
+
 /** Builds the teacher verification-decision email (approved or rejected). */
 export function buildVerificationStatusEmail(
   status: "APPROVED" | "REJECTED",

@@ -23,7 +23,7 @@ export async function POST(request: Request) {
         }
 
         // A verified teacher's ID was checked by an admin; swapping it needs a new review.
-        if (user.teacherProfile.verificationStatus === "APPROVED") {
+        if (user.teacherProfile.verificationStatus === "APPROVED" || user.teacherProfile.verificationStatus === "SUSPENDED") {
             return NextResponse.json(
                 { error: "Your ID is verified. Contact support to change it.", code: "IDENTITY_LOCKED" },
                 { status: 403 }

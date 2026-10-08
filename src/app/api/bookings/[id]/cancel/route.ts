@@ -2,9 +2,8 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getSessionFromRequest } from "@/lib/auth";
-import { refundBookingToStudent } from "@/lib/wallet";
 import { createNotification } from "@/lib/notifications";
-import { releaseSeat } from "@/lib/seats";
+import { cancelBooking } from "@/lib/bookings";
 
 /**
  * Cancels a booking. Either side can cancel a class that hasn't happened yet;
@@ -41,24 +40,7 @@ export async function POST(
         const body = await request.json().catch(() => ({}));
         const reason: string | undefined = body?.reason?.toString().trim() || undefined;
 
-        // Refund first: if the money has already cleared into the teacher's
-        // earnings there is nothing to reverse, and the booking stays as it is.
-        const refund = await refundBookingToStudent(bookingId, reason);
-
-        // Cancel and give the seat back together, so a group slot's seat count
-        // never disagrees with its bookings.
-        const cancelled = await prisma.$transaction(async (tx) => {
-            const updated = await tx.booking.update({
-                where: { id: bookingId },
-                data: {
-                    status: "CANCELLED",
-                    cancelledAt: new Date(),
-                    cancellationReason: reason ?? null,
-                },
-            });
-            await releaseSeat(tx, booking.timeSlotId);
-            return updated;
-        });
+        const { booking: cancelled, refunded } = await cancelBooking(bookingId, reason);
 
         // Notify whoever didn't press cancel.
         const otherPartyId = userId === booking.studentId ? booking.teacherId : booking.studentId;
@@ -69,10 +51,10 @@ export async function POST(
             message: reason
                 ? `A booked class was cancelled: ${reason}`
                 : "A booked class was cancelled.",
-            metadata: { bookingId, refunded: refund.refunded },
+            metadata: { bookingId, refunded },
         });
 
-        return NextResponse.json({ ...cancelled, refunded: refund.refunded });
+        return NextResponse.json({ ...cancelled, refunded });
     } catch (error: any) {
         if (error?.message === "ESCROW_RELEASED") {
             return NextResponse.json(
