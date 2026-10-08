@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getSessionFromRequest } from "@/lib/auth";
 import { DEFAULT_COUNTRY, initialsFromFullName } from "@/lib/profileOptions";
+import { isProfileComplete, notifyAdminsOfSubmission } from "@/lib/adminAlerts";
 
 // Every editable profile string field, grouped by the section that owns it.
 const EDITABLE_FIELDS = [
@@ -109,11 +110,18 @@ export async function PUT(request: Request) {
       }
     }
 
+    // Remember whether it was complete, to spot the save that makes it ready for review.
+    const wasComplete = profile.verificationStatus === "PENDING" ? await isProfileComplete(session.sub) : null;
+
     await prisma.teacherProfile.update({ where: { userId: session.sub }, data });
 
     // An ID type without a back side (e.g. passport) makes an old back scan stale.
     if (data.idType && data.idType !== "NIC" && data.idType !== "LICENSE") {
       await prisma.verificationDocument.deleteMany({ where: { teacherId: profile.id, documentType: "ID_BACK" } });
+    }
+
+    if (wasComplete === false && (await isProfileComplete(session.sub))) {
+      await notifyAdminsOfSubmission({ teacherUserId: session.sub, resubmitted: false, origin: new URL(request.url).origin });
     }
 
     return NextResponse.json({ success: true });

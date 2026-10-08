@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import NotificationBell from "@/components/notifications/NotificationBell";
 import {
   Dialog,
   DialogContent,
@@ -66,12 +67,43 @@ const StatusBadge = ({ status }: { status: string }) => (
 const fmtDate = (d?: string | null) =>
   d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—";
 
+/** Number of items waiting, shown on a tab. Hidden at zero. */
+const CountBadge = ({ n }: { n: number }) =>
+  n > 0 ? (
+    <span className="min-w-[20px] rounded-full bg-primary px-1.5 py-0.5 text-center text-[11px] font-semibold tabular-nums text-primary-foreground">
+      {n > 99 ? "99+" : n}
+    </span>
+  ) : null;
+
 /* -------------------------------------------------------------------------- */
 
 const AdminDashboard = () => {
   const { user, logout } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
+
+  // Waiting-item counts for the tab badges, kept fresh while the console is open.
+  const [counts, setCounts] = useState<{ teachers: number; withdrawals: number }>({ teachers: 0, withdrawals: 0 });
+  const refreshCounts = useCallback(async () => {
+    try {
+      const [t, w] = await Promise.all([fetch("/api/admin/teachers?status=PENDING"), fetch("/api/admin/withdrawals?status=PENDING")]);
+      const tj = t.ok ? await t.json() : null;
+      const wj = w.ok ? await w.json() : null;
+      setCounts((c) => ({ teachers: tj?.count ?? c.teachers, withdrawals: wj?.count ?? c.withdrawals }));
+    } catch {
+      /* keep the last counts */
+    }
+  }, []);
+  useEffect(() => {
+    refreshCounts();
+    const timer = setInterval(refreshCounts, 60_000);
+    const onVisible = () => document.visibilityState === "visible" && refreshCounts();
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [refreshCounts]);
 
   const handleLogout = async () => {
     try {
@@ -99,6 +131,7 @@ const AdminDashboard = () => {
             </Badge>
           </Link>
           <div className="flex items-center gap-3">
+            <NotificationBell />
             <span className="hidden text-sm text-muted-foreground sm:inline">
               {user ? `${user.firstName} ${user.lastName}` : "Admin"}
             </span>
@@ -121,17 +154,19 @@ const AdminDashboard = () => {
           <TabsList className="mb-6">
             <TabsTrigger value="teachers" className="gap-2">
               <ShieldCheck className="h-4 w-4" /> Teacher verification
+              <CountBadge n={counts.teachers} />
             </TabsTrigger>
             <TabsTrigger value="withdrawals" className="gap-2">
               <Wallet className="h-4 w-4" /> Withdrawals
+              <CountBadge n={counts.withdrawals} />
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="teachers">
-            <TeacherReview toast={toast} />
+            <TeacherReview toast={toast} onChanged={refreshCounts} />
           </TabsContent>
           <TabsContent value="withdrawals">
-            <WithdrawalReview toast={toast} />
+            <WithdrawalReview toast={toast} onChanged={refreshCounts} />
           </TabsContent>
         </Tabs>
       </main>
@@ -145,7 +180,7 @@ const AdminDashboard = () => {
 
 const TEACHER_FILTERS = ["PENDING", "APPROVED", "REJECTED"] as const;
 
-const TeacherReview = ({ toast }: { toast: any }) => {
+const TeacherReview = ({ toast, onChanged }: { toast: any; onChanged: () => void }) => {
   const [status, setStatus] = useState<(typeof TEACHER_FILTERS)[number]>("PENDING");
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -171,6 +206,10 @@ const TeacherReview = ({ toast }: { toast: any }) => {
 
   useEffect(() => {
     load();
+    // New submissions arrive while the console sits open: re-check on return.
+    const onVisible = () => document.visibilityState === "visible" && load();
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
   }, [load]);
 
   return (
@@ -243,6 +282,7 @@ const TeacherReview = ({ toast }: { toast: any }) => {
           onReviewed={() => {
             setSelected(null);
             load();
+            onChanged();
           }}
           toast={toast}
         />
@@ -538,7 +578,7 @@ const TeacherDetailDialog = ({
 
 const WITHDRAWAL_FILTERS = ["PENDING", "PROCESSING", "PAID", "REJECTED"] as const;
 
-const WithdrawalReview = ({ toast }: { toast: any }) => {
+const WithdrawalReview = ({ toast, onChanged }: { toast: any; onChanged: () => void }) => {
   const [status, setStatus] = useState<(typeof WITHDRAWAL_FILTERS)[number]>("PENDING");
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -583,6 +623,7 @@ const WithdrawalReview = ({ toast }: { toast: any }) => {
       setRejectId(null);
       setNote("");
       load();
+      onChanged();
     } catch (e: any) {
       toast({ title: "Error", description: e?.message || "Something went wrong", variant: "destructive" });
     } finally {

@@ -85,6 +85,22 @@ export function buildRequestResponseEmail(opts: {
   };
 }
 
+/** Tells an admin a teacher's profile is ready for review. */
+export function buildTeacherSubmittedEmail(opts: { teacherName: string; resubmitted: boolean; link: string }) {
+  const what = opts.resubmitted ? "resubmitted their profile after changes" : "completed their profile";
+  return {
+    subject: `${opts.teacherName} is ready for review`,
+    text: `${opts.teacherName} ${what} and is waiting for approval.\n\nReview it: ${opts.link}`,
+    html: `
+      <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; color: #1a1a24;">
+        <h1 style="font-size: 20px; margin: 0 0 16px;">A teacher is waiting for review</h1>
+        <p style="color: #55555f; line-height: 1.6; margin: 0 0 24px;"><strong>${escapeHtml(opts.teacherName)}</strong> ${what}.</p>
+        <a href="${escapeHtml(opts.link)}" style="display: inline-block; background: #6d3fd6; color: #fff; text-decoration: none; padding: 12px 20px; border-radius: 999px; font-weight: 600;">Open the review queue</a>
+      </div>
+    `,
+  };
+}
+
 /** Builds the teacher verification-decision email (approved or rejected). */
 export function buildVerificationStatusEmail(
   status: "APPROVED" | "REJECTED",

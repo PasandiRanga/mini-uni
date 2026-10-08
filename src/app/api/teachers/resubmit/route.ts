@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getSessionFromRequest } from "@/lib/auth";
 import { computeProfileCompletion } from "@/lib/teacherVerification";
+import { notifyAdminsOfSubmission } from "@/lib/adminAlerts";
 
 /**
  * Sends a rejected teacher profile back for review. Rejection is sticky —
@@ -41,6 +42,8 @@ export async function POST(request: Request) {
         data: { status: "PENDING", rejectionReason: null, reviewedBy: null, reviewedAt: null },
       }),
     ]);
+
+    await notifyAdminsOfSubmission({ teacherUserId: session.sub, resubmitted: true, origin: new URL(request.url).origin });
 
     return NextResponse.json({ ok: true, verificationStatus: "PENDING" });
   } catch (error) {

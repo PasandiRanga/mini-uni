@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getSessionFromRequest } from "@/lib/auth";
+import { isProfileComplete, notifyAdminsOfSubmission } from "@/lib/adminAlerts";
 
 export async function POST(request: Request) {
     const session = await getSessionFromRequest(request);
@@ -37,6 +38,15 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "Invalid document type" }, { status: 400 });
         }
 
+        // An upload is often the last step that makes a profile ready for review.
+        const wasComplete =
+            user.teacherProfile.verificationStatus === "PENDING" ? await isProfileComplete(userId) : null;
+        const alertIfNowComplete = async () => {
+            if (wasComplete === false && (await isProfileComplete(userId))) {
+                await notifyAdminsOfSubmission({ teacherUserId: userId, resubmitted: false, origin: new URL(request.url).origin });
+            }
+        };
+
         // Check if document of this type already exists
         const existingDoc = await prisma.verificationDocument.findFirst({
             where: {
@@ -55,6 +65,7 @@ export async function POST(request: Request) {
                     status: "PENDING",
                 },
             });
+            await alertIfNowComplete();
             return NextResponse.json(updated);
         }
 
@@ -67,6 +78,7 @@ export async function POST(request: Request) {
             },
         });
 
+        await alertIfNowComplete();
         return NextResponse.json(created, { status: 201 });
     } catch (error: any) {
         console.error("Error uploading document:", error);
