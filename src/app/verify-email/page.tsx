@@ -1,6 +1,6 @@
 'use client';
 
-import VerifyEmail from '@/pages/VerifyEmail';
+import VerifyEmail from '@/views/VerifyEmail';
 
 export default function VerifyEmailPage() {
     return <VerifyEmail />;

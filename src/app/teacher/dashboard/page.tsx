@@ -1,4 +1,4 @@
-import TeacherDashboard from '@/pages/TeacherDashboard';
+import TeacherDashboard from '@/views/TeacherDashboard';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { Suspense } from 'react';
 

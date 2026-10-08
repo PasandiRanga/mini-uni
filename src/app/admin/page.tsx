@@ -1,4 +1,4 @@
-import AdminDashboard from '@/pages/AdminDashboard';
+import AdminDashboard from '@/views/AdminDashboard';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { Suspense } from 'react';
 

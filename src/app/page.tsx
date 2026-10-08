@@ -3,7 +3,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import Index from '../pages/Index';
+import Index from '@/views/Index';
 
 export default function Home() {
     const { isAuthenticated, user, isLoading } = useAuth();

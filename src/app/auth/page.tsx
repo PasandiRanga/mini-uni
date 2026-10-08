@@ -1,4 +1,4 @@
-import Auth from '@/pages/Auth';
+import Auth from '@/views/Auth';
 import { Suspense } from 'react';
 
 export default function AuthPage() {

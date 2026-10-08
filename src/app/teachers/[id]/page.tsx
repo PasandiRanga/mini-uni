@@ -1,6 +1,6 @@
 'use client';
 
-import TeacherProfile from '@/pages/TeacherProfile';
+import TeacherProfile from '@/views/TeacherProfile';
 import { useParams } from 'next/navigation';
 
 export default function TeacherProfilePage() {

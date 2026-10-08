@@ -1,4 +1,4 @@
-import Explore from '@/pages/Explore';
+import Explore from '@/views/Explore';
 import { Suspense } from 'react';
 
 export default function ExplorePage() {
