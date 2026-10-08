@@ -56,6 +56,12 @@ export async function POST(
 
         return NextResponse.json({ ...cancelled, refunded });
     } catch (error: any) {
+        if (error?.message === "CLASS_STARTED") {
+            return NextResponse.json(
+                { error: "This class has already started, so it can't be cancelled", code: "CLASS_STARTED" },
+                { status: 400 }
+            );
+        }
         if (error?.message === "ESCROW_RELEASED") {
             return NextResponse.json(
                 { error: "This class is already settled and can no longer be cancelled" },

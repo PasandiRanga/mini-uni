@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireSelfOrAdmin } from "@/lib/adminAuth";
+import { settleFinishedBookings } from "@/lib/bookings";
 
 export async function GET(
     request: Request,
@@ -11,6 +12,8 @@ export async function GET(
 
     try {
         const { studentId } = params;
+        // Finished classes become COMPLETED before they're listed.
+        await settleFinishedBookings({ studentId });
         // ?scope=all returns finished and cancelled classes too, for history
         // views and stats. The default stays limited to active bookings.
         const all = new URL(request.url).searchParams.get("scope") === "all";

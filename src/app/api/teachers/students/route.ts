@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getSessionFromRequest } from "@/lib/auth";
 import { BookingStatus } from "@prisma/client";
+import { settleFinishedBookings } from "@/lib/bookings";
 
 // Booking statuses that represent a real teacher↔student relationship.
 const RELATIONSHIP_STATUSES: BookingStatus[] = [
@@ -25,6 +26,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    await settleFinishedBookings({ teacherId: session.sub });
     const bookings = await prisma.booking.findMany({
       where: {
         teacherId: session.sub,
