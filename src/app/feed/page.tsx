@@ -1,10 +1,6 @@
-import Feed from '@/pages/Feed';
-import { Suspense } from 'react';
+import { redirect } from 'next/navigation';
 
+// The old feed was replaced by Explore; keep old links working.
 export default function FeedPage() {
-    return (
-        <Suspense fallback={<div>Loading...</div>}>
-            <Feed />
-        </Suspense>
-    );
+    redirect('/explore');
 }

@@ -1,7 +1,7 @@
 'use client';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +26,7 @@ import {
   FileText,
   MessageSquare,
   MoreHorizontal,
+  ShieldAlert,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import MyClasses from '@/components/classes/MyClasses';
@@ -64,10 +65,16 @@ const TEACHER_WIDGETS: WidgetDef[] = [
 
 const TeacherDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
+  // Links such as /teacher/dashboard?tab=inquiries open that tab.
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    const t = searchParams?.get("tab");
+    if (t) setActiveTab(t);
+  }, [searchParams]);
   const [moreOpen, setMoreOpen] = useState(false);
   // Approval is a one-time confirmation — remember (per teacher) once it's been dismissed.
   const [approvedDismissed, setApprovedDismissed] = useState(false);
-  const [completion, setCompletion] = useState<{ percent: number; verificationStatus?: string; rejectionReason?: string | null } | null>(null);
+  const [completion, setCompletion] = useState<{ percent: number; verificationStatus?: string; rejectionReason?: string | null; suspensionReason?: string | null } | null>(null);
   const [bookings, setBookings] = useState<any[]>([]);
   const [inquiries, setInquiries] = useState<any[]>([]);
   const [wallet, setWallet] = useState<any>(null);
@@ -221,7 +228,7 @@ const TeacherDashboard = () => {
                   className={`mt-3 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${
                     verificationStatus === 'APPROVED'
                       ? 'border-success/30 bg-success/10 text-success'
-                      : verificationStatus === 'REJECTED'
+                      : verificationStatus === 'REJECTED' || verificationStatus === 'SUSPENDED'
                         ? 'border-destructive/30 bg-destructive/10 text-destructive'
                         : 'border-warning/30 bg-warning/10 text-warning'
                   }`}
@@ -231,7 +238,9 @@ const TeacherDashboard = () => {
                     ? 'Verified teacher'
                     : verificationStatus === 'REJECTED'
                       ? 'Changes needed'
-                      : 'Pending approval'}
+                      : verificationStatus === 'SUSPENDED'
+                        ? 'Suspended'
+                        : 'Pending approval'}
                 </span>
               )}
             </div>
@@ -242,7 +251,13 @@ const TeacherDashboard = () => {
                 className="gap-2"
                 onClick={() => openCreatePost()}
                 disabled={verificationStatus !== 'APPROVED'}
-                title={verificationStatus !== 'APPROVED' ? 'Available once your profile is approved' : undefined}
+                title={
+                  verificationStatus === 'SUSPENDED'
+                    ? 'Your account is suspended'
+                    : verificationStatus !== 'APPROVED'
+                      ? 'Available once your profile is approved'
+                      : undefined
+                }
               >
                 <Plus className="h-4 w-4" />
                 <span className="hidden sm:inline">Create Post</span>
@@ -346,6 +361,31 @@ const TeacherDashboard = () => {
                 </span>
               </div>
             </button>
+          )}
+
+          {/* Suspended by an admin — no resubmit; they contact support */}
+          {completion && completion.verificationStatus === 'SUSPENDED' && (
+            <div className="mb-8 overflow-hidden rounded-3xl border border-destructive/40 bg-destructive/[0.07] p-5 sm:p-6">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-destructive/15 text-destructive">
+                  <ShieldAlert className="h-[18px] w-[18px]" strokeWidth={1.75} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium">
+                    Your teaching account is <span className="font-serif italic">suspended</span>
+                  </p>
+                  <p className="mt-0.5 text-sm text-muted-foreground">
+                    Your classes are hidden and you can&apos;t take new bookings. You can still withdraw money you&apos;ve already earned.
+                    Contact support if you have questions.
+                  </p>
+                  {completion.suspensionReason && (
+                    <p className="mt-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                      <span className="font-medium">Reason:</span> {completion.suspensionReason}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
           )}
 
           {/* Approved — one-time confirmation the teacher can dismiss */}

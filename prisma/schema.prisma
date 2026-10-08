@@ -21,6 +21,7 @@ enum VerificationStatus {
   PENDING
   APPROVED
   REJECTED
+  SUSPENDED // was approved; an admin paused them (see TeacherProfile.suspensionReason)
 }
 
 enum ClassType {
@@ -175,6 +176,7 @@ model TeacherProfile {
   user                User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   verificationDocs    VerificationDocument[]
   verificationStatus  VerificationStatus    @default(PENDING)
+  suspensionReason    String?               // shown to the teacher while SUSPENDED
 
   @@map("teacher_profiles")
 }

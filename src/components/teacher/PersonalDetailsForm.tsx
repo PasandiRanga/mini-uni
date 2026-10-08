@@ -69,7 +69,7 @@ const PersonalDetailsForm = ({ onSaved }: PersonalDetailsFormProps) => {
       .then((d) => {
         if (!active || !d) return;
         setData({ ...EMPTY, ...d });
-        setVerified(d.verificationStatus === "APPROVED");
+        setVerified(d.verificationStatus === "APPROVED" || d.verificationStatus === "SUSPENDED");
         const filled = d.prefilled ? String(d.prefilled).split(",").filter(Boolean) : [];
         setPrefilled(filled);
         // Saved initials that don't match the generated ones were typed by hand.

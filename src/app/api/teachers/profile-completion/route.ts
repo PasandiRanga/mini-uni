@@ -41,6 +41,7 @@ export async function GET(request: Request) {
       steps,
       verificationStatus: p.verificationStatus,
       rejectionReason,
+      suspensionReason: p.verificationStatus === "SUSPENDED" ? p.suspensionReason : null,
     });
   } catch (error) {
     console.error("Error computing profile completion:", error);

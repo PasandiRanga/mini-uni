@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import NotificationBell from "@/components/notifications/NotificationBell";
 import {
   Dialog,
   DialogContent,
@@ -33,6 +34,8 @@ import {
   MapPin,
   RefreshCw,
   ExternalLink,
+  Ban,
+  RotateCcw,
 } from "lucide-react";
 
 /* -------------------------------------------------------------------------- */
@@ -52,6 +55,7 @@ const statusTone: Record<string, string> = {
   PENDING: "bg-amber-500/10 text-amber-600 border-amber-500/20",
   APPROVED: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
   REJECTED: "bg-destructive/10 text-destructive border-destructive/20",
+  SUSPENDED: "bg-destructive/10 text-destructive border-destructive/20",
   PROCESSING: "bg-blue-500/10 text-blue-600 border-blue-500/20",
   PAID: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
   CANCELLED: "bg-muted text-muted-foreground border-border",
@@ -66,12 +70,43 @@ const StatusBadge = ({ status }: { status: string }) => (
 const fmtDate = (d?: string | null) =>
   d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—";
 
+/** Number of items waiting, shown on a tab. Hidden at zero. */
+const CountBadge = ({ n }: { n: number }) =>
+  n > 0 ? (
+    <span className="min-w-[20px] rounded-full bg-primary px-1.5 py-0.5 text-center text-[11px] font-semibold tabular-nums text-primary-foreground">
+      {n > 99 ? "99+" : n}
+    </span>
+  ) : null;
+
 /* -------------------------------------------------------------------------- */
 
 const AdminDashboard = () => {
   const { user, logout } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
+
+  // Waiting-item counts for the tab badges, kept fresh while the console is open.
+  const [counts, setCounts] = useState<{ teachers: number; withdrawals: number }>({ teachers: 0, withdrawals: 0 });
+  const refreshCounts = useCallback(async () => {
+    try {
+      const [t, w] = await Promise.all([fetch("/api/admin/teachers?status=PENDING"), fetch("/api/admin/withdrawals?status=PENDING")]);
+      const tj = t.ok ? await t.json() : null;
+      const wj = w.ok ? await w.json() : null;
+      setCounts((c) => ({ teachers: tj?.count ?? c.teachers, withdrawals: wj?.count ?? c.withdrawals }));
+    } catch {
+      /* keep the last counts */
+    }
+  }, []);
+  useEffect(() => {
+    refreshCounts();
+    const timer = setInterval(refreshCounts, 60_000);
+    const onVisible = () => document.visibilityState === "visible" && refreshCounts();
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [refreshCounts]);
 
   const handleLogout = async () => {
     try {
@@ -99,6 +134,7 @@ const AdminDashboard = () => {
             </Badge>
           </Link>
           <div className="flex items-center gap-3">
+            <NotificationBell />
             <span className="hidden text-sm text-muted-foreground sm:inline">
               {user ? `${user.firstName} ${user.lastName}` : "Admin"}
             </span>
@@ -121,17 +157,19 @@ const AdminDashboard = () => {
           <TabsList className="mb-6">
             <TabsTrigger value="teachers" className="gap-2">
               <ShieldCheck className="h-4 w-4" /> Teacher verification
+              <CountBadge n={counts.teachers} />
             </TabsTrigger>
             <TabsTrigger value="withdrawals" className="gap-2">
               <Wallet className="h-4 w-4" /> Withdrawals
+              <CountBadge n={counts.withdrawals} />
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="teachers">
-            <TeacherReview toast={toast} />
+            <TeacherReview toast={toast} onChanged={refreshCounts} />
           </TabsContent>
           <TabsContent value="withdrawals">
-            <WithdrawalReview toast={toast} />
+            <WithdrawalReview toast={toast} onChanged={refreshCounts} />
           </TabsContent>
         </Tabs>
       </main>
@@ -143,9 +181,9 @@ const AdminDashboard = () => {
  * Teacher verification queue
  * -------------------------------------------------------------------------- */
 
-const TEACHER_FILTERS = ["PENDING", "APPROVED", "REJECTED"] as const;
+const TEACHER_FILTERS = ["PENDING", "APPROVED", "REJECTED", "SUSPENDED"] as const;
 
-const TeacherReview = ({ toast }: { toast: any }) => {
+const TeacherReview = ({ toast, onChanged }: { toast: any; onChanged: () => void }) => {
   const [status, setStatus] = useState<(typeof TEACHER_FILTERS)[number]>("PENDING");
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -171,6 +209,10 @@ const TeacherReview = ({ toast }: { toast: any }) => {
 
   useEffect(() => {
     load();
+    // New submissions arrive while the console sits open: re-check on return.
+    const onVisible = () => document.visibilityState === "visible" && load();
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
   }, [load]);
 
   return (
@@ -243,6 +285,7 @@ const TeacherReview = ({ toast }: { toast: any }) => {
           onReviewed={() => {
             setSelected(null);
             load();
+            onChanged();
           }}
           toast={toast}
         />
@@ -301,6 +344,9 @@ const TeacherDetailDialog = ({
   const [detail, setDetail] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [rejecting, setRejecting] = useState(false);
+  const [suspending, setSuspending] = useState(false);
+  // Cancel and refund the teacher's upcoming classes when suspending (on by default).
+  const [cancelUpcoming, setCancelUpcoming] = useState(true);
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [loadError, setLoadError] = useState(false);
@@ -327,13 +373,18 @@ const TeacherDetailDialog = ({
     };
   }, [userId, reloadKey]);
 
-  const act = async (kind: "approve" | "reject") => {
+  const act = async (kind: "approve" | "reject" | "suspend" | "reinstate") => {
     setSubmitting(true);
     try {
       const res = await fetch(`/api/admin/teachers/${userId}/${kind}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: kind === "reject" ? JSON.stringify({ reason: reason.trim() }) : undefined,
+        body:
+          kind === "reject"
+            ? JSON.stringify({ reason: reason.trim() })
+            : kind === "suspend"
+              ? JSON.stringify({ reason: reason.trim(), cancelUpcoming })
+              : undefined,
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -341,13 +392,19 @@ const TeacherDetailDialog = ({
         if (res.status === 409) onReviewed();
         throw new Error(err.error || "Action failed");
       }
-      toast({
-        title: kind === "approve" ? "Teacher approved" : "Teacher rejected",
-        description:
-          kind === "approve"
-            ? "They can now post classes and take bookings."
-            : "They've been told what to fix and can re-submit.",
-      });
+      const result = await res.json().catch(() => ({}));
+      const messages = {
+        approve: ["Teacher approved", "They can now post classes and take bookings."],
+        reject: ["Teacher rejected", "They've been told what to fix and can re-submit."],
+        suspend: [
+          "Teacher suspended",
+          `Their classes are hidden.${result.cancelled ? ` ${result.cancelled} upcoming class${result.cancelled === 1 ? "" : "es"} cancelled and refunded.` : ""}${
+            result.notCancelled ? ` ${result.notCancelled} couldn't be cancelled (already paid out).` : ""
+          }`,
+        ],
+        reinstate: ["Teacher reinstated", "Their classes are visible again."],
+      } as const;
+      toast({ title: messages[kind][0], description: messages[kind][1] });
       onReviewed();
     } catch (e: any) {
       toast({ title: "Error", description: e?.message || "Something went wrong", variant: "destructive" });
@@ -359,6 +416,8 @@ const TeacherDetailDialog = ({
   const p = detail?.personal;
   const a = detail?.academic;
   const isPending = detail?.verificationStatus === "PENDING";
+  const isApproved = detail?.verificationStatus === "APPROVED";
+  const isSuspended = detail?.verificationStatus === "SUSPENDED";
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
@@ -482,6 +541,46 @@ const TeacherDetailDialog = ({
               </p>
             )}
 
+            {isSuspended && detail.suspensionReason && (
+              <p className="rounded-xl border border-destructive/30 bg-destructive/[0.04] px-4 py-3 text-sm">
+                <span className="font-medium">Suspended:</span> {detail.suspensionReason}
+              </p>
+            )}
+
+            {/* Suspend: reason + what happens to booked classes */}
+            {suspending && (
+              <div className="space-y-3 rounded-xl border border-destructive/30 bg-destructive/[0.04] p-4">
+                <div>
+                  <label className="mb-2 block text-sm font-medium">Reason for suspension</label>
+                  <Textarea
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    placeholder="The teacher will see this…"
+                    rows={3}
+                  />
+                </div>
+                {detail.upcomingBookings > 0 ? (
+                  <label className="flex cursor-pointer items-start gap-2.5 text-sm">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 h-4 w-4 accent-[hsl(var(--destructive))]"
+                      checked={cancelUpcoming}
+                      onChange={(e) => setCancelUpcoming(e.target.checked)}
+                    />
+                    <span>
+                      Cancel their {detail.upcomingBookings} upcoming booked class{detail.upcomingBookings === 1 ? "" : "es"} and refund the
+                      students
+                      <span className="block text-xs text-muted-foreground">
+                        Untick to let those classes go ahead. No new bookings either way.
+                      </span>
+                    </span>
+                  </label>
+                ) : (
+                  <p className="text-xs text-muted-foreground">They have no upcoming booked classes.</p>
+                )}
+              </div>
+            )}
+
             {/* Reject reason input */}
             {rejecting && (
               <div className="rounded-xl border border-destructive/30 bg-destructive/[0.04] p-4">
@@ -495,6 +594,35 @@ const TeacherDetailDialog = ({
               </div>
             )}
           </div>
+        )}
+
+        {detail && isApproved && (
+          <DialogFooter className="gap-2 sm:gap-2">
+            {suspending ? (
+              <>
+                <Button variant="ghost" onClick={() => setSuspending(false)} disabled={submitting}>
+                  Back
+                </Button>
+                <Button variant="destructive" onClick={() => act("suspend")} disabled={submitting || !reason.trim()} className="gap-2">
+                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Ban className="h-4 w-4" />}
+                  Confirm suspension
+                </Button>
+              </>
+            ) : (
+              <Button variant="outline" onClick={() => setSuspending(true)} className="gap-2 text-destructive">
+                <Ban className="h-4 w-4" /> Suspend teacher
+              </Button>
+            )}
+          </DialogFooter>
+        )}
+
+        {detail && isSuspended && (
+          <DialogFooter>
+            <Button onClick={() => act("reinstate")} disabled={submitting} className="gap-2">
+              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
+              Reinstate
+            </Button>
+          </DialogFooter>
         )}
 
         {detail && isPending && (
@@ -538,7 +666,7 @@ const TeacherDetailDialog = ({
 
 const WITHDRAWAL_FILTERS = ["PENDING", "PROCESSING", "PAID", "REJECTED"] as const;
 
-const WithdrawalReview = ({ toast }: { toast: any }) => {
+const WithdrawalReview = ({ toast, onChanged }: { toast: any; onChanged: () => void }) => {
   const [status, setStatus] = useState<(typeof WITHDRAWAL_FILTERS)[number]>("PENDING");
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -583,6 +711,7 @@ const WithdrawalReview = ({ toast }: { toast: any }) => {
       setRejectId(null);
       setNote("");
       load();
+      onChanged();
     } catch (e: any) {
       toast({ title: "Error", description: e?.message || "Something went wrong", variant: "destructive" });
     } finally {

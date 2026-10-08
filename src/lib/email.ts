@@ -57,6 +57,80 @@ export async function sendEmail({ to, subject, html, text }: SendEmailArgs): Pro
   return true;
 }
 
+/** Escapes text from users (names, messages, reasons) before it goes into email HTML. */
+export const escapeHtml = (s: string) =>
+  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+
+/** Tells a student that a teacher responded to their "looking for a teacher" request. */
+export function buildRequestResponseEmail(opts: {
+  studentFirstName?: string;
+  teacherName: string;
+  requestTitle: string;
+  message: string;
+  link: string;
+}) {
+  const greeting = opts.studentFirstName ? `Hi ${opts.studentFirstName},` : "Hi there,";
+  const subject = `${opts.teacherName} responded to your request on MiniUni`;
+  return {
+    subject,
+    text: `${greeting}\n\n${opts.teacherName} responded to "${opts.requestTitle}":\n\n"${opts.message}"\n\nSee their classes and reply: ${opts.link}`,
+    html: `
+      <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; color: #1a1a24;">
+        <h1 style="font-size: 20px; margin: 0 0 16px;">A teacher responded to your request</h1>
+        <p style="color: #55555f; line-height: 1.6; margin: 0 0 16px;">${escapeHtml(greeting)} <strong>${escapeHtml(opts.teacherName)}</strong> responded to &ldquo;${escapeHtml(opts.requestTitle)}&rdquo;:</p>
+        <div style="background: #f3effc; border-radius: 12px; padding: 16px; margin-bottom: 24px; color: #2a2340; white-space: pre-wrap;">${escapeHtml(opts.message)}</div>
+        <a href="${escapeHtml(opts.link)}" style="display: inline-block; background: #6d3fd6; color: #fff; text-decoration: none; padding: 12px 20px; border-radius: 999px; font-weight: 600;">View and reply</a>
+      </div>
+    `,
+  };
+}
+
+/** Tells an admin a teacher's profile is ready for review. */
+export function buildTeacherSubmittedEmail(opts: { teacherName: string; resubmitted: boolean; link: string }) {
+  const what = opts.resubmitted ? "resubmitted their profile after changes" : "completed their profile";
+  return {
+    subject: `${opts.teacherName} is ready for review`,
+    text: `${opts.teacherName} ${what} and is waiting for approval.\n\nReview it: ${opts.link}`,
+    html: `
+      <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; color: #1a1a24;">
+        <h1 style="font-size: 20px; margin: 0 0 16px;">A teacher is waiting for review</h1>
+        <p style="color: #55555f; line-height: 1.6; margin: 0 0 24px;"><strong>${escapeHtml(opts.teacherName)}</strong> ${what}.</p>
+        <a href="${escapeHtml(opts.link)}" style="display: inline-block; background: #6d3fd6; color: #fff; text-decoration: none; padding: 12px 20px; border-radius: 999px; font-weight: 600;">Open the review queue</a>
+      </div>
+    `,
+  };
+}
+
+/** Tells a teacher they were suspended (with the reason) or reinstated. */
+export function buildSuspensionEmail(kind: "SUSPENDED" | "REINSTATED", firstName?: string, reason?: string, cancelledCount = 0) {
+  const greeting = firstName ? `Hi ${firstName},` : "Hi there,";
+  if (kind === "REINSTATED") {
+    return {
+      subject: "Your MiniUni teaching account is active again",
+      text: `${greeting}\n\nYour teacher account has been reinstated. Your classes are visible again and students can book you.`,
+      html: `
+        <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; color: #1a1a24;">
+          <h1 style="font-size: 20px; margin: 0 0 16px;">You're back</h1>
+          <p style="color: #55555f; line-height: 1.6; margin: 0;">${escapeHtml(greeting)} your teacher account has been <strong>reinstated</strong>. Your classes are visible again and students can book you.</p>
+        </div>
+      `,
+    };
+  }
+  const cancelledLine = cancelledCount > 0 ? ` ${cancelledCount} upcoming class${cancelledCount === 1 ? " was" : "es were"} cancelled and the students refunded.` : "";
+  return {
+    subject: "Your MiniUni teaching account has been suspended",
+    text: `${greeting}\n\nYour teacher account has been suspended.${reason ? ` Reason: ${reason}` : ""}${cancelledLine}\n\nYour classes are hidden and you can't take new bookings. Money you've already earned can still be withdrawn. Reply to this email to contact support.`,
+    html: `
+      <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; color: #1a1a24;">
+        <h1 style="font-size: 20px; margin: 0 0 16px;">Your teaching account is suspended</h1>
+        ${reason ? `<div style="background: #fbeaea; border-radius: 12px; padding: 16px; margin-bottom: 20px; color: #7a2020;"><strong>Reason:</strong> ${escapeHtml(reason)}</div>` : ""}
+        <p style="color: #55555f; line-height: 1.6; margin: 0 0 12px;">${escapeHtml(greeting)} your classes are hidden and you can't take new bookings.${escapeHtml(cancelledLine)}</p>
+        <p style="color: #55555f; line-height: 1.6; margin: 0;">Money you've already earned can still be withdrawn. Reply to this email to contact support.</p>
+      </div>
+    `,
+  };
+}
+
 /** Builds the teacher verification-decision email (approved or rejected). */
 export function buildVerificationStatusEmail(
   status: "APPROVED" | "REJECTED",
@@ -87,7 +161,7 @@ export function buildVerificationStatusEmail(
       <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; color: #1a1a24;">
         <h1 style="font-size: 20px; margin: 0 0 16px;">Verification needs attention</h1>
         <p style="color: #55555f; line-height: 1.6; margin: 0 0 16px;">${greeting} your teacher profile wasn't approved yet.</p>
-        ${reason ? `<div style="background: #fbeaea; border-radius: 12px; padding: 16px; margin-bottom: 20px; color: #7a2020;"><strong>Reason:</strong> ${reason}</div>` : ""}
+        ${reason ? `<div style="background: #fbeaea; border-radius: 12px; padding: 16px; margin-bottom: 20px; color: #7a2020;"><strong>Reason:</strong> ${escapeHtml(reason)}</div>` : ""}
         <p style="color: #55555f; line-height: 1.6; margin: 0;">Please review your details and documents, then resubmit from your dashboard.</p>
       </div>
     `,

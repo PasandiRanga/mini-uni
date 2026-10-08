@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getAdminSession } from "@/lib/adminAuth";
 import { computeProfileCompletion } from "@/lib/teacherVerification";
+import { OPEN_BOOKING_STATUSES } from "@/lib/bookings";
 
 /**
  * Full detail for one teacher under review — everything an admin needs to make
@@ -31,12 +32,22 @@ export async function GET(request: Request, { params }: { params: { id: string }
     }
 
     const { percent, complete, steps } = computeProfileCompletion(profile);
+    // Shown when suspending: how many booked classes would be cancelled and refunded.
+    const upcomingBookings = await prisma.booking.count({
+      where: {
+        teacherId: profile.userId,
+        status: { in: [...OPEN_BOOKING_STATUSES] },
+        timeSlot: { startTime: { gt: new Date() } },
+      },
+    });
 
     return NextResponse.json({
       userId: profile.userId,
       profileId: profile.id,
       user: profile.user,
       verificationStatus: profile.verificationStatus,
+      suspensionReason: profile.suspensionReason,
+      upcomingBookings,
       completion: percent,
       complete,
       steps,

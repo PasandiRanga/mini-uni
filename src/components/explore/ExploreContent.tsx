@@ -16,8 +16,11 @@ import { CLASS_TYPE_LABELS, slotDurationLabel, slotDateLabel, isPostExpired, Pos
 import BookClassModal, { type BookablePost } from "@/components/post/BookClassModal";
 import PostActions from "@/components/post/PostActions";
 import PostDetail, { type DetailPost } from "@/components/post/PostDetail";
+import RespondDialog, { type RespondablePost } from "@/components/post/RespondDialog";
+import { useMyResponses } from "@/hooks/useMyResponses";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import {
+  Check,
   Search,
   SlidersHorizontal,
   BookOpen,
@@ -69,6 +72,8 @@ const ExploreContent: React.FC = () => {
   const [posts, setPosts] = useState<PostItem[]>([]);
   const [isLoadingPosts, setIsLoadingPosts] = useState(false);
   const [bookPost, setBookPost] = useState<BookablePost | null>(null);
+  const [respondPost, setRespondPost] = useState<RespondablePost | null>(null);
+  const { hasResponded, markResponded } = useMyResponses();
   // The post whose full details are open; `id` alone is enough to load it.
   const [detailPost, setDetailPost] = useState<(Partial<DetailPost> & { id: string }) | null>(null);
   // Clicking a card opens its details, except on its own buttons and links.
@@ -481,9 +486,13 @@ const ExploreContent: React.FC = () => {
                           );
 
                           if (userRole === 'TEACHER' && postType === 'STUDENT_REQUEST') return (
-                            <Button size="sm" variant="secondary" className="h-8 px-3 text-xs" disabled={teacherLocked} title={teacherLocked ? lockedHint : undefined} onClick={() => toast({ title: 'Interest Sent', description: 'Interested.' })}>
-                              Respond
-                            </Button>
+                            hasResponded(post.id) ? (
+                              <span className="inline-flex items-center gap-1 text-xs font-medium text-success"><Check className="h-3.5 w-3.5" /> Responded</span>
+                            ) : (
+                              <Button size="sm" variant="hero" className="h-8 px-3 text-xs" disabled={teacherLocked} title={teacherLocked ? lockedHint : undefined} onClick={() => setRespondPost(post)}>
+                                Respond
+                              </Button>
+                            )
                           );
 
                           return null;
@@ -511,6 +520,12 @@ const ExploreContent: React.FC = () => {
           )}
         </DialogContent>
       </Dialog>
+      <RespondDialog
+        post={respondPost}
+        open={!!respondPost}
+        onOpenChange={(o) => !o && setRespondPost(null)}
+        onSent={markResponded}
+      />
       <BookClassModal
         post={bookPost}
         open={!!bookPost}

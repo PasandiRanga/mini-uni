@@ -55,7 +55,7 @@ const IdentityVerificationForm = ({ onSaved }: IdentityVerificationFormProps) =>
       .then((d) => {
         if (!active || !d) return;
         if (d.idType) setIdType(d.idType);
-        setVerified(d.verificationStatus === "APPROVED");
+        setVerified(d.verificationStatus === "APPROVED" || d.verificationStatus === "SUSPENDED");
         setFrontOnFile(d.idFrontUploaded === "yes");
         setBackOnFile(d.idBackUploaded === "yes");
       })
