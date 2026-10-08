@@ -1,7 +1,7 @@
 'use client';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -64,6 +64,12 @@ const TEACHER_WIDGETS: WidgetDef[] = [
 
 const TeacherDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
+  // Links such as /teacher/dashboard?tab=inquiries open that tab.
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    const t = searchParams?.get("tab");
+    if (t) setActiveTab(t);
+  }, [searchParams]);
   const [moreOpen, setMoreOpen] = useState(false);
   // Approval is a one-time confirmation — remember (per teacher) once it's been dismissed.
   const [approvedDismissed, setApprovedDismissed] = useState(false);

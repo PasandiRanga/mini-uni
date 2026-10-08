@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
-import { BookOpen, CalendarDays, Clock, GraduationCap, Loader2, Users } from "lucide-react";
+import { BookOpen, CalendarDays, Check, Clock, GraduationCap, Loader2, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -15,6 +15,8 @@ import { formatMoney } from "@/lib/currency";
 import { CLASS_TYPE_LABELS } from "@/components/post/postCardBits";
 import PostActions, { CommentThread } from "@/components/post/PostActions";
 import BookClassModal, { type BookablePost } from "@/components/post/BookClassModal";
+import RespondDialog from "@/components/post/RespondDialog";
+import { useMyResponses } from "@/hooks/useMyResponses";
 
 interface DetailSlot {
   id: string;
@@ -90,6 +92,8 @@ const PostDetail = ({ postId, initialPost, onNavigate }: PostDetailProps) => {
   const [loading, setLoading] = useState(true);
   const [missing, setMissing] = useState(false);
   const [bookPost, setBookPost] = useState<BookablePost | null>(null);
+  const [respondOpen, setRespondOpen] = useState(false);
+  const { hasResponded, markResponded } = useMyResponses();
   const [commentCount, setCommentCount] = useState(initialPost?.commentCount ?? 0);
   const commentsRef = useRef<HTMLElement>(null);
 
@@ -175,6 +179,13 @@ const PostDetail = ({ postId, initialPost, onNavigate }: PostDetailProps) => {
       );
     }
     if (role === "TEACHER" && !isTeacherPost) {
+      if (hasResponded(post.id)) {
+        return (
+          <p className="flex items-center justify-center gap-1.5 rounded-full border border-success/30 bg-success/10 px-4 py-2 text-sm font-medium text-success">
+            <Check className="h-4 w-4" /> You&apos;ve responded
+          </p>
+        );
+      }
       const locked = !teacherStatus.isApproved;
       return (
         <Button
@@ -182,9 +193,9 @@ const PostDetail = ({ postId, initialPost, onNavigate }: PostDetailProps) => {
           className="w-full"
           disabled={locked}
           title={locked ? "Available once your profile is approved" : undefined}
-          onClick={() => toast({ title: "Interest sent", description: `${authorName} will see that you're interested.` })}
+          onClick={() => setRespondOpen(true)}
         >
-          Respond
+          Respond to {post.user?.firstName || "student"}
         </Button>
       );
     }
@@ -344,6 +355,7 @@ const PostDetail = ({ postId, initialPost, onNavigate }: PostDetailProps) => {
         </div>
       </div>
 
+      <RespondDialog post={post} open={respondOpen} onOpenChange={setRespondOpen} onSent={markResponded} />
       <BookClassModal
         post={bookPost}
         open={!!bookPost}

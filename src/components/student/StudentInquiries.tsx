@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { Inbox, Send, MessageSquare, RefreshCw, Check, X, Loader2 } from "lucide-react";
+import Link from "next/link";
+import { Inbox, Send, MessageSquare, RefreshCw, Check, X, Loader2, GraduationCap } from "lucide-react";
 
 interface Inquiry {
   id: string;
@@ -27,6 +28,17 @@ const statusClasses = (status?: string) => {
     case "CANCELLED": return "bg-destructive/10 text-destructive";
     case "RESPONDED": return "bg-accent/10 text-accent";
     default: return "bg-warning/10 text-warning"; // PENDING
+  }
+};
+
+/** Plain-language status, from the student's side. */
+const statusLabel = (status: string, isReceived: boolean) => {
+  switch (status) {
+    case "ACCEPTED": return isReceived ? "Interested" : "Accepted";
+    case "REJECTED": return "Declined";
+    case "CANCELLED": return "Withdrawn";
+    case "RESPONDED": return "Replied";
+    default: return isReceived ? "New" : "Waiting";
   }
 };
 
@@ -80,7 +92,11 @@ const StudentInquiries = () => {
       }
       toast({
         title:
-          status === "ACCEPTED" ? "Inquiry accepted" : status === "REJECTED" ? "Inquiry declined" : "Inquiry cancelled",
+          status === "ACCEPTED"
+            ? "Great, they've been told you're interested"
+            : status === "REJECTED"
+              ? "Declined"
+              : "Inquiry cancelled",
       });
       load();
     } catch (e: any) {
@@ -90,7 +106,11 @@ const StudentInquiries = () => {
     }
   };
 
-  const items = box === "received" ? received : sent;
+  // A response the teacher withdrew is no longer the student's to act on.
+  const visibleReceived = received.filter(
+    (i) => !(i.post?.type === "STUDENT_REQUEST" && (i.status || "").toUpperCase() === "CANCELLED")
+  );
+  const items = box === "received" ? visibleReceived : sent;
 
   return (
     <section className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
@@ -112,7 +132,7 @@ const StudentInquiries = () => {
       {/* Received / Sent toggle */}
       <div className="flex gap-2 px-6 pt-5">
         {([
-          { id: "received", label: "Received", icon: Inbox, count: received.length },
+          { id: "received", label: "Received", icon: Inbox, count: visibleReceived.length },
           { id: "sent", label: "Sent", icon: Send, count: sent.length },
         ] as const).map((t) => (
           <button
@@ -152,6 +172,9 @@ const StudentInquiries = () => {
               const person = isReceived ? inq.sender : inq.receiver;
               const name = personName(person, isReceived ? "Teacher" : "Teacher");
               const status = (inq.status || "PENDING").toUpperCase();
+              // A teacher answering this student's "looking for a teacher" request.
+              const isTeacherResponse = isReceived && inq.post?.type === "STUDENT_REQUEST";
+              const teacherHref = inq.sender?.id ? `/teachers/${inq.sender.id}` : null;
               return (
                 <div key={inq.id} className="flex items-start gap-4 rounded-2xl border border-border/70 bg-background/40 p-4">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full gradient-hero text-sm font-semibold text-primary-foreground">
@@ -160,13 +183,35 @@ const StudentInquiries = () => {
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-medium">{isReceived ? name : `To ${name}`}</p>
-                      <Badge className={`rounded-full ${statusClasses(status)}`}>{status}</Badge>
+                      {isTeacherResponse && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                          <GraduationCap className="h-3 w-3" /> Teacher
+                        </span>
+                      )}
+                      <Badge className={`rounded-full ${statusClasses(status)}`}>{statusLabel(status, isReceived)}</Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground">{inq.post?.title || inq.post?.subject || "Class"}</p>
-                    {inq.message && <p className="mt-1.5 line-clamp-2 text-sm text-muted-foreground">{inq.message}</p>}
+                    <p className="text-xs text-muted-foreground">
+                      {isTeacherResponse ? "Responded to: " : ""}
+                      {inq.post?.title || inq.post?.subject || "Class"}
+                    </p>
+                    {inq.message && (
+                      <p className={`mt-1.5 text-sm text-muted-foreground ${isTeacherResponse ? "whitespace-pre-wrap break-words" : "line-clamp-2"}`}>
+                        {inq.message}
+                      </p>
+                    )}
                     <p className="mt-1 text-xs text-muted-foreground">
                       {inq.createdAt ? formatDistanceToNow(new Date(inq.createdAt), { addSuffix: true }) : ""}
                     </p>
+
+                    {/* Interested in a teacher's response → book one of their classes */}
+                    {isTeacherResponse && status === "ACCEPTED" && teacherHref && (
+                      <div className="mt-3 flex flex-wrap items-center gap-3">
+                        <p className="text-sm text-success">You&apos;re interested. Book one of {name}&apos;s classes to get started.</p>
+                        <Button size="sm" variant="hero" asChild>
+                          <Link href={teacherHref}>View classes</Link>
+                        </Button>
+                      </div>
+                    )}
 
                     {/* Sent + accepted → nudge to book */}
                     {!isReceived && status === "ACCEPTED" && (
@@ -178,12 +223,17 @@ const StudentInquiries = () => {
                       <div className="mt-3 flex flex-wrap gap-2">
                         {isReceived ? (
                           <>
+                            {isTeacherResponse && teacherHref && (
+                              <Button size="sm" variant="outline" asChild>
+                                <Link href={teacherHref}>View classes</Link>
+                              </Button>
+                            )}
                             <Button size="sm" onClick={() => setStatus(inq.id, "ACCEPTED")} disabled={busyId === inq.id} className="gap-1.5">
                               {busyId === inq.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                              Accept
+                              {isTeacherResponse ? "I'm interested" : "Accept"}
                             </Button>
                             <Button size="sm" variant="outline" onClick={() => setStatus(inq.id, "REJECTED")} disabled={busyId === inq.id} className="gap-1.5 text-destructive">
-                              <X className="h-4 w-4" /> Decline
+                              <X className="h-4 w-4" /> {isTeacherResponse ? "Not interested" : "Decline"}
                             </Button>
                           </>
                         ) : (

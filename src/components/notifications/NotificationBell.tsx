@@ -5,6 +5,8 @@ import { Bell, Check, CheckCheck } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface NotificationItem {
   id: string;
@@ -31,6 +33,11 @@ const NotificationBell = () => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const router = useRouter();
+  const { user } = useAuth();
+  // Inquiry notifications open the Inquiries tab of the reader's dashboard.
+  const inquiriesHref =
+    user?.role === "TEACHER" ? "/teacher/dashboard?tab=inquiries" : user?.role === "STUDENT" ? "/student/dashboard?tab=inquiries" : null;
 
   const load = useCallback(async () => {
     try {
@@ -121,7 +128,15 @@ const NotificationBell = () => {
               {items.map((n) => (
                 <li
                   key={n.id}
-                  className={`flex gap-3 px-4 py-3 transition-colors ${n.isRead ? "" : "bg-primary/[0.04]"}`}
+                  onClick={(e) => {
+                    if (n.type !== "INQUIRY_RECEIVED" || !inquiriesHref || (e.target as HTMLElement).closest("button")) return;
+                    if (!n.isRead) markRead(n.id);
+                    setOpen(false);
+                    router.push(inquiriesHref);
+                  }}
+                  className={`flex gap-3 px-4 py-3 transition-colors ${n.isRead ? "" : "bg-primary/[0.04]"} ${
+                    n.type === "INQUIRY_RECEIVED" && inquiriesHref ? "cursor-pointer hover:bg-muted/50" : ""
+                  }`}
                 >
                   <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${n.isRead ? "bg-transparent" : "bg-primary"}`} />
                   <div className="min-w-0 flex-1">
