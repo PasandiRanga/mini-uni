@@ -1,5 +1,6 @@
 'use client';
 import React, { useEffect, useMemo, useState } from "react";
+import { formatMoneyCompact } from "@/lib/currency";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,7 +33,6 @@ const FindTeacher: React.FC = () => {
   const [minPrice, setMinPrice] = useState<number | null>(null);
   const [maxPrice, setMaxPrice] = useState<number | null>(null);
   const [minRating, setMinRating] = useState<number | null>(null);
-  const [verifiedOnly, setVerifiedOnly] = useState(true);
 
   const [showFilters, setShowFilters] = useState(false);
   const [viewType, setViewType] = useState<'grid' | 'compact'>('grid');
@@ -89,7 +89,6 @@ const FindTeacher: React.FC = () => {
 
   const filtered = useMemo(() => {
     return teachers.filter((t) => {
-      if (verifiedOnly && !t.verified) return false;
       if (query) {
         const q = query.toLowerCase();
         const hay = `${t.firstName} ${t.lastName} ${(t.subjects || []).join(' ')} `.toLowerCase();
@@ -102,7 +101,7 @@ const FindTeacher: React.FC = () => {
       if (minRating != null && (t.rating == null || t.rating < minRating)) return false;
       return true;
     });
-  }, [teachers, query, subject, minPrice, maxPrice, minRating, verifiedOnly]);
+  }, [teachers, query, subject, minPrice, maxPrice, minRating]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -113,7 +112,7 @@ const FindTeacher: React.FC = () => {
             <p className="text-muted-foreground">Browse verified teachers, compare prices and book classes.</p>
           </div>
 
-          <div className={`${viewType === 'grid' ? 'max-w-6xl' : 'max-w-4xl'} mx - auto mb - 6`}>
+          <div className={`${viewType === 'grid' ? 'max-w-6xl' : 'max-w-4xl'} mx-auto mb-6`}>
             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
               <div className="flex gap-3 flex-1 w-full">
                 <div className="relative flex-1">
@@ -126,14 +125,14 @@ const FindTeacher: React.FC = () => {
               <div className="flex bg-muted rounded-xl p-1 shrink-0">
                 <button
                   onClick={() => setViewType('grid')}
-                  className={`p - 2 rounded - lg transition - all ${viewType === 'grid' ? 'bg-card shadow-soft text-primary' : 'text-muted-foreground'} `}
+                  className={`p-2 rounded-lg transition-all ${viewType === 'grid' ? 'bg-card shadow-soft text-primary' : 'text-muted-foreground'}`}
                   title="Grid View"
                 >
                   <LayoutGrid className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setViewType('compact')}
-                  className={`p - 2 rounded - lg transition - all ${viewType === 'compact' ? 'bg-card shadow-soft text-primary' : 'text-muted-foreground'} `}
+                  className={`p-2 rounded-lg transition-all ${viewType === 'compact' ? 'bg-card shadow-soft text-primary' : 'text-muted-foreground'}`}
                   title="Compact View"
                 >
                   <LayoutList className="w-4 h-4" />
@@ -174,18 +173,15 @@ const FindTeacher: React.FC = () => {
                   <div />
                   <div />
                   <div className="flex items-end justify-end">
-                    <Button variant="outline" onClick={() => { setSubject(null); setGrade(null); setMinPrice(null); setMaxPrice(null); setMinRating(null); setVerifiedOnly(true); }}>Reset Filters</Button>
+                    <Button variant="outline" onClick={() => { setSubject(null); setGrade(null); setMinPrice(null); setMaxPrice(null); setMinRating(null); }}>Reset Filters</Button>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4 mt-3">
-                  <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={verifiedOnly} onChange={(e) => setVerifiedOnly(e.target.checked)} /> Verified only</label>
-                </div>
               </div>
             )}
           </div>
 
-          <div className={`${viewType === 'grid' ? 'max-w-6xl' : 'max-w-4xl'} mx - auto`}>
+          <div className={`${viewType === 'grid' ? 'max-w-6xl' : 'max-w-4xl'} mx-auto`}>
             <div className={viewType === 'grid' ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-4"}>
               {isLoading && <div className="text-center text-muted-foreground w-full py-10">Loading teachers...</div>}
               {!isLoading && filtered.length === 0 && (
@@ -197,16 +193,16 @@ const FindTeacher: React.FC = () => {
                 if (viewType === 'compact') {
                   return (
                     <div key={t.id} className="space-y-2">
-                      <article className={`bg - card rounded - xl p - 4 shadow - sm border border - border / 50 hover: border - primary / 30 transition - all flex items - center justify - between gap - 4 ${isExpanded ? 'border-primary/50 ring-1 ring-primary/5' : ''} `}>
+                      <article className={`bg-card rounded-xl p-4 shadow-sm border border-border/50 hover:border-primary/30 transition-all flex items-center justify-between gap-4 ${isExpanded ? 'border-primary/50 ring-1 ring-primary/5' : ''}`}>
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className={`w - 10 h - 10 shrink - 0 rounded - lg gradient - hero flex items - center justify - center text - sm font - semibold text - primary - foreground`}>{(t.firstName || '').charAt(0)}{(t.lastName || '').charAt(0)}</div>
+                          <div className={`w-10 h-10 shrink-0 rounded-lg gradient-hero flex items-center justify-center text-sm font-semibold text-primary-foreground`}>{(t.firstName || '').charAt(0)}{(t.lastName || '').charAt(0)}</div>
                           <div className="min-w-0">
                             <h3 className="font-semibold text-sm truncate">{t.firstName} {t.lastName}</h3>
                             <p className="text-xs text-muted-foreground truncate">{(t.subjects || []).join(', ')}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
-                          {t.startingPrice && <span className="text-sm font-bold text-primary">${t.startingPrice}</span>}
+                          {t.startingPrice != null && <span className="text-sm font-bold text-primary">{formatMoneyCompact(t.startingPrice)}</span>}
                           <Button
                             variant={isExpanded ? "secondary" : "ghost"}
                             size="sm"
@@ -225,15 +221,15 @@ const FindTeacher: React.FC = () => {
                               <div className="flex items-center gap-4">
                                 <div className="w-14 h-14 rounded-2xl gradient-hero flex items-center justify-center text-primary-foreground font-bold text-xl">{(t.firstName || '').charAt(0)}{(t.lastName || '').charAt(0)}</div>
                                 <div>
-                                  <Link href={`/ teachers / ${t.id} `} className="font-bold text-xl hover:text-primary transition-colors">{t.firstName} {t.lastName}</Link>
+                                  <Link href={`/teachers/${t.id}`} className="font-bold text-xl hover:text-primary transition-colors">{t.firstName} {t.lastName}</Link>
                                   <div className="flex items-center gap-2 mt-1">
-                                    <Badge variant={t.verified ? 'secondary' : 'outline'} className="text-[10px] h-5">{t.verified ? 'Verified' : 'Pending'}</Badge>
+                                    <Badge variant="secondary" className="text-[10px] h-5">Verified</Badge>
                                     <div className="flex items-center text-yellow-500 text-sm font-bold"><Star className="w-3.5 h-3.5 fill-current mr-1" /> {t.rating ?? 'New'}</div>
                                   </div>
                                 </div>
                               </div>
                               <div className="text-right">
-                                <div className="text-xl font-bold text-primary">${t.startingPrice}<span className="text-xs text-muted-foreground font-normal">/hr</span></div>
+                                <div className="text-xl font-bold text-primary">{formatMoneyCompact(t.startingPrice)}<span className="text-xs text-muted-foreground font-normal">/hr</span></div>
                                 <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Online Classes</div>
                               </div>
                             </div>
@@ -257,28 +253,28 @@ const FindTeacher: React.FC = () => {
                     <div className="flex items-start gap-4 mb-4 flex-1">
                       <div className="w-16 h-16 rounded-2xl gradient-hero flex items-center justify-center text-primary-foreground font-bold text-2xl shrink-0">{(t.firstName || '').charAt(0)}{(t.lastName || '').charAt(0)}</div>
                       <div className="min-w-0">
-                        <Link href={`/ teachers / ${t.id} `} className="font-bold text-xl hover:text-primary transition-colors block truncate">{t.firstName} {t.lastName}</Link>
+                        <Link href={`/teachers/${t.id}`} className="font-bold text-xl hover:text-primary transition-colors block truncate">{t.firstName} {t.lastName}</Link>
                         <div className="flex flex-wrap gap-1 mt-1">
                           {(t.subjects || []).slice(0, 3).map(s => <span key={s} className="text-xs text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full">{s}</span>)}
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-6 mt-auto pt-4 border-t border-border justify-between w-full">
+                    <div className="mt-auto flex w-full flex-wrap items-center justify-between gap-x-6 gap-y-3 border-t border-border pt-4">
                       <div className="flex items-center gap-4">
                         <div className="text-center">
                           <div className="flex items-center justify-center text-yellow-500 font-bold"><Star className="w-4 h-4 fill-current mr-1" /> {t.rating ?? 'New'}</div>
                           <div className="text-[10px] text-muted-foreground uppercase font-medium">Rating</div>
                         </div>
                         <div className="text-center">
-                          <div className="font-bold text-foreground">${t.startingPrice ?? '—'}</div>
+                          <div className="font-bold text-foreground">{t.startingPrice != null ? formatMoneyCompact(t.startingPrice) : '—'}</div>
                           <div className="text-[10px] text-muted-foreground uppercase font-medium">Starting</div>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        <Badge variant={t.verified ? 'secondary' : 'outline'} className="hidden sm:inline-flex">{t.verified ? 'Verified' : 'Pending'}</Badge>
-                        <Button className={`${viewType === 'grid' ? 'flex-1' : ''} `} onClick={() => { if (!isAuthenticated) { toast({ title: 'Sign in to contact' }); router.push('/auth'); return; } router.push(`/teachers/${t.id}`); }}>View Profile</Button>
+                      <div className="ml-auto flex items-center gap-2">
+                        <Badge variant="secondary" className="hidden sm:inline-flex">Verified</Badge>
+                        <Button className={`${viewType === 'grid' ? 'flex-1' : ''}`} onClick={() => { if (!isAuthenticated) { toast({ title: 'Sign in to contact' }); router.push('/auth'); return; } router.push(`/teachers/${t.id}`); }}>View Profile</Button>
                       </div>
                     </div>
                   </div>

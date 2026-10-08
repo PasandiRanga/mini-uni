@@ -1,4 +1,4 @@
-import FindTeacher from '@/pages/FindTeacher';
+import FindTeacher from '@/views/FindTeacher';
 import { Suspense } from 'react';
 
 export default function TeachersPage() {

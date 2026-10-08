@@ -1,4 +1,4 @@
-import StudentDashboard from '@/pages/StudentDashboard';
+import StudentDashboard from '@/views/StudentDashboard';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { Suspense } from 'react';
 

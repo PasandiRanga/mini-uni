@@ -1,6 +1,6 @@
 'use client';
 
-import PostPage from '@/pages/PostPage';
+import PostPage from '@/views/PostPage';
 import { useParams } from 'next/navigation';
 
 export default function PostDetailPage() {

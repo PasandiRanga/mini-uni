@@ -1,4 +1,4 @@
-import MyPosts from '@/pages/MyPosts';
+import MyPosts from '@/views/MyPosts';
 import { Suspense } from 'react';
 
 export default function MyPostsPage() {
