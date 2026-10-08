@@ -179,7 +179,7 @@ const Auth = () => {
 
             {mode === "login" && (
               <div className="flex justify-end">
-                <Link href="/forgot-password" className="text-sm text-primary hover:underline">
+                <Link href={formData.email.trim() ? `/forgot-password?email=${encodeURIComponent(formData.email.trim())}` : "/forgot-password"} className="text-sm text-primary hover:underline">
                   Forgot password?
                 </Link>
               </div>
