@@ -1,6 +1,6 @@
 'use client';
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { LEVEL_GROUPS, gradeMatches } from "@/lib/classLevels";
+import { LEVEL_GROUPS, POPULAR_SUBJECTS, gradeMatches, splitGrade, subjectsFor } from "@/lib/classLevels";
 import { SuggestInput } from "@/components/ui/suggest-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,17 +56,9 @@ type PostItem = {
   user?: { id: string; firstName: string; lastName: string };
 };
 
-const subjects = [
-  "All Subjects",
-  "Mathematics",
-  "Physics",
-  "Chemistry",
-  "Biology",
-  "English",
-  "Spanish",
-  "History",
-  "Computer Science",
-];
+const ALL_SUBJECTS = "All Subjects";
+/** Chips shown before "More subjects". */
+const SUBJECT_CHIP_LIMIT = 10;
 
 const ExploreContent: React.FC = () => {
   const [posts, setPosts] = useState<PostItem[]>([]);
@@ -108,9 +100,30 @@ const ExploreContent: React.FC = () => {
   }, []);
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedSubject, setSelectedSubject] = useState("All Subjects");
+  const [selectedSubject, setSelectedSubject] = useState(ALL_SUBJECTS);
   const [postType, setPostType] = useState<"all" | "teachers" | "students">("all");
   const [grade, setGrade] = useState<string | null>(null);
+  const [showAllSubjects, setShowAllSubjects] = useState(false);
+
+  // Subject chips follow the picked level, so O/L shows O/L subjects.
+  const levelSubjects = useMemo(() => {
+    if (!grade) return POPULAR_SUBJECTS;
+    const { level, stream } = splitGrade(grade);
+    return subjectsFor(level, stream);
+  }, [grade]);
+
+  // A subject that isn't taught at the new level would hide every post.
+  useEffect(() => {
+    if (selectedSubject !== ALL_SUBJECTS && !levelSubjects.includes(selectedSubject)) setSelectedSubject(ALL_SUBJECTS);
+  }, [levelSubjects, selectedSubject]);
+
+  const subjectChips = useMemo(() => {
+    if (showAllSubjects || levelSubjects.length <= SUBJECT_CHIP_LIMIT) return levelSubjects;
+    const shown = levelSubjects.slice(0, SUBJECT_CHIP_LIMIT);
+    // Keep the picked subject visible after collapsing.
+    return shown.includes(selectedSubject) || selectedSubject === ALL_SUBJECTS ? shown : [...shown, selectedSubject];
+  }, [levelSubjects, showAllSubjects, selectedSubject]);
+  const hiddenSubjectCount = levelSubjects.length - SUBJECT_CHIP_LIMIT;
 
   const [minPrice, setMinPrice] = useState<number | null>(null);
   const [maxPrice, setMaxPrice] = useState<number | null>(null);
@@ -146,7 +159,8 @@ const ExploreContent: React.FC = () => {
 
         if (postType === "teachers" && post.type !== "TEACHER_OFFERING") return false;
         if (postType === "students" && post.type !== "STUDENT_REQUEST") return false;
-        if (selectedSubject && selectedSubject !== "All Subjects" && post.subject !== selectedSubject) return false;
+        // Subjects are free text, so match loosely.
+        if (selectedSubject !== ALL_SUBJECTS && post.subject?.trim().toLowerCase() !== selectedSubject.toLowerCase()) return false;
         if (searchQuery) {
           const q = searchQuery.toLowerCase();
           const hay = `${post.title} ${post.description} ${post.subject || ""} ${post.user?.firstName || ""} ${post.user?.lastName || ""}`.toLowerCase();
@@ -207,10 +221,11 @@ const ExploreContent: React.FC = () => {
                 </div>
 
                 <div className="mt-4 flex flex-wrap gap-2">
-                  {subjects.map((subject) => (
+                  {[ALL_SUBJECTS, ...subjectChips].map((subject) => (
                     <button
                       key={subject}
                       onClick={() => setSelectedSubject(subject)}
+                      aria-pressed={selectedSubject === subject}
                       className={`rounded-full px-4 py-2 text-sm font-medium transition-all duration-300 ${selectedSubject === subject
                         ? "gradient-hero text-primary-foreground shadow-soft"
                         : "border border-border/70 bg-background/60 text-muted-foreground hover:border-primary/30 hover:text-foreground"
@@ -219,7 +234,19 @@ const ExploreContent: React.FC = () => {
                       {subject}
                     </button>
                   ))}
+                  {hiddenSubjectCount > 0 && (
+                    <button
+                      onClick={() => setShowAllSubjects((s) => !s)}
+                      aria-expanded={showAllSubjects}
+                      className="rounded-full px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
+                    >
+                      {showAllSubjects ? "Fewer subjects" : `+${hiddenSubjectCount} more`}
+                    </button>
+                  )}
                 </div>
+                {grade && (
+                  <p className="mt-2 text-xs text-muted-foreground">Showing subjects for {grade}. Change the level in Filters.</p>
+                )}
               </div>
             </div>
 

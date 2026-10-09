@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { ratingSummaries } from "@/lib/reviews";
 
 export async function GET(
     request: Request,
@@ -31,8 +32,11 @@ export async function GET(
             return NextResponse.json({ error: "Teacher not found" }, { status: 404 });
         }
 
+        const ratings = await ratingSummaries([teacher.id]);
+
         // Flatten for frontend
         const profile = {
+            ...ratings.get(teacher.id),
             id: teacher.id,
             firstName: teacher.firstName,
             lastName: teacher.lastName,

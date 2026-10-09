@@ -27,6 +27,7 @@ export async function GET(
                 teacher: { select: { id: true, firstName: true, lastName: true } },
                 timeSlot: { select: { startTime: true, endTime: true } },
                 inquiry: { include: { post: { select: { title: true, subject: true } } } },
+                review: { select: { rating: true, comment: true } },
             },
             orderBy: { createdAt: "desc" },
             take: all ? 100 : 20,

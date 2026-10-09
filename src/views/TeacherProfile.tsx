@@ -7,8 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { Star, Mail } from "lucide-react";
+import { Mail } from "lucide-react";
 import { InquiryDialog } from "@/components/teachers/InquiryDialog";
+import { RatingBadge, Stars } from "@/components/reviews/StarRating";
+import { format } from "date-fns";
+
+type PublicReview = { id: string; rating: number; comment: string | null; createdAt: string; author: string; subject: string | null };
 
 type TeacherDetail = {
   id: string;
@@ -16,7 +20,8 @@ type TeacherDetail = {
   lastName: string;
   subjects?: string[];
   city?: string;
-  rating?: number;
+  rating?: number | null;
+  reviewCount?: number;
   startingPrice?: number;
   verified?: boolean;
   bio?: string;
@@ -32,6 +37,7 @@ const TeacherProfile: React.FC<TeacherProfileProps> = ({ id: propId }) => {
   const id = propId || params?.id as string;
   const [teacher, setTeacher] = useState<TeacherDetail | null>(null);
   const [posts, setPosts] = useState<any[]>([]);
+  const [reviews, setReviews] = useState<PublicReview[]>([]);
   const [isInquiryOpen, setIsInquiryOpen] = useState(false);
   const { user, isAuthenticated } = useAuth();
   const isGuest = !isAuthenticated;
@@ -64,8 +70,18 @@ const TeacherProfile: React.FC<TeacherProfileProps> = ({ id: propId }) => {
       }
     };
 
+    const fetchReviews = async () => {
+      try {
+        const res = await fetch(`/api/teachers/${id}/reviews`);
+        if (res.ok) setReviews(await res.json());
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
     fetchDetail();
     fetchPosts();
+    fetchReviews();
   }, [id]);
 
   if (!teacher) return (
@@ -90,7 +106,7 @@ const TeacherProfile: React.FC<TeacherProfileProps> = ({ id: propId }) => {
               </div>
               <div className="text-muted-foreground mt-1">{teacher.subjects?.join(', ')}</div>
               <div className="flex items-center gap-4 mt-3">
-                <div className="flex items-center gap-2"><Star className="w-4 h-4" />{teacher.rating ?? '—'}</div>
+                <RatingBadge rating={teacher.rating} count={teacher.reviewCount} />
                 <div className="text-muted-foreground">{teacher.city}</div>
                 <div className="text-muted-foreground">Starting at ${teacher.startingPrice ?? '—'}</div>
               </div>
@@ -120,6 +136,26 @@ const TeacherProfile: React.FC<TeacherProfileProps> = ({ id: propId }) => {
             <ul className="list-disc list-inside text-sm text-muted-foreground mt-2">
               {(teacher.qualifications || []).map((q, i) => <li key={i}>{q}</li>)}
             </ul>
+          </div>
+
+          <div className="mt-6">
+            <h3 className="text-lg font-semibold">Reviews</h3>
+            <div className="mt-3 space-y-3">
+              {reviews.map((r) => (
+                <div key={r.id} className="rounded-lg bg-muted p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Stars value={r.rating} className="h-3.5 w-3.5" />
+                      <span className="text-sm font-medium">{r.author}</span>
+                      {r.subject && <span className="text-xs text-muted-foreground">· {r.subject}</span>}
+                    </div>
+                    <span className="text-xs text-muted-foreground">{format(new Date(r.createdAt), 'MMM d, yyyy')}</span>
+                  </div>
+                  {r.comment && <p className="mt-2 whitespace-pre-line text-sm text-muted-foreground">{r.comment}</p>}
+                </div>
+              ))}
+              {reviews.length === 0 && <div className="text-sm text-muted-foreground">No reviews yet.</div>}
+            </div>
           </div>
 
           <div className="mt-6">

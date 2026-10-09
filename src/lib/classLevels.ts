@@ -121,6 +121,24 @@ const UNDERGRADUATE_SUBJECTS = [
   "Psychology",
 ];
 
+/** The most-taught subjects across O/L and A/L, for when no level is picked. */
+export const POPULAR_SUBJECTS = [
+  "Mathematics",
+  "Combined Mathematics",
+  "Science",
+  "Physics",
+  "Chemistry",
+  "Biology",
+  "English",
+  "ICT",
+  "Accounting",
+  "Business Studies",
+  "Economics",
+  "Sinhala",
+  "Tamil",
+  "History",
+];
+
 /** Subjects to suggest for a level (and, for A/L, a stream). */
 export function subjectsFor(level: string, stream = ""): string[] {
   if ((PRIMARY_GRADES as readonly string[]).includes(level)) return PRIMARY_SUBJECTS;

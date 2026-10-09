@@ -10,7 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import Footer from "@/components/layout/Footer";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { Search, DollarSign, Star, Filter, LayoutGrid, LayoutList, MessageCircle, Heart, Share2 } from "lucide-react";
+import { RatingBadge } from "@/components/reviews/StarRating";
+import { Search, DollarSign, Filter, LayoutGrid, LayoutList, MessageCircle, Heart, Share2 } from "lucide-react";
 
 type Teacher = {
   id: string;
@@ -18,6 +19,7 @@ type Teacher = {
   lastName: string;
   subjects?: string[];
   rating?: number;
+  reviewCount?: number;
   startingPrice?: number;
   verified?: boolean;
   bio?: string;
@@ -71,7 +73,8 @@ const FindTeacher: React.FC = () => {
           lastName: r.lastName || r.user?.lastName || '',
           subjects: r.teacherProfile?.subjects || r.subjects || [],
 
-          rating: r.rating || r.teacherProfile?.rating || undefined,
+          rating: r.rating ?? undefined,
+          reviewCount: r.reviewCount ?? 0,
           startingPrice: r.teacherProfile?.hourlyRate || r.startingPrice || undefined,
           verified: (r.verified === true) || (r.teacherProfile && r.teacherProfile.verificationStatus === 'APPROVED') || false,
           bio: r.teacherProfile?.bio || r.bio || undefined,
@@ -224,7 +227,7 @@ const FindTeacher: React.FC = () => {
                                   <Link href={`/teachers/${t.id}`} className="font-bold text-xl hover:text-primary transition-colors">{t.firstName} {t.lastName}</Link>
                                   <div className="flex items-center gap-2 mt-1">
                                     <Badge variant="secondary" className="text-[10px] h-5">Verified</Badge>
-                                    <div className="flex items-center text-yellow-500 text-sm font-bold"><Star className="w-3.5 h-3.5 fill-current mr-1" /> {t.rating ?? 'New'}</div>
+                                    <RatingBadge rating={t.rating} count={t.reviewCount} className="text-sm" />
                                   </div>
                                 </div>
                               </div>
@@ -263,7 +266,7 @@ const FindTeacher: React.FC = () => {
                     <div className="mt-auto flex w-full flex-wrap items-center justify-between gap-x-6 gap-y-3 border-t border-border pt-4">
                       <div className="flex items-center gap-4">
                         <div className="text-center">
-                          <div className="flex items-center justify-center text-yellow-500 font-bold"><Star className="w-4 h-4 fill-current mr-1" /> {t.rating ?? 'New'}</div>
+                          <RatingBadge rating={t.rating} count={t.reviewCount} />
                           <div className="text-[10px] text-muted-foreground uppercase font-medium">Rating</div>
                         </div>
                         <div className="text-center">

@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { ratingSummaries } from "@/lib/reviews";
 
 export async function GET() {
     try {
@@ -26,7 +27,8 @@ export async function GET() {
             take: 50,
         });
 
-        return NextResponse.json(teachers);
+        const ratings = await ratingSummaries(teachers.map((t) => t.id));
+        return NextResponse.json(teachers.map((t) => ({ ...t, ...ratings.get(t.id) })));
     } catch (error) {
         console.error("Error fetching teachers:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });

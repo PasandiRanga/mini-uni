@@ -1,6 +1,7 @@
 import prisma from "./prisma";
 import { refundBookingToStudent, releaseBookingEscrow } from "./wallet";
 import { releaseSeat } from "./seats";
+import { createNotification } from "./notifications";
 
 /** Bookings that still hold a seat and haven't happened yet. */
 export const OPEN_BOOKING_STATUSES = ["PENDING_PAYMENT", "PAYMENT_COMPLETED", "CONFIRMED"] as const;
@@ -58,15 +59,25 @@ export async function settleFinishedBookings(who: { teacherId: string } | { stud
 
   const finished = await prisma.booking.findMany({
     where: { ...who, status: { in: [...PAID_BOOKING_STATUSES] }, timeSlot: { endTime: { lte: now } } },
-    select: { id: true },
+    select: { id: true, studentId: true, teacher: { select: { firstName: true } } },
   });
   for (const b of finished) {
     try {
       await releaseBookingEscrow(b.id); // no-op if already released or never paid via the wallet
-      await prisma.booking.updateMany({
+      const { count } = await prisma.booking.updateMany({
         where: { id: b.id, status: { in: [...PAID_BOOKING_STATUSES] } },
         data: { status: "COMPLETED", completedAt: now },
       });
+      // Only the run that completed it asks for a rating, so it's asked once.
+      if (count === 1) {
+        await createNotification({
+          userId: b.studentId,
+          type: "CLASS_COMPLETION",
+          title: "How was your class?",
+          message: `Rate your class with ${b.teacher.firstName} from My Classes → Completed.`,
+          metadata: { bookingId: b.id },
+        });
+      }
     } catch (err) {
       console.error(`Couldn't complete booking ${b.id}:`, err);
     }

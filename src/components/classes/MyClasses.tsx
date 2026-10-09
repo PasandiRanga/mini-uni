@@ -11,12 +11,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Calendar, Clock, Video, User, CheckCircle, XCircle, ChevronRight, RefreshCw, Loader2 } from 'lucide-react';
+import { Calendar, Clock, Video, User, CheckCircle, XCircle, ChevronRight, RefreshCw, Loader2, Star } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { formatMoney } from '@/lib/currency';
 import { format } from 'date-fns';
 import { slotDurationLabel } from '@/components/post/postCardBits';
+import { Stars } from '@/components/reviews/StarRating';
+import RateClassDialog, { type Review } from '@/components/reviews/RateClassDialog';
 
 interface Booking {
   id: string;
@@ -27,6 +29,7 @@ interface Booking {
   student?: { firstName?: string; lastName?: string };
   googleMeetLink?: string | null;
   fee?: number;
+  review?: Review | null; // students only: their rating of a completed class
 }
 
 type ViewId = 'upcoming' | 'completed' | 'cancelled';
@@ -99,7 +102,9 @@ const MyClasses: React.FC<MyClassesProps> = ({ preview = false, onViewAll }) => 
   const [showAll, setShowAll] = useState(false);
   const [toCancel, setToCancel] = useState<Booking | null>(null);
   const [cancelling, setCancelling] = useState(false);
+  const [toRate, setToRate] = useState<Booking | null>(null);
   const { toast } = useToast();
+  const isStudent = user?.role === 'STUDENT';
 
   const fetchBookings = useCallback(async () => {
     if (!user) return;
@@ -199,6 +204,7 @@ const MyClasses: React.FC<MyClassesProps> = ({ preview = false, onViewAll }) => 
     const title = b.inquiry?.post?.title || b.inquiry?.post?.subject || 'Class';
     const initials = (otherName || 'U').split(' ').map((n) => n.charAt(0)).slice(0, 2).join('');
     const isFuture = start ? start > new Date() : false;
+    const canRate = isStudent && !preview && (b.status || '').toUpperCase() === 'COMPLETED';
 
     return (
       <div key={b.id} className="rounded-2xl border border-border/70 bg-background/40 p-4 transition-colors hover:bg-muted/40">
@@ -236,6 +242,20 @@ const MyClasses: React.FC<MyClassesProps> = ({ preview = false, onViewAll }) => 
                 <XCircle className="h-3.5 w-3.5" /> Cancel
               </Button>
             )}
+            {canRate && (b.review ? (
+              <button
+                type="button"
+                onClick={() => setToRate(b)}
+                className="rounded-md p-1 hover:bg-muted"
+                title="Edit your review"
+              >
+                <Stars value={b.review.rating} className="h-3.5 w-3.5" />
+              </button>
+            ) : (
+              <Button size="sm" variant="outline" className="h-8" onClick={() => setToRate(b)}>
+                <Star className="h-3.5 w-3.5" /> Rate
+              </Button>
+            ))}
           </div>
         </div>
       </div>
@@ -305,6 +325,15 @@ const MyClasses: React.FC<MyClassesProps> = ({ preview = false, onViewAll }) => 
           <div className="space-y-3">{visible.map(renderBookingCard)}</div>
         )}
       </div>
+
+      <RateClassDialog
+        bookingId={toRate?.id ?? null}
+        teacherName={`${toRate?.teacher?.firstName || ''} ${toRate?.teacher?.lastName || ''}`.trim()}
+        classTitle={toRate?.inquiry?.post?.title || toRate?.inquiry?.post?.subject || 'Class'}
+        existing={toRate?.review}
+        onOpenChange={(o) => { if (!o) setToRate(null); }}
+        onSaved={(id, review) => setBookings((prev) => prev.map((x) => (x.id === id ? { ...x, review } : x)))}
+      />
 
       <AlertDialog open={!!toCancel} onOpenChange={(o) => { if (!o && !cancelling) setToCancel(null); }}>
         <AlertDialogContent>
