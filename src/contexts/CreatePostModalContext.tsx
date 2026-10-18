@@ -8,6 +8,8 @@ interface CreatePostModalContextType {
   /**
    * Open the create-post modal. Pass a post id to edit an existing post, and
    * optionally the already-loaded post object to prefill instantly (no fetch).
+   * With no id but a post, it starts a new post copied from that one, without
+   * its time slots.
    */
   openCreatePost: (editId?: string | null, initialPost?: unknown) => void;
   closeCreatePost: () => void;

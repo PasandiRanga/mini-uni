@@ -7,7 +7,7 @@ import { getSessionFromRequest } from "@/lib/auth";
 import { sendEmail, buildOtpEmail } from "@/lib/email";
 
 const OTP_TTL_MS = 10 * 60 * 1000;
-const RESEND_COOLDOWN_MS = 60 * 1000;
+const RESEND_COOLDOWN_MS = 2 * 60 * 1000;
 
 export async function POST(request: Request) {
   try {
@@ -28,13 +28,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Email already verified" }, { status: 400 });
     }
 
-    // One code per minute: the last one was issued OTP_TTL before its expiry.
+    // One code every two minutes: the last one was issued OTP_TTL before its expiry.
     if (user.emailOtpExpiry) {
       const issuedAt = user.emailOtpExpiry.getTime() - OTP_TTL_MS;
       const retryAfter = Math.ceil((issuedAt + RESEND_COOLDOWN_MS - Date.now()) / 1000);
       if (retryAfter > 0) {
         return NextResponse.json(
-          { error: `Please wait ${retryAfter}s before requesting another code.`, retryAfter },
+          { error: `Please wait ${Math.floor(retryAfter / 60)}:${String(retryAfter % 60).padStart(2, "0")} before requesting another code.`, retryAfter },
           { status: 429 }
         );
       }

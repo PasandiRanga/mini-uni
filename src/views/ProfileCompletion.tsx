@@ -112,7 +112,7 @@ const ProfileCompletion = () => {
         </div>
 
         <div className="mb-2">
-          <h1 className="text-3xl font-normal sm:text-4xl">
+          <h1 className="type-page-title">
             Complete your <span className="font-serif italic text-gradient font-semibold">profile</span>
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -172,7 +172,7 @@ const ProfileCompletion = () => {
                 <PartyPopper className="h-7 w-7" strokeWidth={1.75} />
               )}
             </div>
-            <h2 className="text-xl font-semibold">
+            <h2 className="type-title">
               {status === "APPROVED" ? "You're verified" : status === "SUSPENDED" ? "Your account is suspended" : "Profile complete"}
             </h2>
             <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
@@ -221,7 +221,7 @@ const ProfileCompletion = () => {
             {/* Active step form */}
             <div className="rounded-3xl border border-border/70 bg-card p-6 sm:p-8">
               <div className="mb-6">
-                <h2 className="text-lg font-semibold">{STEP_META[current].title}</h2>
+                <h2 className="type-section font-medium">{STEP_META[current].title}</h2>
                 <p className="mt-0.5 text-sm text-muted-foreground">{STEP_META[current].blurb}</p>
               </div>
 

@@ -111,7 +111,7 @@ const DashboardLayout: React.FC<PropsWithChildren> = ({ children }) => {
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div className="animate-fade-up">
                 <p className="mb-1 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">{todayLabel()}</p>
-                <h1 className="text-3xl sm:text-4xl font-normal leading-tight">
+                <h1 className="type-page-title">
                   {greeting()},{" "}
                   <span className="font-serif italic text-gradient font-semibold">{user?.firstName || "Student"}.</span>
                 </h1>

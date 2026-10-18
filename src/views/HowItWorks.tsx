@@ -20,7 +20,7 @@ const HowItWorks = () => {
               The MiniUni Guide
             </div>
 
-            <h1 className="text-4xl sm:text-5xl font-bold leading-tight mb-4">How MiniUni Works</h1>
+            <h1 className="mb-4 text-4xl font-normal leading-tight sm:text-5xl">How MiniUni <span className="font-serif italic text-gradient font-semibold">works</span></h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">Step-by-step flows for students and teachers — from discovery to verified teaching, secure bookings, and completed classes.</p>
           </div>
 

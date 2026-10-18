@@ -68,7 +68,7 @@ const VerifyEmail = () => {
       }
       if (!res.ok) throw new Error(data.error || "Failed to send code");
 
-      setCooldown(data.retryAfter ?? 60);
+      setCooldown(data.retryAfter ?? 120);
       setPhase("code-sent");
       if (data.devCode) {
         toast({ title: "Dev mode — code not emailed", description: `Your code is ${data.devCode}` });
@@ -138,7 +138,7 @@ const VerifyEmail = () => {
               <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-success/15 text-success">
                 <CheckCircle2 className="h-7 w-7" strokeWidth={1.75} />
               </div>
-              <h1 className="text-2xl font-semibold">Email verified</h1>
+              <h1 className="type-title">Email <span className="font-serif font-semibold">verified</span></h1>
               <p className="mt-2 text-sm text-muted-foreground">Taking you to your dashboard…</p>
             </div>
           ) : (
@@ -147,7 +147,7 @@ const VerifyEmail = () => {
                 <Mail className="h-6 w-6" strokeWidth={1.75} />
               </div>
 
-              <h1 className="text-2xl font-semibold">Verify your email</h1>
+              <h1 className="type-title">Verify your <span className="font-serif font-semibold">email</span></h1>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                 {phase === "code-sent" || phase === "verifying" ? (
                   <>
@@ -179,7 +179,7 @@ const VerifyEmail = () => {
                   ) : (
                     cooldown > 0 ? (
                       <span className="text-sm text-muted-foreground" aria-live="polite">
-                        Didn&apos;t get it? You can resend in {cooldown}s
+                        Didn&apos;t get it? You can resend in {Math.floor(cooldown / 60)}:{String(cooldown % 60).padStart(2, "0")}
                       </span>
                     ) : (
                       <button onClick={sendCode} className="text-sm font-medium text-primary hover:underline">

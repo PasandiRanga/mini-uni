@@ -165,6 +165,29 @@
   }
 }
 
+/*
+ * Type scale. Headings are regular weight; emphasis comes from a semibold
+ * serif accent word (e.g. Explore <span class="font-serif ...">Classes</span>).
+ *   type-page-title  top of a page (Explore, Find teachers, sign-in)
+ *   type-title       title inside a page or card (a teacher's name, Admin console)
+ *   type-section     card / section header (My classes, Reviews)
+ *   type-eyebrow     small uppercase label above a group of fields
+ */
+@layer components {
+  .type-page-title {
+    @apply text-3xl font-normal leading-tight sm:text-4xl;
+  }
+  .type-title {
+    @apply text-2xl font-normal leading-tight sm:text-3xl;
+  }
+  .type-section {
+    @apply text-lg font-normal;
+  }
+  .type-eyebrow {
+    @apply text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground;
+  }
+}
+
 @layer utilities {
   .gradient-hero {
     background: var(--gradient-hero);

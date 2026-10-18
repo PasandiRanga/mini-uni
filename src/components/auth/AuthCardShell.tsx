@@ -14,7 +14,7 @@ const AuthCardShell = ({ title, subtitle, children }: { title: string; subtitle?
         <span className="text-xl font-bold">MiniUni</span>
       </Link>
       <div className="mb-8">
-        <h1 className="mb-2 text-3xl font-bold">{title}</h1>
+        <h1 className="type-page-title mb-2">{title}</h1>
         {subtitle && <p className="text-muted-foreground">{subtitle}</p>}
       </div>
       {children}

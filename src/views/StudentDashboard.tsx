@@ -4,11 +4,12 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
-import { Calendar, Clock, BookOpen, Wallet, ArrowUpRight } from "lucide-react";
+import { Calendar, Clock, CalendarClock, Wallet, ArrowUpRight } from "lucide-react";
 import MyClasses from '@/components/classes/MyClasses';
 import ExploreContent from "@/components/explore/ExploreContent";
 import EmailVerificationBanner from "@/components/auth/EmailVerificationBanner";
 import { CurrencySettings } from "@/components/settings/CurrencySettings";
+import { ChangePasswordForm } from "@/components/settings/ChangePasswordForm";
 import { formatMoney, formatMoneyCompact } from "@/lib/currency";
 import ScheduleCalendar from "@/components/calendar/ScheduleCalendar";
 import MiniCalendar from "@/components/calendar/MiniCalendar";
@@ -20,7 +21,7 @@ import { useStudentDashboard } from "@/hooks/useStudentDashboard";
 import { CustomizeWidgets, useWidgetPrefs, type WidgetDef } from "@/components/dashboard/CustomizeWidgets";
 
 const STUDENT_WIDGETS: WidgetDef[] = [
-  { id: "stats", label: "Key numbers", description: "Classes, learning time and wallet" },
+  { id: "stats", label: "Key numbers", description: "Classes and wallet" },
   { id: "enrolled", label: "Enrolled courses" },
   { id: "upcoming", label: "Upcoming classes" },
   { id: "calendar", label: "Calendar" },
@@ -38,13 +39,12 @@ const DashboardContent = () => {
     upcomingClasses,
     recentTeachers,
     enrolledCourses,
-    studyHours,
     completedCount,
-    subjectCount,
     recommendations,
     calendarEvents,
     user,
-    wallet
+    wallet,
+    loading: statsLoading,
   } = useStudentDashboard();
   const { user: authUser } = useAuth();
   const currency = authUser?.currency;
@@ -75,12 +75,18 @@ const DashboardContent = () => {
     return (
       <div className="max-w-2xl space-y-6">
         <div>
-          <h2 className="text-xl font-semibold">Settings</h2>
+          <h2 className="type-title">Settings</h2>
           <p className="mt-1 text-sm text-muted-foreground">Manage your account and verification.</p>
         </div>
         <section className="space-y-3">
           <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Email verification</p>
           <EmailVerificationBanner variant="card" />
+        </section>
+        <section className="space-y-3">
+          <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Password</p>
+          <div className="rounded-2xl border border-border/70 bg-card p-6">
+            <ChangePasswordForm />
+          </div>
         </section>
         <section className="space-y-3">
           <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Currency</p>
@@ -92,11 +98,14 @@ const DashboardContent = () => {
     );
   }
 
+  // Until the first load lands, show a dash rather than a misleading 0.
+  const pending = (v: string | number) => (statsLoading ? "–" : v);
   const stats = [
-    { icon: Calendar, label: "Classes completed", value: completedCount },
-    { icon: Clock, label: "Learning time", value: `${studyHours} hrs` },
-    { icon: BookOpen, label: "Subjects studied", value: subjectCount },
-    { icon: Wallet, label: "Wallet balance", value: formatMoneyCompact((wallet as any)?.releasedBalance, currency) },
+    { icon: Calendar, label: "Classes completed", value: pending(completedCount) },
+    { icon: CalendarClock, label: "Upcoming classes", value: pending(upcomingClasses.length) },
+    { icon: Wallet, label: "Wallet balance", value: pending(formatMoneyCompact((wallet as any)?.releasedBalance, currency)) },
+    // Paid for classes still to come (or under review); see StudentWallet.
+    { icon: Clock, label: "On hold", value: pending(formatMoneyCompact((wallet as any)?.heldAmount ?? 0, currency)) },
   ];
 
   return (
@@ -127,7 +136,7 @@ const DashboardContent = () => {
                   <ArrowUpRight className="h-3.5 w-3.5" />
                 </span>
               </div>
-              <p className="mt-auto truncate font-serif text-2xl leading-none tabular-nums sm:text-[1.75rem] xl:text-3xl" title={String(stat.value)}>{stat.value}</p>
+              <p className={`mt-auto truncate font-serif leading-none tabular-nums ${String(stat.value).length > 7 ? "text-xl sm:text-2xl xl:text-[1.75rem]" : "text-2xl sm:text-[1.75rem] xl:text-3xl"}`} title={String(stat.value)}>{stat.value}</p>
               <p className={`mt-2 min-h-[2rem] text-xs uppercase leading-tight tracking-[0.14em] ${featured ? "text-primary-foreground/70" : "text-muted-foreground"}`}>{stat.label}</p>
             </div>
           );
@@ -143,7 +152,7 @@ const DashboardContent = () => {
           {show("enrolled") && (
           <section className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
             <div className="flex items-center justify-between border-b border-border/60 px-6 py-5">
-              <h2 className="text-lg font-normal">
+              <h2 className="type-section">
                 Enrolled <span className="font-serif italic font-semibold">courses</span>
               </h2>
               <Button variant="ghost" size="sm" className="text-primary" onClick={() => router.push("/student/dashboard?tab=classes")}>Manage</Button>
@@ -178,7 +187,7 @@ const DashboardContent = () => {
           <div className={`grid grid-cols-1 gap-6 ${show("upcoming") && show("calendar") ? "md:grid-cols-2" : ""}`}>
             {show("upcoming") && (
             <section className="rounded-3xl border border-border/70 bg-card p-6 shadow-soft">
-              <h3 className="mb-4 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Upcoming classes</h3>
+              <h3 className="type-eyebrow mb-4">Upcoming classes</h3>
               <div className="space-y-4">
                 {upcomingClasses.length === 0 && <p className="text-sm text-muted-foreground">No upcoming classes</p>}
                 {upcomingClasses.map((uc) => (
@@ -201,7 +210,7 @@ const DashboardContent = () => {
 
             {show("calendar") && (
             <section className="rounded-3xl border border-border/70 bg-card p-6 shadow-soft">
-              <h3 className="mb-4 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">This month</h3>
+              <h3 className="type-eyebrow mb-4">This month</h3>
               <MiniCalendar
                 events={calendarEvents as any}
                 onSelectDate={() => router.push('/student/dashboard?tab=schedule')}
@@ -219,7 +228,7 @@ const DashboardContent = () => {
           {show("foryou") && (
           <section className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
             <div className="flex items-center justify-between border-b border-border/60 px-6 py-5">
-              <h2 className="text-lg font-normal">
+              <h2 className="type-section">
                 For <span className="font-serif italic font-semibold">you</span>
               </h2>
               <Button variant="ghost" size="sm" onClick={() => router.push("/student/dashboard?tab=explore")}>See All</Button>
@@ -245,7 +254,7 @@ const DashboardContent = () => {
           {show("teachers") && (
           <section className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
             <div className="flex items-center justify-between border-b border-border/60 px-6 py-5">
-              <h2 className="text-lg font-normal">
+              <h2 className="type-section">
                 Your <span className="font-serif italic font-semibold">teachers</span>
               </h2>
               <Button variant="ghost" size="sm" onClick={() => router.push("/student/dashboard?tab=classes")}>View All</Button>

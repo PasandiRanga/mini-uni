@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import bcrypt from "bcrypt";
 import prisma from "@/lib/prisma";
-import { getSessionFromRequest } from "@/lib/auth";
+import { encrypt, forgetPasswordChange, getSessionFromRequest, SESSION_COOKIE_OPTIONS } from "@/lib/auth";
 
 export async function PUT(request: Request) {
   try {
@@ -31,9 +31,14 @@ export async function PUT(request: Request) {
     }
 
     const hashed = await bcrypt.hash(newPassword, 10);
-    await prisma.user.update({ where: { id: user.id }, data: { password: hashed } });
+    // Stamping the change signs out every other device (see lib/auth).
+    await prisma.user.update({ where: { id: user.id }, data: { password: hashed, passwordChangedAt: new Date() } });
+    forgetPasswordChange(user.id);
 
-    return NextResponse.json({ success: true });
+    // A fresh token keeps this device signed in.
+    const response = NextResponse.json({ success: true });
+    response.cookies.set("token", await encrypt({ sub: user.id, role: user.role }), SESSION_COOKIE_OPTIONS);
+    return response;
   } catch (error) {
     console.error("change-password error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

@@ -20,7 +20,7 @@ import { useTeacherStatus } from "@/hooks/useTeacherStatus";
 import { formatMoney } from "@/lib/currency";
 import { applyPostChange, emitPostChanged, onPostChanged } from "@/lib/postEvents";
 import { CLASS_TYPE_LABELS, slotDurationLabel, slotDateLabel, PostDescription } from "@/components/post/postCardBits";
-import { FileText, RefreshCw, Pencil, Trash2, Plus, Clock, CalendarDays } from "lucide-react";
+import { FileText, RefreshCw, Pencil, Trash2, Plus, Clock, CalendarDays, Copy, AlertTriangle } from "lucide-react";
 
 interface TimeSlot {
   startTime: string;
@@ -44,6 +44,12 @@ interface MyPost {
 // A post is "past" once it has time slots and its last slot has ended.
 const latestEnd = (p: MyPost) => (p.timeSlots ?? []).reduce((m, s) => Math.max(m, new Date(s.endTime).getTime()), 0);
 const isPastPost = (p: MyPost) => (p.timeSlots?.length ?? 0) > 0 && latestEnd(p) < Date.now();
+/** Still open, but its last time is within this window: nudge the teacher to add more. */
+const ENDING_SOON_MS = 48 * 60 * 60 * 1000;
+const isEndingSoon = (p: MyPost) => {
+  const end = latestEnd(p);
+  return end > Date.now() && end - Date.now() < ENDING_SOON_MS;
+};
 
 const TeacherPosts = () => {
   const { toast } = useToast();
@@ -135,13 +141,23 @@ const TeacherPosts = () => {
               {slotDate && <span className="flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5" />{slotDate}</span>}
             </div>
 
+            {editable && isEndingSoon(p) && (
+              <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-warning">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                Last time is {formatDistanceToNow(new Date(latestEnd(p)), { addSuffix: true })}. Add more times to keep it visible.
+              </p>
+            )}
             <p className="mt-2 text-xs text-muted-foreground">{p.createdAt ? formatDistanceToNow(new Date(p.createdAt), { addSuffix: true }) : ""}</p>
           </div>
 
           <div className="flex shrink-0 items-center gap-1">
-            {editable && (
+            {editable ? (
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openCreatePost(p.id, p)} title="Edit">
                 <Pencil className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Button variant="outline" size="sm" className="h-8" onClick={() => openCreatePost(null, p)} disabled={!isApproved} title={isApproved ? "Post this class again with new times" : lockedHint}>
+                <Copy className="h-3.5 w-3.5" /> Run again
               </Button>
             )}
             <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setConfirmPost(p)} disabled={deleting === p.id} title="Delete">
@@ -156,7 +172,7 @@ const TeacherPosts = () => {
   return (
     <section className="mx-auto w-full max-w-3xl overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
       <div className="flex items-center justify-between border-b border-border/60 px-6 py-5">
-        <h2 className="text-lg font-normal">
+        <h2 className="type-section">
           My <span className="font-serif font-semibold">posts</span>
           {posts.length > 0 && <span className="ml-2 text-sm font-normal text-muted-foreground">({posts.length})</span>}
         </h2>
@@ -188,6 +204,20 @@ const TeacherPosts = () => {
           </div>
         ) : (
           <>
+            {/* Nothing bookable: students can't find this teacher at all. */}
+            {upcoming.length === 0 && isApproved && (
+              <div className="mb-5 flex items-start gap-3 rounded-2xl border border-warning/30 bg-warning/5 p-4 text-sm">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+                <div>
+                  <p className="font-medium">Students can&apos;t book you right now</p>
+                  <p className="mt-0.5 text-muted-foreground">
+                    None of your classes have upcoming times, so they&apos;re hidden from Explore and your profile.
+                    Use <span className="font-medium text-foreground">Run again</span> on a past class, or create a new one.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Active / Past toggle */}
             <div className="mb-5 inline-flex rounded-xl bg-muted p-1">
               <button
@@ -207,7 +237,7 @@ const TeacherPosts = () => {
             </div>
 
             {view === 'past' && past.length > 0 && (
-              <p className="mb-3 text-xs text-muted-foreground">These classes have already taken place and can no longer be edited.</p>
+              <p className="mb-3 text-xs text-muted-foreground">These classes have already taken place and can no longer be edited. Use Run again to offer one with new times.</p>
             )}
 
             {(view === 'active' ? upcoming : past).length === 0 ? (

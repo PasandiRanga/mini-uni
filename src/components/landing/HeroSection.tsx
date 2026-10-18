@@ -1,13 +1,27 @@
+"use client";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowRight, ArrowUpRight, Star, ShieldCheck, CalendarDays } from "lucide-react";
+import { POPULAR_SUBJECTS } from "@/lib/classLevels";
 
-const subjects = [
-  "Mathematics", "Physics", "Chemistry", "Music Theory", "Literature",
-  "Programming", "Economics", "Biology", "Languages", "Art & Design",
-];
+const subjects = POPULAR_SUBJECTS;
+
+/** Real platform numbers from /api/stats. */
+type Stats = { teachers: number; teacherInitials: string[]; students: number; reviewCount: number; averageRating: number | null };
+/** Below this many reviews an average says little, so it isn't shown. */
+const MIN_REVIEWS_FOR_RATING = 5;
 
 const HeroSection = () => {
+  const [stats, setStats] = useState<Stats | null>(null);
+  useEffect(() => {
+    fetch("/api/stats")
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setStats)
+      .catch(() => setStats(null));
+  }, []);
+  const showRating = stats?.averageRating != null && stats.reviewCount >= MIN_REVIEWS_FOR_RATING;
+
   return (
     <section className="relative min-h-screen flex flex-col justify-center pt-24 overflow-hidden grain">
       {/* Background washes */}
@@ -49,11 +63,12 @@ const HeroSection = () => {
               </Button>
             </div>
 
+            {stats && stats.teachers > 0 && (
             <div className="animate-fade-up flex items-center gap-6 pt-2" style={{ animationDelay: "0.4s" }}>
               <div className="flex -space-x-2.5">
-                {["A", "M", "K", "S", "J"].map((initial, i) => (
+                {stats.teacherInitials.map((initial, i) => (
                   <div
-                    key={initial}
+                    key={i}
                     className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-background bg-muted text-[11px] font-semibold text-foreground/70"
                     style={{ zIndex: 5 - i }}
                   >
@@ -62,12 +77,24 @@ const HeroSection = () => {
                 ))}
               </div>
               <div className="text-sm text-muted-foreground">
-                <span className="flex items-center gap-1 font-medium text-foreground">
-                  4.9 <Star className="h-3.5 w-3.5 fill-accent text-accent" /> average rating
-                </span>
-                from 2,500+ students
+                {showRating ? (
+                  <>
+                    <span className="flex items-center gap-1 font-medium text-foreground">
+                      {stats.averageRating!.toFixed(1)} <Star className="h-3.5 w-3.5 fill-accent text-accent" /> average rating
+                    </span>
+                    from {stats.reviewCount.toLocaleString()} student reviews
+                  </>
+                ) : (
+                  <>
+                    <span className="flex items-center gap-1 font-medium text-foreground">
+                      <ShieldCheck className="h-3.5 w-3.5 text-primary" /> {stats.teachers.toLocaleString()} verified teacher{stats.teachers === 1 ? "" : "s"}
+                    </span>
+                    every one ID-checked by MiniUni
+                  </>
+                )}
               </div>
             </div>
+            )}
           </div>
 
           {/* Right — layered class cards */}
@@ -77,12 +104,12 @@ const HeroSection = () => {
               <div className="relative z-20 rounded-3xl border border-border/70 bg-card p-7 shadow-elevated">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl gradient-hero font-serif text-2xl italic text-primary-foreground">
-                      S
+                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl gradient-hero font-serif text-lg italic text-primary-foreground">
+                      A/L
                     </div>
                     <div>
-                      <p className="font-semibold">Sarah Mitchell</p>
-                      <p className="text-xs text-muted-foreground">Mathematics · Physics</p>
+                      <p className="font-semibold">Combined Maths</p>
+                      <p className="text-xs text-muted-foreground">Example class · Individual or group</p>
                     </div>
                   </div>
                   <span className="inline-flex items-center gap-1 rounded-full bg-success/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-success">
@@ -97,7 +124,7 @@ const HeroSection = () => {
                     </p>
                   </div>
                   <p className="font-serif text-3xl italic">
-                    $40<span className="text-sm not-italic font-sans text-muted-foreground">/hr</span>
+                    Rs 2,500<span className="text-sm not-italic font-sans text-muted-foreground"> /class</span>
                   </p>
                 </div>
               </div>
@@ -106,7 +133,7 @@ const HeroSection = () => {
               <div className="relative z-10 -mt-7 ml-12 rounded-3xl border border-border/60 bg-muted/70 p-6 backdrop-blur-sm shadow-card">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-semibold">Grade 11 — Organic Chemistry</p>
+                    <p className="text-sm font-semibold">O/L Science: looking for a teacher</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">Student request · 2h ago</p>
                   </div>
                   <span className="rounded-full bg-secondary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-secondary">
@@ -118,7 +145,7 @@ const HeroSection = () => {
               {/* Floating booked chip */}
               <div className="animate-float absolute -bottom-9 right-2 z-30 rounded-2xl border border-border/70 bg-card px-5 py-3.5 shadow-card">
                 <p className="text-sm font-semibold">Class booked ✓</p>
-                <p className="text-[11px] text-muted-foreground">Payment held in escrow</p>
+                <p className="text-[11px] text-muted-foreground">Paid from your wallet</p>
               </div>
             </div>
           </div>

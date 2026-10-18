@@ -49,7 +49,7 @@ const MyPosts: React.FC = () => {
       <DashboardLayout>
         <main className="container mx-auto p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold">My Posts</h2>
+            <h2 className="type-title">My <span className="font-serif font-semibold">posts</span></h2>
             <Button onClick={() => openCreatePost()}>Create Post</Button>
           </div>
           <div className="space-y-4">
