@@ -2,14 +2,16 @@ import { Prisma, WithdrawalStatus } from "@prisma/client";
 import prisma from "./prisma";
 import { createNotification } from "./notifications";
 import { splitCommission, commissionPercent } from "./commission";
+import { DISPUTE_WINDOW_MS } from "./disputeReasons";
 
 /**
  * Escrow model
  * ------------
  * A student's payment lands in the teacher's wallet as *pending* money. It
- * clears into the *released* (withdrawable) balance once the class is over —
- * that is, once the booked time slot's end time has passed, or earlier if both
- * sides confirm the class is complete. Only released money can be withdrawn.
+ * clears into the *released* (withdrawable) balance DISPUTE_WINDOW_HOURS after
+ * the class ends, which gives the student time to report a problem (or earlier
+ * if both sides confirm the class is complete). A reported class stays on hold
+ * until an admin settles it. Only released money can be withdrawn.
  *
  * Students have a wallet too. Theirs holds spendable money rather than
  * earnings: refunds from cancelled classes land there, students can top it up
@@ -141,17 +143,22 @@ export async function releaseBookingEscrow(bookingId: string) {
   }
 }
 
+/** When a class's money clears to the teacher, given when it ends. */
+export const escrowReleasesAt = (endTime: Date) => new Date(endTime.getTime() + DISPUTE_WINDOW_MS);
+
 /**
- * Releases every booking of this teacher whose class has finished but whose
- * money is still on hold. Called whenever the wallet is read, which keeps
- * balances correct without a background job.
+ * Releases the held money of every completed class (for one teacher or
+ * student) whose report window has closed. A DISPUTED booking isn't
+ * COMPLETED, so it stays on hold until an admin settles it. Called whenever
+ * classes or wallets are read, which keeps balances right without a
+ * background job.
  */
-export async function releaseDueEscrow(userId: string) {
+export async function releaseClearedEscrow(who: { teacherId: string } | { studentId: string }) {
   const due = await prisma.booking.findMany({
     where: {
-      teacherId: userId,
-      status: FUNDED_BOOKING_STATUSES,
-      timeSlot: { endTime: { lte: new Date() } },
+      ...who,
+      status: "COMPLETED",
+      timeSlot: { endTime: { lte: new Date(Date.now() - DISPUTE_WINDOW_MS) } },
       walletTransactions: {
         some: { type: "DEPOSIT", status: "COMPLETED" },
         none: { type: "RELEASE" },
@@ -182,6 +189,7 @@ export async function getPendingHolds(userId: string) {
     select: {
       id: true,
       fee: true,
+      status: true,
       timeSlot: { select: { startTime: true, endTime: true } },
       student: { select: { firstName: true, lastName: true } },
       inquiry: { select: { post: { select: { title: true, subject: true } } } },
@@ -194,7 +202,9 @@ export async function getPendingHolds(userId: string) {
     amount: h.fee,
     // What the teacher will actually receive once the platform fee comes off.
     netAmount: splitCommission(h.fee).net,
-    releasesAt: h.timeSlot?.endTime ?? null,
+    // A reported class waits for an admin, so it has no release date.
+    underReview: h.status === "DISPUTED",
+    releasesAt: h.status === "DISPUTED" || !h.timeSlot ? null : escrowReleasesAt(h.timeSlot.endTime),
     startTime: h.timeSlot?.startTime ?? null,
     title: h.inquiry?.post?.title || h.inquiry?.post?.subject || "Class",
     studentName: `${h.student?.firstName ?? ""} ${h.student?.lastName ?? ""}`.trim(),
@@ -398,7 +408,7 @@ export async function rejectWithdrawal(withdrawalId: string, note: string) {
  * hold, withdrawal history, and whether payouts are set up.
  */
 export async function getWalletSnapshot(userId: string) {
-  await releaseDueEscrow(userId);
+  await releaseClearedEscrow({ teacherId: userId });
 
   const wallet = await getWalletForUser(userId);
 

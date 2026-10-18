@@ -218,3 +218,18 @@ export function buildOtpEmail(code: string, firstName?: string) {
     `,
   };
 }
+
+/** A short notice with one button, used for dispute updates. */
+export function buildNoticeEmail(opts: { subject: string; heading: string; body: string; link: string; cta: string }) {
+  return {
+    subject: opts.subject,
+    text: `${opts.body}\n\n${opts.cta}: ${opts.link}`,
+    html: `
+      <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; color: #1a1a24;">
+        <h1 style="font-size: 20px; margin: 0 0 16px;">${escapeHtml(opts.heading)}</h1>
+        <p style="color: #55555f; line-height: 1.6; margin: 0 0 24px; white-space: pre-line;">${escapeHtml(opts.body)}</p>
+        <a href="${escapeHtml(opts.link)}" style="display: inline-block; background: #6d3fd6; color: #fff; text-decoration: none; padding: 12px 20px; border-radius: 999px; font-weight: 600;">${escapeHtml(opts.cta)}</a>
+      </div>
+    `,
+  };
+}

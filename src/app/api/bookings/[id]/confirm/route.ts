@@ -25,6 +25,11 @@ export async function POST(
             return NextResponse.json({ error: "Booking not found" }, { status: 404 });
         }
 
+        // A reported class is settled by an admin, not by confirming it.
+        if (booking.status === "DISPUTED" || booking.status === "CANCELLED") {
+            return NextResponse.json({ error: "This class can't be confirmed" }, { status: 400 });
+        }
+
         const updateData: any = {};
         if (booking.studentId === userId) updateData.studentConfirmed = true;
         if (booking.teacherId === userId) updateData.teacherConfirmed = true;

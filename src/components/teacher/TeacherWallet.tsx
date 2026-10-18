@@ -16,6 +16,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatMoney } from "@/lib/currency";
+import { DISPUTE_WINDOW_HOURS } from "@/lib/disputeReasons";
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -60,6 +61,7 @@ interface Hold {
   amount: string | number;
   netAmount: string | number;
   releasesAt: string | null;
+  underReview?: boolean; // a student reported a problem; an admin decides
   startTime: string | null;
   title: string;
   studentName: string;
@@ -243,7 +245,7 @@ const TeacherWallet: React.FC<TeacherWalletProps> = ({ onOpenSettings }) => {
             Your <span className="font-serif text-gradient font-semibold">wallet</span>
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Class payments are held safely until the class is over, then become available to withdraw.
+            Class payments are held until {DISPUTE_WINDOW_HOURS} hours after each class, in case a student reports a problem, then become available to withdraw.
           </p>
         </div>
         <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={fetchWallet} disabled={loading}>
@@ -283,7 +285,7 @@ const TeacherWallet: React.FC<TeacherWalletProps> = ({ onOpenSettings }) => {
             {available <= 0 && !loading && (
               <p className="text-center text-xs text-background/50">
                 {Number(wallet?.pendingBalance ?? 0) > 0
-                  ? "Your earnings become available once each class is over."
+                  ? `Your earnings become available ${DISPUTE_WINDOW_HOURS} hours after each class.`
                   : "You have nothing to withdraw yet."}
               </p>
             )}
@@ -321,7 +323,7 @@ const TeacherWallet: React.FC<TeacherWalletProps> = ({ onOpenSettings }) => {
               <span className="ml-2 text-sm font-normal text-muted-foreground">({wallet?.holds.length})</span>
             </h3>
             <p className="text-xs text-muted-foreground">
-              Released when the class ends, less the {wallet?.commissionPercent ?? 0}% service fee
+              Released {DISPUTE_WINDOW_HOURS} hours after the class ends, less the {wallet?.commissionPercent ?? 0}% service fee
             </p>
           </div>
           <div className="divide-y divide-border/60">
@@ -334,6 +336,7 @@ const TeacherWallet: React.FC<TeacherWalletProps> = ({ onOpenSettings }) => {
                     <p className="truncate font-medium">{h.title}</p>
                     <p className="mt-0.5 truncate text-sm text-muted-foreground">
                       {h.studentName || "Student"}
+                      {h.underReview && <span className="font-medium text-warning"> · reported, under review</span>}
                       {releasesAt && (
                         <>
                           {" · "}

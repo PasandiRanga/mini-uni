@@ -130,6 +130,7 @@ model User {
   comments       Comment[]
   reviewsGiven    Review[] @relation("ReviewAuthor")
   reviewsReceived Review[] @relation("ReviewTeacher")
+  disputesOpened  Dispute[] @relation("DisputeReporter")
 
   @@index([email])
   @@index([role])
@@ -350,6 +351,7 @@ model Booking {
   timeSlot  TimeSlot  @relation(fields: [timeSlotId], references: [id], onDelete: Cascade)
   payment   Payment?
   review    Review?
+  dispute   Dispute?
   walletTransactions WalletTransaction[]
 
   @@index([studentId])
@@ -488,4 +490,28 @@ model Review {
 
   @@index([teacherId])
   @@map("reviews")
+}
+
+// A student's report that a class didn't go as booked (teacher didn't show,
+// ended early, …). While OPEN the booking is DISPUTED and the teacher's payout
+// stays on hold; an admin settles it by refunding the student or paying the
+// teacher.
+model Dispute {
+  id              String    @id @default(cuid())
+  bookingId       String    @unique
+  reportedById    String
+  reason          String    // NO_SHOW | ENDED_EARLY | QUALITY | TECHNICAL | OTHER
+  details         String    @db.Text
+  teacherResponse String?   @db.Text // the teacher's side, added while OPEN
+  status          String    @default("OPEN") // OPEN | REFUNDED | RELEASED
+  resolutionNote  String?   @db.Text // admin's note, shown to both sides
+  resolvedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  booking    Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  reportedBy User    @relation("DisputeReporter", fields: [reportedById], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@map("disputes")
 }

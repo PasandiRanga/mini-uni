@@ -36,7 +36,9 @@ import {
   ExternalLink,
   Ban,
   RotateCcw,
+  Flag,
 } from "lucide-react";
+import { DISPUTE_REASONS, DISPUTE_WINDOW_HOURS, type DisputeReason } from "@/lib/disputeReasons";
 
 /* -------------------------------------------------------------------------- */
 
@@ -59,6 +61,9 @@ const statusTone: Record<string, string> = {
   PROCESSING: "bg-blue-500/10 text-blue-600 border-blue-500/20",
   PAID: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
   CANCELLED: "bg-muted text-muted-foreground border-border",
+  OPEN: "bg-amber-500/10 text-amber-600 border-amber-500/20",
+  REFUNDED: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+  RELEASED: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
 };
 
 const StatusBadge = ({ status }: { status: string }) => (
@@ -86,13 +91,22 @@ const AdminDashboard = () => {
   const router = useRouter();
 
   // Waiting-item counts for the tab badges, kept fresh while the console is open.
-  const [counts, setCounts] = useState<{ teachers: number; withdrawals: number }>({ teachers: 0, withdrawals: 0 });
+  const [counts, setCounts] = useState<{ teachers: number; withdrawals: number; disputes: number }>({ teachers: 0, withdrawals: 0, disputes: 0 });
   const refreshCounts = useCallback(async () => {
     try {
-      const [t, w] = await Promise.all([fetch("/api/admin/teachers?status=PENDING"), fetch("/api/admin/withdrawals?status=PENDING")]);
+      const [t, w, d] = await Promise.all([
+        fetch("/api/admin/teachers?status=PENDING"),
+        fetch("/api/admin/withdrawals?status=PENDING"),
+        fetch("/api/admin/disputes?scope=open"),
+      ]);
       const tj = t.ok ? await t.json() : null;
       const wj = w.ok ? await w.json() : null;
-      setCounts((c) => ({ teachers: tj?.count ?? c.teachers, withdrawals: wj?.count ?? c.withdrawals }));
+      const dj = d.ok ? await d.json() : null;
+      setCounts((c) => ({
+        teachers: tj?.count ?? c.teachers,
+        withdrawals: wj?.count ?? c.withdrawals,
+        disputes: Array.isArray(dj) ? dj.length : c.disputes,
+      }));
     } catch {
       /* keep the last counts */
     }
@@ -149,12 +163,12 @@ const AdminDashboard = () => {
         <div className="mb-6">
           <h1 className="text-2xl font-semibold sm:text-3xl">Admin console</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Review teacher verifications and process withdrawal payouts.
+            Review teacher verifications, process withdrawal payouts and settle reported classes.
           </p>
         </div>
 
         <Tabs defaultValue="teachers" className="w-full">
-          <TabsList className="mb-6">
+          <TabsList className="mb-6 h-auto max-w-full flex-wrap justify-start">
             <TabsTrigger value="teachers" className="gap-2">
               <ShieldCheck className="h-4 w-4" /> Teacher verification
               <CountBadge n={counts.teachers} />
@@ -163,6 +177,10 @@ const AdminDashboard = () => {
               <Wallet className="h-4 w-4" /> Withdrawals
               <CountBadge n={counts.withdrawals} />
             </TabsTrigger>
+            <TabsTrigger value="disputes" className="gap-2">
+              <Flag className="h-4 w-4" /> Disputes
+              <CountBadge n={counts.disputes} />
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="teachers">
@@ -170,6 +188,9 @@ const AdminDashboard = () => {
           </TabsContent>
           <TabsContent value="withdrawals">
             <WithdrawalReview toast={toast} onChanged={refreshCounts} />
+          </TabsContent>
+          <TabsContent value="disputes">
+            <DisputeReview toast={toast} onChanged={refreshCounts} />
           </TabsContent>
         </Tabs>
       </main>
@@ -827,6 +848,191 @@ const WithdrawalReview = ({ toast, onChanged }: { toast: any; onChanged: () => v
               </div>
             );
           })}
+        </div>
+      )}
+    </div>
+  );
+};
+
+/* -------------------------------------------------------------------------- */
+
+const DisputeReview = ({ toast, onChanged }: { toast: any; onChanged: () => void }) => {
+  const [scope, setScope] = useState<"open" | "resolved">("open");
+  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  // The decision being confirmed, with the admin's note.
+  const [deciding, setDeciding] = useState<{ id: string; action: "refund" | "release" } | null>(null);
+  const [note, setNote] = useState("");
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setFailed(false);
+    try {
+      const res = await fetch(`/api/admin/disputes?scope=${scope}`);
+      if (!res.ok) throw new Error();
+      setItems(await res.json());
+    } catch {
+      setItems([]);
+      setFailed(true);
+    } finally {
+      setLoading(false);
+    }
+  }, [scope]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const decide = async () => {
+    if (!deciding) return;
+    setBusyId(deciding.id);
+    try {
+      const res = await fetch(`/api/admin/disputes/${deciding.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: deciding.action, note: note.trim() }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Action failed");
+      }
+      toast({
+        title: deciding.action === "refund" ? "Student refunded" : "Teacher paid",
+        description: "Both sides have been notified.",
+      });
+      setDeciding(null);
+      setNote("");
+      load();
+      onChanged();
+    } catch (e: any) {
+      toast({ title: "Error", description: e?.message || "Something went wrong", variant: "destructive" });
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const fmtWhen = (d: string) =>
+    new Date(d).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+
+  return (
+    <div>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-2">
+          {(["open", "resolved"] as const).map((s) => (
+            <button
+              key={s}
+              onClick={() => setScope(s)}
+              className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                scope === s ? "border-primary bg-primary/[0.08] text-primary" : "border-border/70 text-muted-foreground hover:bg-muted/60"
+              }`}
+            >
+              {s === "open" ? "Open" : "Resolved"}
+            </button>
+          ))}
+        </div>
+        <Button variant="ghost" size="sm" onClick={load} className="gap-2 text-muted-foreground">
+          <RefreshCw className="h-4 w-4" /> Refresh
+        </Button>
+      </div>
+
+      {loading ? (
+        <Loading />
+      ) : failed ? (
+        <LoadFailed onRetry={load} />
+      ) : items.length === 0 ? (
+        <Empty
+          icon={Flag}
+          title={scope === "open" ? "No open reports" : "No resolved reports yet"}
+          subtitle={scope === "open" ? `Students can report a class from when it starts until ${DISPUTE_WINDOW_HOURS} hours after it ends.` : undefined}
+        />
+      ) : (
+        <div className="grid gap-3">
+          {items.map((d) => (
+            <div key={d.id} className="rounded-2xl border border-border/70 bg-card/80 p-4 shadow-card">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-semibold">{DISPUTE_REASONS[d.reason as DisputeReason] ?? d.reason}</p>
+                    <StatusBadge status={d.status} />
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {d.title} · {fmtWhen(d.startTime)} · {d.classType === "GROUP" ? "Group" : "Individual"}
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">Reported {fmtWhen(d.createdAt)}</p>
+                </div>
+                <p className="text-lg font-semibold">{formatMoney(d.amount, d.currency)}</p>
+              </div>
+
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-xl border border-border/60 bg-muted/30 p-3 text-sm">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Student: {d.student.firstName} {d.student.lastName}
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{d.student.email}</p>
+                  <p className="mt-2 whitespace-pre-line">{d.details}</p>
+                </div>
+                <div className="rounded-xl border border-border/60 bg-muted/30 p-3 text-sm">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Teacher: {d.teacher.firstName} {d.teacher.lastName}
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{d.teacher.email}</p>
+                  <p className={`mt-2 whitespace-pre-line ${d.teacherResponse ? "" : "italic text-muted-foreground"}`}>
+                    {d.teacherResponse || "No response yet."}
+                  </p>
+                </div>
+              </div>
+
+              {d.resolutionNote && <p className="mt-2 text-sm text-muted-foreground">Note: {d.resolutionNote}</p>}
+              {d.resolvedAt && <p className="mt-1 text-xs text-muted-foreground">Decided {fmtWhen(d.resolvedAt)}</p>}
+
+              {d.status === "OPEN" && (
+                <div className="mt-4">
+                  {deciding?.id === d.id ? (
+                    <div className="space-y-2">
+                      <Textarea
+                        value={note}
+                        onChange={(e) => setNote(e.target.value)}
+                        rows={2}
+                        placeholder={
+                          deciding?.action === "refund"
+                            ? "Why the student is refunded (both sides see this)"
+                            : "Optional note for both sides"
+                        }
+                      />
+                      <div className="flex justify-end gap-2">
+                        <Button variant="ghost" size="sm" onClick={() => { setDeciding(null); setNote(""); }} disabled={busyId === d.id}>
+                          Cancel
+                        </Button>
+                        <Button
+                          variant={deciding?.action === "refund" ? "destructive" : "default"}
+                          size="sm"
+                          onClick={decide}
+                          disabled={busyId === d.id || (deciding?.action === "refund" && !note.trim())}
+                          className="gap-2"
+                        >
+                          {busyId === d.id && <Loader2 className="h-4 w-4 animate-spin" />}
+                          {deciding?.action === "refund"
+                            ? `Refund ${formatMoney(d.amount, d.currency)} to student`
+                            : "Pay the teacher"}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap justify-end gap-2">
+                      <Button variant="outline" size="sm" className="gap-2" onClick={() => setDeciding({ id: d.id, action: "release" })}>
+                        <CheckCircle2 className="h-4 w-4" /> Pay the teacher
+                      </Button>
+                      <Button variant="outline" size="sm" className="gap-2 text-destructive" onClick={() => setDeciding({ id: d.id, action: "refund" })}>
+                        <RotateCcw className="h-4 w-4" /> Refund the student
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
     </div>
