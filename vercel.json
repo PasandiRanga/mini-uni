@@ -5,5 +5,11 @@
     "installCommand": "npm install",
     "regions": [
         "sin1"
+    ],
+    "crons": [
+        {
+            "path": "/api/cron/class-expiry",
+            "schedule": "30 2 * * *"
+        }
     ]
 }

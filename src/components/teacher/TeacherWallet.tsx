@@ -241,7 +241,7 @@ const TeacherWallet: React.FC<TeacherWalletProps> = ({ onOpenSettings }) => {
     <div className="mx-auto w-full max-w-4xl space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-normal sm:text-3xl">
+          <h2 className="type-title">
             Your <span className="font-serif text-gradient font-semibold">wallet</span>
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -318,7 +318,7 @@ const TeacherWallet: React.FC<TeacherWalletProps> = ({ onOpenSettings }) => {
       {(wallet?.holds?.length ?? 0) > 0 && (
         <section className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
           <div className="flex items-center justify-between border-b border-border/60 px-6 py-5">
-            <h3 className="text-lg font-normal">
+            <h3 className="type-section">
               On <span className="font-serif font-semibold">hold</span>
               <span className="ml-2 text-sm font-normal text-muted-foreground">({wallet?.holds.length})</span>
             </h3>
@@ -365,7 +365,7 @@ const TeacherWallet: React.FC<TeacherWalletProps> = ({ onOpenSettings }) => {
       {(wallet?.withdrawals?.length ?? 0) > 0 && (
         <section className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
           <div className="border-b border-border/60 px-6 py-5">
-            <h3 className="text-lg font-normal">
+            <h3 className="type-section">
               Withdrawal <span className="font-serif font-semibold">requests</span>
             </h3>
           </div>
@@ -407,7 +407,7 @@ const TeacherWallet: React.FC<TeacherWalletProps> = ({ onOpenSettings }) => {
       {/* Activity */}
       <section className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-6 py-5">
-          <h3 className="text-lg font-normal">
+          <h3 className="type-section">
             Transaction <span className="font-serif font-semibold">history</span>
           </h3>
           <div className="flex flex-wrap gap-1.5">

@@ -734,7 +734,7 @@ export async function refundBookingToStudent(bookingId: string, reason?: string)
 export async function getStudentWalletSnapshot(userId: string) {
   const wallet = await getWalletForUser(userId);
 
-  const [transactions, unpaid] = await Promise.all([
+  const [transactions, unpaid, held] = await Promise.all([
     prisma.walletTransaction.findMany({
       where: { walletId: wallet.id },
       orderBy: { createdAt: "desc" },
@@ -761,10 +761,39 @@ export async function getStudentWalletSnapshot(userId: string) {
       },
       orderBy: { createdAt: "desc" },
     }),
+    // Paid for but not settled yet: the class hasn't happened, or it's under review.
+    // This money comes back if the class is cancelled or a report is upheld.
+    prisma.booking.findMany({
+      where: {
+        studentId: userId,
+        status: { in: ["PAYMENT_COMPLETED", "CONFIRMED", "IN_PROGRESS", "DISPUTED"] },
+        payment: { status: "COMPLETED" },
+      },
+      select: {
+        id: true,
+        status: true,
+        payment: { select: { amount: true } },
+        timeSlot: { select: { startTime: true } },
+        teacher: { select: { firstName: true, lastName: true } },
+        inquiry: { select: { post: { select: { title: true, subject: true } } } },
+      },
+      orderBy: { timeSlot: { startTime: "asc" } },
+    }),
   ]);
+
+  const heldAmount = held.reduce((sum, b) => sum.plus(b.payment?.amount ?? 0), new Prisma.Decimal(0));
 
   return {
     ...wallet,
+    heldAmount,
+    heldBookings: held.map((b) => ({
+      bookingId: b.id,
+      amount: b.payment?.amount ?? 0,
+      startTime: b.timeSlot?.startTime ?? null,
+      underReview: b.status === "DISPUTED",
+      title: b.inquiry?.post?.title || b.inquiry?.post?.subject || "Class",
+      teacherName: `${b.teacher?.firstName ?? ""} ${b.teacher?.lastName ?? ""}`.trim(),
+    })),
     transactions: transactions.map((t) => ({
       id: t.id,
       type: t.type,

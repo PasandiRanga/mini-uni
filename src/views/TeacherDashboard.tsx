@@ -219,7 +219,7 @@ const TeacherDashboard = () => {
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div className="animate-fade-up">
               <p className="mb-1 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">{todayLabel()}</p>
-              <h1 className="text-3xl sm:text-4xl font-normal leading-tight">
+              <h1 className="type-page-title">
                 {greeting()},{" "}
                 <span className="font-serif italic text-gradient font-semibold">{user?.firstName || "Teacher"}.</span>
               </h1>
@@ -442,7 +442,7 @@ const TeacherDashboard = () => {
                       <ArrowUpRight className="h-3.5 w-3.5" />
                     </span>
                   </div>
-                  <p className="mt-auto truncate font-serif text-2xl leading-none tabular-nums sm:text-[1.75rem] xl:text-3xl" title={String(stat.value)}>{stat.value}</p>
+                  <p className={`mt-auto truncate font-serif leading-none tabular-nums ${String(stat.value).length > 7 ? "text-xl sm:text-2xl xl:text-[1.75rem]" : "text-2xl sm:text-[1.75rem] xl:text-3xl"}`} title={String(stat.value)}>{stat.value}</p>
                   <p className={`mt-2 min-h-[2rem] text-xs uppercase leading-tight tracking-[0.14em] ${featured ? "text-primary-foreground/70" : "text-muted-foreground"}`}>{stat.label}</p>
                 </div>
               );
@@ -466,7 +466,7 @@ const TeacherDashboard = () => {
             {show("inquiries") && (
             <section className="flex flex-col overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
               <div className="flex items-center justify-between border-b border-border/60 px-6 py-5">
-                <h2 className="text-lg font-normal">
+                <h2 className="type-section">
                   <span className="font-serif italic font-semibold">Inquiries</span>
                 </h2>
                 {unreadCount > 0 && (
@@ -496,7 +496,7 @@ const TeacherDashboard = () => {
             {/* Mini calendar — click a date to open the full schedule */}
             {show("calendar") && (
             <section className="rounded-3xl border border-border/70 bg-card p-6 shadow-soft">
-              <h3 className="mb-4 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">This month</h3>
+              <h3 className="type-eyebrow mb-4">This month</h3>
               <MiniCalendar
                 events={bookings.map((b) => ({ start: b.timeSlot?.startTime })) as any}
                 onSelectDate={() => setActiveTab('schedule')}

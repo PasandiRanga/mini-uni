@@ -32,7 +32,7 @@ const SignUp = () => {
             </div>
             <span className="text-xl font-bold">MiniUni</span>
           </Link>
-          <h1 className="text-3xl font-bold mb-2">Get Started</h1>
+          <h1 className="type-page-title mb-2">Get <span className="font-serif font-semibold">started</span></h1>
           <p className="text-muted-foreground">Choose your role to continue</p>
         </div>
 

@@ -11,6 +11,7 @@ import ProfileLoadError from "@/components/teacher/ProfileLoadError";
 import IdentityVerificationForm from "@/components/teacher/IdentityVerificationForm";
 import AcademicBackgroundForm from "@/components/teacher/AcademicBackgroundForm";
 import { CurrencySettings } from "@/components/settings/CurrencySettings";
+import { ChangePasswordForm } from "@/components/settings/ChangePasswordForm";
 import { Loader2, Check, UserCog, Lock, Bell, Landmark, Coins, ShieldCheck, GraduationCap } from "lucide-react";
 
 const Section = ({
@@ -39,55 +40,8 @@ const Section = ({
 );
 
 const GroupHeading = ({ children }: { children: React.ReactNode }) => (
-  <h3 className="px-1 pb-1 pt-2 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{children}</h3>
+  <h3 className="type-eyebrow px-1 pb-1 pt-2">{children}</h3>
 );
-
-const ChangePasswordForm = () => {
-  const { toast } = useToast();
-  const [currentPassword, setCurrent] = useState("");
-  const [newPassword, setNew] = useState("");
-  const [saving, setSaving] = useState(false);
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    try {
-      const res = await fetch("/api/auth/change-password", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ currentPassword, newPassword }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed");
-      toast({ title: "Password updated" });
-      setCurrent("");
-      setNew("");
-    } catch (err: unknown) {
-      toast({ title: "Couldn't update", description: err instanceof Error ? err.message : "Try again", variant: "destructive" });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <form onSubmit={submit} className="grid gap-5 sm:grid-cols-2">
-      <div className="space-y-1.5">
-        <Label htmlFor="currentPassword">Current password</Label>
-        <Input id="currentPassword" type="password" value={currentPassword} onChange={(e) => setCurrent(e.target.value)} required />
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="newPassword">New password</Label>
-        <Input id="newPassword" type="password" value={newPassword} onChange={(e) => setNew(e.target.value)} required minLength={8} />
-      </div>
-      <div className="sm:col-span-2">
-        <Button type="submit" disabled={saving} className="gap-2">
-          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
-          Update password
-        </Button>
-      </div>
-    </form>
-  );
-};
 
 const NotificationPrefs = () => {
   const { toast } = useToast();
@@ -232,7 +186,7 @@ const TeacherSettings = () => {
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       <div>
-        <h2 className="text-2xl font-normal sm:text-3xl">
+        <h2 className="type-title">
           <span className="font-serif text-gradient font-semibold">Settings</span>
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">

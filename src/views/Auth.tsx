@@ -106,7 +106,7 @@ const Auth = () => {
 
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">
+            <h1 className="type-page-title mb-2">
               {mode === "login" ? "Welcome back" : "Create your account"}
             </h1>
             <p className="text-muted-foreground">
@@ -220,7 +220,7 @@ const Auth = () => {
       {/* Right Panel - Visual */}
       <div className="hidden lg:flex flex-1 gradient-hero items-center justify-center p-12">
         <div className="max-w-lg text-primary-foreground text-center">
-          <h2 className="text-3xl font-bold mb-4">
+          <h2 className="type-page-title mb-4">
             {role === "teacher"
               ? "Share your knowledge with the world"
               : "Find your perfect teacher today"}

@@ -11,6 +11,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import Footer from "@/components/layout/Footer";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { RatingBadge } from "@/components/reviews/StarRating";
+import { SuggestInput } from "@/components/ui/suggest-input";
+import { LEVEL_GROUPS, splitGrade } from "@/lib/classLevels";
 import { Search, DollarSign, Filter, LayoutGrid, LayoutList, MessageCircle, Heart, Share2 } from "lucide-react";
 
 type Teacher = {
@@ -21,9 +23,15 @@ type Teacher = {
   rating?: number;
   reviewCount?: number;
   startingPrice?: number;
+  currency?: string;
+  levels?: string[];
+  openClasses?: number;
   verified?: boolean;
   bio?: string;
 };
+
+/** Lower-cased search text without a trailing "s", so "maths" matches "Mathematics". */
+const searchTerm = (s: string) => s.trim().toLowerCase().replace(/s$/, "");
 
 const FindTeacher: React.FC = () => {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
@@ -66,16 +74,18 @@ const FindTeacher: React.FC = () => {
         else if (json && Array.isArray((json as any).items)) rawList = (json as any).items;
         else if (json && typeof json === 'object') rawList = [json];
 
-        // Normalize to our Teacher shape, extracting verificationStatus / hourlyRate from teacherProfile when present
+        // Subjects, levels and price come from the teacher's open classes (see /api/teachers).
         const list: Teacher[] = rawList.map((r: any) => ({
           id: r.id,
           firstName: r.firstName || r.user?.firstName || '',
           lastName: r.lastName || r.user?.lastName || '',
-          subjects: r.teacherProfile?.subjects || r.subjects || [],
-
+          subjects: r.subjects || r.teacherProfile?.subjects || [],
+          levels: r.levels || [],
+          openClasses: r.openClasses ?? 0,
+          currency: r.currency || undefined,
           rating: r.rating ?? undefined,
           reviewCount: r.reviewCount ?? 0,
-          startingPrice: r.teacherProfile?.hourlyRate || r.startingPrice || undefined,
+          startingPrice: r.startingPrice ?? undefined,
           verified: (r.verified === true) || (r.teacherProfile && r.teacherProfile.verificationStatus === 'APPROVED') || false,
           bio: r.teacherProfile?.bio || r.bio || undefined,
         }));
@@ -93,25 +103,26 @@ const FindTeacher: React.FC = () => {
   const filtered = useMemo(() => {
     return teachers.filter((t) => {
       if (query) {
-        const q = query.toLowerCase();
         const hay = `${t.firstName} ${t.lastName} ${(t.subjects || []).join(' ')} `.toLowerCase();
-        if (!hay.includes(q)) return false;
+        if (!hay.includes(searchTerm(query))) return false;
       }
-      if (subject && !(t.subjects || []).includes(subject)) return false;
+      // Free-text subject: "maths" finds "Combined Mathematics".
+      if (subject && !(t.subjects || []).some((s) => s.toLowerCase().includes(searchTerm(subject)))) return false;
+      if (grade && !(t.levels || []).some((l) => l.toLowerCase() === splitGrade(grade).level.toLowerCase())) return false;
 
       if (minPrice != null && (t.startingPrice == null || t.startingPrice < minPrice)) return false;
       if (maxPrice != null && (t.startingPrice == null || t.startingPrice > maxPrice)) return false;
       if (minRating != null && (t.rating == null || t.rating < minRating)) return false;
       return true;
     });
-  }, [teachers, query, subject, minPrice, maxPrice, minRating]);
+  }, [teachers, query, subject, grade, minPrice, maxPrice, minRating]);
 
   return (
     <div className="min-h-screen bg-background">
       <DashboardLayout>
         <main className="container mx-auto px-4 py-8">
           <div className="max-w-4xl mx-auto text-center mb-6">
-            <h1 className="text-3xl font-bold">Find Teachers</h1>
+            <h1 className="type-page-title">Find <span className="font-serif italic text-gradient font-semibold">teachers</span></h1>
             <p className="text-muted-foreground">Browse verified teachers, compare prices and book classes.</p>
           </div>
 
@@ -152,7 +163,13 @@ const FindTeacher: React.FC = () => {
                   </div>
                   <div>
                     <label className="text-sm font-medium">Grade / Level</label>
-                    <Input placeholder="e.g. Grade 10, Undergraduate" value={grade ?? ''} onChange={(e) => setGrade(e.target.value || null)} />
+                    <SuggestInput
+                      value={grade || ''}
+                      onChange={(v) => setGrade(v || null)}
+                      groups={LEVEL_GROUPS}
+                      placeholder="Any level"
+                      searchPlaceholder="Search levels…"
+                    />
                   </div>
                   <div />
                 </div>
@@ -205,7 +222,7 @@ const FindTeacher: React.FC = () => {
                           </div>
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
-                          {t.startingPrice != null && <span className="text-sm font-bold text-primary">{formatMoneyCompact(t.startingPrice)}</span>}
+                          {t.startingPrice != null && <span className="text-sm font-bold text-primary">{formatMoneyCompact(t.startingPrice, t.currency)}</span>}
                           <Button
                             variant={isExpanded ? "secondary" : "ghost"}
                             size="sm"
@@ -232,7 +249,7 @@ const FindTeacher: React.FC = () => {
                                 </div>
                               </div>
                               <div className="text-right">
-                                <div className="text-xl font-bold text-primary">{formatMoneyCompact(t.startingPrice)}<span className="text-xs text-muted-foreground font-normal">/hr</span></div>
+                                <div className="text-xl font-bold text-primary">{formatMoneyCompact(t.startingPrice, t.currency)}<span className="text-xs text-muted-foreground font-normal">/class</span></div>
                                 <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Online Classes</div>
                               </div>
                             </div>
@@ -260,6 +277,10 @@ const FindTeacher: React.FC = () => {
                         <div className="flex flex-wrap gap-1 mt-1">
                           {(t.subjects || []).slice(0, 3).map(s => <span key={s} className="text-xs text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full">{s}</span>)}
                         </div>
+                        <p className="mt-1.5 text-xs text-muted-foreground">
+                          {t.openClasses ? `${t.openClasses} class${t.openClasses === 1 ? '' : 'es'} open` : 'No classes open right now'}
+                          {(t.levels?.length ?? 0) > 0 && ` · ${t.levels!.join(', ')}`}
+                        </p>
                       </div>
                     </div>
 
@@ -270,8 +291,8 @@ const FindTeacher: React.FC = () => {
                           <div className="text-[10px] text-muted-foreground uppercase font-medium">Rating</div>
                         </div>
                         <div className="text-center">
-                          <div className="font-bold text-foreground">{t.startingPrice != null ? formatMoneyCompact(t.startingPrice) : '—'}</div>
-                          <div className="text-[10px] text-muted-foreground uppercase font-medium">Starting</div>
+                          <div className="font-bold text-foreground">{t.startingPrice != null ? formatMoneyCompact(t.startingPrice, t.currency) : '—'}</div>
+                          <div className="text-[10px] text-muted-foreground uppercase font-medium">From / class</div>
                         </div>
                       </div>
 

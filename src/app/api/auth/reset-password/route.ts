@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import bcrypt from "bcrypt";
 import prisma from "@/lib/prisma";
+import { forgetPasswordChange } from "@/lib/auth";
 import { sendEmail, buildPasswordChangedEmail } from "@/lib/email";
 import { MIN_PASSWORD_LENGTH, resetTokenMatches } from "@/lib/passwordReset";
 
@@ -41,8 +42,15 @@ export async function POST(request: Request) {
     // the person controls the inbox, so the email counts as verified too.
     await prisma.user.update({
       where: { id: user.id },
-      data: { password: await bcrypt.hash(password, 10), emailOtp: null, emailOtpExpiry: null, emailVerified: true },
+      data: {
+        password: await bcrypt.hash(password, 10),
+        passwordChangedAt: new Date(), // signs out every device (see lib/auth)
+        emailOtp: null,
+        emailOtpExpiry: null,
+        emailVerified: true,
+      },
     });
+    forgetPasswordChange(user.id);
 
     sendEmail({ to: user.email, ...buildPasswordChangedEmail(user.firstName) }).catch((e) =>
       console.error("Failed to send password-changed email:", e)

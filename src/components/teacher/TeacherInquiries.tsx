@@ -97,7 +97,7 @@ const TeacherInquiries = () => {
     <section className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
       <div className="flex items-center justify-between border-b border-border/60 px-6 py-5">
         <div>
-          <h2 className="text-lg font-normal">
+          <h2 className="type-section">
             Your <span className="font-serif font-semibold">inquiries</span>
           </h2>
           <p className="mt-0.5 text-sm text-muted-foreground">

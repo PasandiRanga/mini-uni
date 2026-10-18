@@ -248,7 +248,7 @@ const PostDetail = ({ postId, initialPost, onNavigate }: PostDetailProps) => {
           </div>
 
           <div className="space-y-3">
-            <h1 className="text-2xl font-semibold leading-tight sm:text-3xl">{post.title}</h1>
+            <h1 className="type-title">{post.title}</h1>
             <div className="flex flex-wrap gap-2">
               {post.subject && <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">{post.subject}</span>}
               {post.grade && <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium">{post.grade}</span>}

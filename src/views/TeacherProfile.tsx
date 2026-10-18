@@ -128,7 +128,7 @@ const TeacherProfile: React.FC<TeacherProfileProps> = ({ id: propId }) => {
     <div className="min-h-screen bg-background">
       <Navbar />
       <main className="container mx-auto px-4 py-16 text-center">
-        <h1 className="text-2xl font-semibold">Teacher not found</h1>
+        <h1 className="type-title">Teacher not found</h1>
         <p className="mt-2 text-muted-foreground">This teacher isn&apos;t available right now.</p>
         <Button className="mt-6" variant="hero" onClick={() => router.push('/teachers')}>Browse teachers</Button>
       </main>
@@ -159,7 +159,7 @@ const TeacherProfile: React.FC<TeacherProfileProps> = ({ id: propId }) => {
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="text-2xl font-semibold">{fullName}</h1>
+                  <h1 className="type-title">{fullName}</h1>
                   {teacher.verified && (
                     <Badge variant="secondary" className="gap-1"><BadgeCheck className="h-3.5 w-3.5" /> Verified</Badge>
                   )}
@@ -202,7 +202,7 @@ const TeacherProfile: React.FC<TeacherProfileProps> = ({ id: propId }) => {
           {/* Background */}
           {(teacher.background?.length ?? 0) > 0 && (
             <section className="rounded-3xl border border-border/70 bg-card p-6 shadow-card">
-              <h2 className="text-lg font-semibold">Background</h2>
+              <h2 className="type-section font-medium">Background</h2>
               <ul className="mt-3 space-y-2">
                 {teacher.background!.map((line) => (
                   <li key={line} className="flex items-start gap-2 text-sm text-muted-foreground">
@@ -215,7 +215,7 @@ const TeacherProfile: React.FC<TeacherProfileProps> = ({ id: propId }) => {
 
           {/* Classes */}
           <section id="classes" className="scroll-mt-24 rounded-3xl border border-border/70 bg-card p-6 shadow-card">
-            <h2 className="text-lg font-semibold">Classes <span className="font-normal text-muted-foreground">({openClasses.length})</span></h2>
+            <h2 className="type-section font-medium">Classes <span className="font-normal text-muted-foreground">({openClasses.length})</span></h2>
             <div className="mt-4 space-y-3">
               {openClasses.map((p) => {
                 const duration = slotDurationLabel(p.timeSlots);
@@ -254,7 +254,7 @@ const TeacherProfile: React.FC<TeacherProfileProps> = ({ id: propId }) => {
 
           {/* Reviews */}
           <section className="rounded-3xl border border-border/70 bg-card p-6 shadow-card">
-            <h2 className="text-lg font-semibold">Reviews <span className="font-normal text-muted-foreground">({teacher.reviewCount ?? reviews.length})</span></h2>
+            <h2 className="type-section font-medium">Reviews <span className="font-normal text-muted-foreground">({teacher.reviewCount ?? reviews.length})</span></h2>
             <div className="mt-4 space-y-3">
               {reviews.map((r) => (
                 <div key={r.id} className="rounded-2xl bg-muted/60 p-4">

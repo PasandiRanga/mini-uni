@@ -161,7 +161,7 @@ const AdminDashboard = () => {
 
       <main className="mx-auto max-w-6xl px-5 py-8 sm:px-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-semibold sm:text-3xl">Admin console</h1>
+          <h1 className="type-title">Admin <span className="font-serif font-semibold">console</span></h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Review teacher verifications, process withdrawal payouts and settle reported classes.
           </p>

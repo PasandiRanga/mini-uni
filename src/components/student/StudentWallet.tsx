@@ -27,6 +27,7 @@ import {
   RefreshCw,
   RotateCcw,
   ShieldCheck,
+  Clock,
   Wallet as WalletIcon,
 } from "lucide-react";
 
@@ -58,6 +59,9 @@ interface WalletData {
   minTopUp: number;
   transactions: Transaction[];
   unpaidBookings: UnpaidBooking[];
+  /** Paid for classes that haven't happened yet (or are under review). */
+  heldAmount?: string | number;
+  heldBookings?: { bookingId: string; amount: string | number; startTime: string | null; underReview: boolean; title: string; teacherName: string }[];
 }
 
 const TX_LABELS: Record<TxType, string> = {
@@ -282,7 +286,7 @@ const StudentWallet: React.FC = () => {
     <div className="mx-auto w-full max-w-4xl space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-normal sm:text-3xl">
+          <h2 className="type-title">
             Your <span className="font-serif text-gradient font-semibold">wallet</span>
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -309,7 +313,11 @@ const StudentWallet: React.FC = () => {
           <div className="flex-1">
             <p className="mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-background/50">Available to spend</p>
             <p className="mb-7 font-serif text-4xl italic sm:text-5xl">{formatMoney(wallet?.releasedBalance, currency)}</p>
-            <div className="grid grid-cols-2 gap-6 sm:max-w-sm sm:gap-10">
+            <div className="grid grid-cols-2 gap-6 sm:max-w-lg sm:grid-cols-3 sm:gap-10">
+              <div>
+                <p className="font-serif text-2xl italic sm:text-3xl">{formatMoney(wallet?.heldAmount ?? 0, currency)}</p>
+                <p className="mt-1 text-xs uppercase tracking-[0.14em] text-background/60">On hold for classes</p>
+              </div>
               <div>
                 <p className="font-serif text-2xl italic sm:text-3xl">{formatMoney(wallet?.totalSpent, currency)}</p>
                 <p className="mt-1 text-xs uppercase tracking-[0.14em] text-background/60">Spent from wallet</p>
@@ -342,11 +350,43 @@ const StudentWallet: React.FC = () => {
         </div>
       </div>
 
+      {/* Paid, not yet settled: what "On hold" is made of */}
+      {(wallet?.heldBookings?.length ?? 0) > 0 && (
+        <section className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
+          <div className="border-b border-border/60 px-6 py-5">
+            <h3 className="type-section">
+              On <span className="font-serif font-semibold">hold</span>
+              <span className="ml-2 text-sm font-normal text-muted-foreground">({wallet?.heldBookings?.length})</span>
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Paid for classes that haven&apos;t happened yet. It comes back to your wallet if a class is cancelled or a report you make is upheld.
+            </p>
+          </div>
+          <div className="divide-y divide-border/60">
+            {wallet?.heldBookings?.map((h) => (
+              <div key={h.bookingId} className="flex items-center justify-between gap-4 px-6 py-4">
+                <div className="min-w-0">
+                  <p className="truncate font-medium">{h.title}</p>
+                  <p className="mt-0.5 truncate text-sm text-muted-foreground">
+                    {h.teacherName || "Teacher"}
+                    {h.startTime && ` · ${new Date(h.startTime).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}`}
+                    {h.underReview && <span className="font-medium text-warning"> · under review</span>}
+                  </p>
+                </div>
+                <p className="flex shrink-0 items-center gap-1 font-semibold">
+                  <Clock className="h-3.5 w-3.5 text-muted-foreground" /> {formatMoney(h.amount, currency)}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Classes waiting to be paid for */}
       {(wallet?.unpaidBookings?.length ?? 0) > 0 && (
         <section className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
           <div className="flex items-center justify-between border-b border-border/60 px-6 py-5">
-            <h3 className="text-lg font-normal">
+            <h3 className="type-section">
               Awaiting <span className="font-serif font-semibold">payment</span>
               <span className="ml-2 text-sm font-normal text-muted-foreground">({wallet?.unpaidBookings.length})</span>
             </h3>
@@ -411,7 +451,7 @@ const StudentWallet: React.FC = () => {
       {/* Activity */}
       <section className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-6 py-5">
-          <h3 className="text-lg font-normal">
+          <h3 className="type-section">
             Transaction <span className="font-serif font-semibold">history</span>
           </h3>
           <div className="flex flex-wrap gap-1.5">

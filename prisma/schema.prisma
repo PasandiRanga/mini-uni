@@ -110,6 +110,7 @@ model User {
   emailVerified Boolean   @default(false)
   emailOtp        String?   // bcrypt hash of the current verification code
   emailOtpExpiry  DateTime? // when the current code expires
+  passwordChangedAt DateTime? // sessions issued before this are signed out
   notifyEmail   Boolean   @default(true) // notification preference: email
   notifyInApp   Boolean   @default(true) // notification preference: in-app
   currency      String    @default("LKR") // account display + transaction currency (LKR | USD)

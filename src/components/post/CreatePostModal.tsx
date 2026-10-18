@@ -187,7 +187,12 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, e
   // Prefill the form when editing an existing post; start blank when creating.
   useEffect(() => {
     if (!open) return;
-    if (!editId) { resetForm(); return; }
+    if (!editId) {
+      resetForm();
+      // "Run again": a new post copied from an old one, keeping its length but not its (past) times.
+      if (initialPost) { fillFromPost(initialPost); setSlots([]); }
+      return;
+    }
     // Prefill instantly from the post the caller already has (no blank flash).
     if (initialPost) { fillFromPost(initialPost); return; }
     // Fallback: fetch by id (e.g. when opened from a deep link without the object).
