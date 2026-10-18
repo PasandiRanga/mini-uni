@@ -12,7 +12,7 @@ export async function GET(
 
     try {
         const { teacherId } = params;
-        // Finished classes become COMPLETED (and pay out) before they're listed.
+        // Finished classes become COMPLETED (and pay out once the report window closes) before they're listed.
         await settleFinishedBookings({ teacherId });
 
         const bookings = await prisma.booking.findMany({
@@ -21,6 +21,7 @@ export async function GET(
                 student: { select: { id: true, firstName: true, lastName: true } },
                 timeSlot: { select: { startTime: true, endTime: true } },
                 inquiry: { include: { post: { select: { title: true, subject: true } } } },
+                dispute: { select: { reason: true, details: true, status: true, teacherResponse: true, resolutionNote: true, createdAt: true } },
             },
             orderBy: { createdAt: "desc" },
             take: 50,

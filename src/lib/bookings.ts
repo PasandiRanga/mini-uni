@@ -1,5 +1,5 @@
 import prisma from "./prisma";
-import { refundBookingToStudent, releaseBookingEscrow } from "./wallet";
+import { refundBookingToStudent, releaseClearedEscrow } from "./wallet";
 import { releaseSeat } from "./seats";
 import { createNotification } from "./notifications";
 
@@ -47,8 +47,9 @@ export async function cancelBooking(bookingId: string, reason?: string) {
 
 /**
  * Closes out classes whose time has passed, for one teacher or student:
- * a paid class that has ended becomes COMPLETED and the teacher's earnings
- * are released; a booking still unpaid when its class started is cancelled.
+ * a paid class that has ended becomes COMPLETED, its earnings are released
+ * once the report window has closed (see releaseClearedEscrow), and a booking
+ * still unpaid when its class started is cancelled.
  *
  * Runs whenever classes or wallets are loaded, so statuses and balances are
  * right without a background job. Safe to run repeatedly or concurrently:
@@ -63,7 +64,6 @@ export async function settleFinishedBookings(who: { teacherId: string } | { stud
   });
   for (const b of finished) {
     try {
-      await releaseBookingEscrow(b.id); // no-op if already released or never paid via the wallet
       const { count } = await prisma.booking.updateMany({
         where: { id: b.id, status: { in: [...PAID_BOOKING_STATUSES] } },
         data: { status: "COMPLETED", completedAt: now },
@@ -81,6 +81,12 @@ export async function settleFinishedBookings(who: { teacherId: string } | { stud
     } catch (err) {
       console.error(`Couldn't complete booking ${b.id}:`, err);
     }
+  }
+
+  try {
+    await releaseClearedEscrow(who);
+  } catch (err) {
+    console.error("Couldn't release cleared escrow:", err);
   }
 
   // Never paid and the class has started: nothing to refund, nothing to teach.

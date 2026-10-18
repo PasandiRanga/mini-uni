@@ -11,7 +11,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Calendar, Clock, Video, User, CheckCircle, XCircle, ChevronRight, RefreshCw, Loader2, Star } from 'lucide-react';
+import { Calendar, Clock, Video, User, CheckCircle, XCircle, ChevronRight, RefreshCw, Loader2, Star, Flag, MessageSquareReply } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { formatMoney } from '@/lib/currency';
@@ -19,6 +19,7 @@ import { format } from 'date-fns';
 import { slotDurationLabel } from '@/components/post/postCardBits';
 import { Stars } from '@/components/reviews/StarRating';
 import RateClassDialog, { type Review } from '@/components/reviews/RateClassDialog';
+import { DisputeResponseDialog, DisputeSummary, ReportProblemDialog, type BookingDispute } from '@/components/disputes/DisputeDialogs';
 
 interface Booking {
   id: string;
@@ -30,6 +31,8 @@ interface Booking {
   googleMeetLink?: string | null;
   fee?: number;
   review?: Review | null; // students only: their rating of a completed class
+  dispute?: BookingDispute | null;
+  canReport?: boolean; // students only: the class can still be reported
 }
 
 type ViewId = 'upcoming' | 'completed' | 'cancelled';
@@ -53,7 +56,7 @@ const VIEWS: {
   {
     id: 'completed',
     label: 'Completed',
-    statuses: ['COMPLETED'],
+    statuses: ['COMPLETED', 'DISPUTED'],
     emptyIcon: CheckCircle,
     emptyText: 'No completed classes yet. Finished classes appear here.',
   },
@@ -88,7 +91,7 @@ const statusLabel = (b: Booking) => {
       IN_PROGRESS: 'In progress',
       COMPLETED: 'Completed',
       CANCELLED: 'Cancelled',
-      DISPUTED: 'Disputed',
+      DISPUTED: 'Under review',
     } as Record<string, string>
   )[status] || status;
 };
@@ -103,6 +106,8 @@ const MyClasses: React.FC<MyClassesProps> = ({ preview = false, onViewAll }) => 
   const [toCancel, setToCancel] = useState<Booking | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [toRate, setToRate] = useState<Booking | null>(null);
+  const [toReport, setToReport] = useState<Booking | null>(null);
+  const [toAnswer, setToAnswer] = useState<Booking | null>(null);
   const { toast } = useToast();
   const isStudent = user?.role === 'STUDENT';
 
@@ -189,6 +194,7 @@ const MyClasses: React.FC<MyClassesProps> = ({ preview = false, onViewAll }) => 
       case 'CANCELLED': return 'bg-destructive/10 text-destructive';
       case 'IN_PROGRESS': return 'bg-accent/10 text-accent';
       case 'CONFIRMED': return 'bg-primary/10 text-primary';
+      case 'DISPUTED': return 'bg-warning/10 text-warning';
       default: return 'bg-muted text-muted-foreground';
     }
   };
@@ -205,6 +211,8 @@ const MyClasses: React.FC<MyClassesProps> = ({ preview = false, onViewAll }) => 
     const initials = (otherName || 'U').split(' ').map((n) => n.charAt(0)).slice(0, 2).join('');
     const isFuture = start ? start > new Date() : false;
     const canRate = isStudent && !preview && (b.status || '').toUpperCase() === 'COMPLETED';
+    const canReport = isStudent && !preview && b.canReport;
+    const canAnswer = !isStudent && !preview && b.dispute?.status === 'OPEN';
 
     return (
       <div key={b.id} className="rounded-2xl border border-border/70 bg-background/40 p-4 transition-colors hover:bg-muted/40">
@@ -256,8 +264,19 @@ const MyClasses: React.FC<MyClassesProps> = ({ preview = false, onViewAll }) => 
                 <Star className="h-3.5 w-3.5" /> Rate
               </Button>
             ))}
+            {canReport && (
+              <Button size="sm" variant="ghost" className="h-8 text-muted-foreground" onClick={() => setToReport(b)}>
+                <Flag className="h-3.5 w-3.5" /> Report a problem
+              </Button>
+            )}
+            {canAnswer && (
+              <Button size="sm" variant="outline" className="h-8" onClick={() => setToAnswer(b)}>
+                <MessageSquareReply className="h-3.5 w-3.5" /> {b.dispute?.teacherResponse ? 'Edit your side' : 'Add your side'}
+              </Button>
+            )}
           </div>
         </div>
+        {b.dispute && !preview && <DisputeSummary dispute={b.dispute} viewer={isStudent ? 'student' : 'teacher'} />}
       </div>
     );
   };
@@ -333,6 +352,22 @@ const MyClasses: React.FC<MyClassesProps> = ({ preview = false, onViewAll }) => 
         existing={toRate?.review}
         onOpenChange={(o) => { if (!o) setToRate(null); }}
         onSaved={(id, review) => setBookings((prev) => prev.map((x) => (x.id === id ? { ...x, review } : x)))}
+      />
+
+      <ReportProblemDialog
+        bookingId={toReport?.id ?? null}
+        classTitle={toReport?.inquiry?.post?.title || toReport?.inquiry?.post?.subject || 'Class'}
+        onOpenChange={(o) => { if (!o) setToReport(null); }}
+        onReported={() => fetchBookings()}
+      />
+
+      <DisputeResponseDialog
+        bookingId={toAnswer?.id ?? null}
+        dispute={toAnswer?.dispute}
+        onOpenChange={(o) => { if (!o) setToAnswer(null); }}
+        onSaved={(id, teacherResponse) =>
+          setBookings((prev) => prev.map((x) => (x.id === id && x.dispute ? { ...x, dispute: { ...x.dispute, teacherResponse } } : x)))
+        }
       />
 
       <AlertDialog open={!!toCancel} onOpenChange={(o) => { if (!o && !cancelling) setToCancel(null); }}>
