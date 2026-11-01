@@ -38,10 +38,14 @@ export async function GET(request: Request) {
     }
 
     const p = user.teacherProfile as Record<string, unknown>;
-    const out: Record<string, string> = { email: user.email };
+    const out: Record<string, unknown> = { email: user.email };
     for (const field of EDITABLE_FIELDS) {
       out[field] = (p[field] as string) ?? "";
     }
+    // Public-facing profile fields (shown to students, not matched against the ID).
+    out.bio = (p.bio as string) ?? "";
+    out.subjects = user.teacherProfile.subjects ?? [];
+    out.experience = user.teacherProfile.experience ?? null;
 
     // Fill blanks from what the teacher already gave us at sign-up, so they
     // only confirm instead of retyping. Nothing is saved until they submit.
@@ -53,7 +57,7 @@ export async function GET(request: Request) {
       }
     };
     prefill("fullName", `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim());
-    prefill("nameWithInitials", initialsFromFullName(out.fullName));
+    prefill("nameWithInitials", initialsFromFullName(String(out.fullName ?? "")));
     prefill("contactNumber", user.phone);
     prefill("country", DEFAULT_COUNTRY);
     out.prefilled = prefilled.join(",");
@@ -82,9 +86,29 @@ export async function PUT(request: Request) {
 
     const body = await request.json();
 
-    const data: Record<string, string> = {};
+    const data: Record<string, unknown> = {};
     for (const field of EDITABLE_FIELDS) {
       if (typeof body[field] === "string") data[field] = body[field].trim();
+    }
+
+    // Public profile fields — a short bio, the subjects taught, and years of
+    // experience. These are shown to students; editable even once approved.
+    if (typeof body.bio === "string") data.bio = body.bio.trim().slice(0, 1000) || null;
+    if (Array.isArray(body.subjects)) {
+      data.subjects = [
+        ...new Set(
+          body.subjects
+            .filter((s: unknown): s is string => typeof s === "string")
+            .map((s: string) => s.trim())
+            .filter(Boolean)
+        ),
+      ].slice(0, 20);
+    }
+    if (body.experience === null || body.experience === "") {
+      data.experience = null;
+    } else if (body.experience !== undefined) {
+      const n = Number(body.experience);
+      if (Number.isInteger(n) && n >= 0 && n <= 60) data.experience = n;
     }
 
     if (Object.keys(data).length === 0) {

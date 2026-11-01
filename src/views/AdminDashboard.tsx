@@ -37,6 +37,7 @@ import {
   Ban,
   RotateCcw,
   Flag,
+  Banknote,
 } from "lucide-react";
 import { DISPUTE_REASONS, DISPUTE_WINDOW_HOURS, type DisputeReason } from "@/lib/disputeReasons";
 
@@ -60,6 +61,8 @@ const statusTone: Record<string, string> = {
   SUSPENDED: "bg-destructive/10 text-destructive border-destructive/20",
   PROCESSING: "bg-blue-500/10 text-blue-600 border-blue-500/20",
   PAID: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+  COMPLETED: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+  FAILED: "bg-destructive/10 text-destructive border-destructive/20",
   CANCELLED: "bg-muted text-muted-foreground border-border",
   OPEN: "bg-amber-500/10 text-amber-600 border-amber-500/20",
   REFUNDED: "bg-blue-500/10 text-blue-600 border-blue-500/20",
@@ -91,19 +94,22 @@ const AdminDashboard = () => {
   const router = useRouter();
 
   // Waiting-item counts for the tab badges, kept fresh while the console is open.
-  const [counts, setCounts] = useState<{ teachers: number; withdrawals: number; disputes: number }>({ teachers: 0, withdrawals: 0, disputes: 0 });
+  const [counts, setCounts] = useState<{ teachers: number; topups: number; withdrawals: number; disputes: number }>({ teachers: 0, topups: 0, withdrawals: 0, disputes: 0 });
   const refreshCounts = useCallback(async () => {
     try {
-      const [t, w, d] = await Promise.all([
+      const [t, u, w, d] = await Promise.all([
         fetch("/api/admin/teachers?status=PENDING"),
+        fetch("/api/admin/topups?status=PENDING"),
         fetch("/api/admin/withdrawals?status=PENDING"),
         fetch("/api/admin/disputes?scope=open"),
       ]);
       const tj = t.ok ? await t.json() : null;
+      const uj = u.ok ? await u.json() : null;
       const wj = w.ok ? await w.json() : null;
       const dj = d.ok ? await d.json() : null;
       setCounts((c) => ({
         teachers: tj?.count ?? c.teachers,
+        topups: uj?.count ?? c.topups,
         withdrawals: wj?.count ?? c.withdrawals,
         disputes: Array.isArray(dj) ? dj.length : c.disputes,
       }));
@@ -173,6 +179,10 @@ const AdminDashboard = () => {
               <ShieldCheck className="h-4 w-4" /> Teacher verification
               <CountBadge n={counts.teachers} />
             </TabsTrigger>
+            <TabsTrigger value="topups" className="gap-2">
+              <Banknote className="h-4 w-4" /> Top-ups
+              <CountBadge n={counts.topups} />
+            </TabsTrigger>
             <TabsTrigger value="withdrawals" className="gap-2">
               <Wallet className="h-4 w-4" /> Withdrawals
               <CountBadge n={counts.withdrawals} />
@@ -185,6 +195,9 @@ const AdminDashboard = () => {
 
           <TabsContent value="teachers">
             <TeacherReview toast={toast} onChanged={refreshCounts} />
+          </TabsContent>
+          <TabsContent value="topups">
+            <TopUpReview toast={toast} onChanged={refreshCounts} />
           </TabsContent>
           <TabsContent value="withdrawals">
             <WithdrawalReview toast={toast} onChanged={refreshCounts} />
@@ -678,6 +691,185 @@ const TeacherDetailDialog = ({
         )}
       </DialogContent>
     </Dialog>
+  );
+};
+
+/* -------------------------------------------------------------------------- *
+ * Top-up queue
+ * -------------------------------------------------------------------------- */
+
+const TOPUP_FILTERS = ["PENDING", "COMPLETED", "FAILED"] as const;
+
+/**
+ * Wallet top-up queue. A student deposits to the MiniUni account and uploads
+ * their slip; the admin checks the amount against the slip and approves (which
+ * credits the wallet) or rejects with a reason.
+ */
+const TopUpReview = ({ toast, onChanged }: { toast: any; onChanged: () => void }) => {
+  const [status, setStatus] = useState<(typeof TOPUP_FILTERS)[number]>("PENDING");
+  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [rejectId, setRejectId] = useState<string | null>(null);
+  const [note, setNote] = useState("");
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/admin/topups?status=${status}`);
+      if (res.ok) {
+        const data = await res.json();
+        setItems(data.items || []);
+      } else {
+        setItems([]);
+      }
+    } catch {
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [status]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const act = async (id: string, action: "approve" | "reject", extra?: Record<string, string>) => {
+    setBusyId(id);
+    try {
+      const res = await fetch(`/api/admin/topups/${id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, ...extra }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Action failed");
+      }
+      toast({
+        title: action === "approve" ? "Top-up approved" : "Top-up rejected",
+        description:
+          action === "approve" ? "The student's wallet has been credited." : "The student has been notified.",
+      });
+      setRejectId(null);
+      setNote("");
+      load();
+      onChanged();
+    } catch (e: any) {
+      toast({ title: "Error", description: e?.message || "Something went wrong", variant: "destructive" });
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  return (
+    <div>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-2">
+          {TOPUP_FILTERS.map((f) => (
+            <button
+              key={f}
+              onClick={() => setStatus(f)}
+              className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                status === f
+                  ? "border-primary bg-primary/[0.08] text-primary"
+                  : "border-border/70 text-muted-foreground hover:bg-muted/60"
+              }`}
+            >
+              {f.charAt(0) + f.slice(1).toLowerCase()}
+            </button>
+          ))}
+        </div>
+        <Button variant="ghost" size="sm" onClick={load} className="gap-2 text-muted-foreground">
+          <RefreshCw className="h-4 w-4" /> Refresh
+        </Button>
+      </div>
+
+      {loading ? (
+        <Loading />
+      ) : items.length === 0 ? (
+        <Empty icon={Banknote} title={`No ${status.toLowerCase()} top-ups`} />
+      ) : (
+        <div className="grid gap-3">
+          {items.map((u) => (
+            <div key={u.id} className="rounded-2xl border border-border/70 bg-card/80 p-4 shadow-card">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-lg font-semibold">{formatMoney(u.amount, u.currency)}</p>
+                    <StatusBadge status={u.status} />
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {u.student?.name || "Unknown student"} · {u.student?.email}
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">Submitted {fmtDate(u.createdAt)}</p>
+                </div>
+                {u.slipUrl && (
+                  <a
+                    href={u.slipUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group relative shrink-0"
+                    title="Open the full slip"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={u.slipUrl}
+                      alt="Deposit slip"
+                      className="h-20 w-28 rounded-lg border border-border/70 object-cover transition-opacity group-hover:opacity-80"
+                    />
+                    <span className="absolute bottom-1 right-1 rounded-md bg-background/80 p-1 text-muted-foreground">
+                      <ExternalLink className="h-3 w-3" />
+                    </span>
+                  </a>
+                )}
+              </div>
+
+              {u.status === "FAILED" && u.description && (
+                <p className="mt-2 text-sm text-muted-foreground">{u.description}</p>
+              )}
+
+              {u.status === "PENDING" && (
+                <div className="mt-4">
+                  {rejectId === u.id ? (
+                    <div className="space-y-2">
+                      <Input
+                        value={note}
+                        onChange={(e) => setNote(e.target.value)}
+                        placeholder="Reason (e.g. amount doesn't match the slip)"
+                      />
+                      <div className="flex justify-end gap-2">
+                        <Button variant="ghost" size="sm" onClick={() => { setRejectId(null); setNote(""); }} disabled={busyId === u.id}>
+                          Cancel
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => act(u.id, "reject", { note: note.trim() })}
+                          disabled={busyId === u.id || !note.trim()}
+                          className="gap-2"
+                        >
+                          {busyId === u.id && <Loader2 className="h-4 w-4 animate-spin" />} Confirm reject
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap justify-end gap-2">
+                      <Button variant="outline" size="sm" onClick={() => setRejectId(u.id)} disabled={busyId === u.id} className="text-destructive">
+                        Reject
+                      </Button>
+                      <Button size="sm" onClick={() => act(u.id, "approve")} disabled={busyId === u.id} className="gap-2">
+                        {busyId === u.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />} Approve &amp; credit
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 };
 

@@ -42,6 +42,9 @@ export async function GET(request: Request) {
       verificationStatus: p.verificationStatus,
       rejectionReason,
       suspensionReason: p.verificationStatus === "SUSPENDED" ? p.suspensionReason : null,
+      // Public-profile completeness, for the "add a bio" nudge once approved.
+      hasBio: Boolean(p.bio && p.bio.trim()),
+      hasSubjects: (p.subjects?.length ?? 0) > 0,
     });
   } catch (error) {
     console.error("Error computing profile completion:", error);

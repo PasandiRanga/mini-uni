@@ -1,7 +1,9 @@
+import { Prisma } from "@prisma/client";
 import prisma from "./prisma";
 import { createNotification } from "./notifications";
 import { buildTeacherSubmittedEmail, sendEmail } from "./email";
 import { computeProfileCompletion } from "./teacherVerification";
+import { formatMoney } from "./currency";
 
 /** Don't alert admins about the same teacher more than once in this window. */
 const REPEAT_WINDOW_MS = 12 * 60 * 60 * 1000;
@@ -63,5 +65,36 @@ export async function notifyAdminsOfSubmission(opts: { teacherUserId: string; re
     );
   } catch (err) {
     console.error("Failed to notify admins of a teacher submission:", err);
+  }
+}
+
+/**
+ * Tells every admin that a student has submitted a wallet top-up slip to verify.
+ * Best-effort and in-app only — it never throws, so the student's submission
+ * always succeeds.
+ */
+export async function notifyAdminsOfTopUp(opts: {
+  studentName: string;
+  amount: Prisma.Decimal | number | string;
+  currency: string;
+}) {
+  try {
+    const admins = await prisma.user.findMany({
+      where: { role: "ADMIN", isActive: true },
+      select: { id: true },
+    });
+
+    await Promise.all(
+      admins.map((admin) =>
+        createNotification({
+          userId: admin.id,
+          type: "TOPUP_SUBMITTED",
+          title: "Wallet top-up to verify",
+          message: `${opts.studentName} uploaded a slip for ${formatMoney(opts.amount.toString(), opts.currency)}. Check the amount and approve it.`,
+        })
+      )
+    );
+  } catch (err) {
+    console.error("Failed to notify admins of a top-up:", err);
   }
 }

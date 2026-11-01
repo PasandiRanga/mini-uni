@@ -7,12 +7,13 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import PersonalDetailsForm from "@/components/teacher/PersonalDetailsForm";
+import PublicProfileForm from "@/components/teacher/PublicProfileForm";
 import ProfileLoadError from "@/components/teacher/ProfileLoadError";
 import IdentityVerificationForm from "@/components/teacher/IdentityVerificationForm";
 import AcademicBackgroundForm from "@/components/teacher/AcademicBackgroundForm";
 import { CurrencySettings } from "@/components/settings/CurrencySettings";
 import { ChangePasswordForm } from "@/components/settings/ChangePasswordForm";
-import { Loader2, Check, UserCog, Lock, Bell, Landmark, Coins, ShieldCheck, GraduationCap } from "lucide-react";
+import { Loader2, Check, UserCog, Lock, Bell, Landmark, Coins, ShieldCheck, GraduationCap, Sparkles } from "lucide-react";
 
 const Section = ({
   icon: Icon,
@@ -197,6 +198,9 @@ const TeacherSettings = () => {
       {/* Profile — same fields as profile completion, editable and prefilled */}
       <div className="space-y-4">
         <GroupHeading>Profile</GroupHeading>
+        <Section icon={Sparkles} title="Public profile" description="Your bio and subjects — what students see.">
+          <PublicProfileForm />
+        </Section>
         <Section icon={UserCog} title="Personal details" description="Your name, contacts and address.">
           <PersonalDetailsForm />
         </Section>
