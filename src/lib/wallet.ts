@@ -3,6 +3,7 @@ import prisma from "./prisma";
 import { createNotification } from "./notifications";
 import { splitCommission, commissionPercent } from "./commission";
 import { DISPUTE_WINDOW_MS } from "./disputeReasons";
+import { createClassEvent, isGoogleConfigured } from "./googleCalendar";
 
 /**
  * Escrow model
@@ -685,7 +686,78 @@ export async function payBookingFromWallet(userId: string, bookingId: string) {
     metadata: { bookingId: booking.id },
   });
 
+  // Put the class on the teacher's Google calendar with a Meet link, if connected.
+  await createMeetLinkForBooking(booking.id);
+
   return { paid: true, amount, currency };
+}
+
+/**
+ * Best-effort: puts a confirmed class on the teacher's Google calendar with a
+ * Meet link and notifies both sides. A no-op when Google isn't configured, the
+ * teacher hasn't connected, or the class already has a link — the booking is
+ * confirmed either way, so this never throws.
+ */
+export async function createMeetLinkForBooking(bookingId: string) {
+  try {
+    if (!isGoogleConfigured()) return;
+
+    const booking = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      select: {
+        googleMeetLink: true,
+        studentId: true,
+        teacherId: true,
+        student: { select: { email: true } },
+        teacher: { select: { email: true, googleAccount: { select: { refreshToken: true } } } },
+        timeSlot: { select: { startTime: true, endTime: true } },
+        inquiry: { select: { post: { select: { title: true, subject: true } } } },
+      },
+    });
+
+    const refreshToken = booking?.teacher?.googleAccount?.refreshToken;
+    if (
+      !booking ||
+      booking.googleMeetLink ||
+      !refreshToken ||
+      !booking.timeSlot ||
+      !booking.student?.email ||
+      !booking.teacher?.email
+    ) {
+      return;
+    }
+
+    const title = booking.inquiry?.post?.title || booking.inquiry?.post?.subject || "MiniUni class";
+    const { hangoutLink } = await createClassEvent({
+      refreshToken,
+      summary: title,
+      description: "Booked through MiniUni.",
+      startISO: booking.timeSlot.startTime.toISOString(),
+      endISO: booking.timeSlot.endTime.toISOString(),
+      teacherEmail: booking.teacher.email,
+      studentEmail: booking.student.email,
+    });
+    if (!hangoutLink) return;
+
+    await prisma.booking.update({ where: { id: bookingId }, data: { googleMeetLink: hangoutLink } });
+
+    await createNotification({
+      userId: booking.studentId,
+      type: "MEETING_LINK_CREATED",
+      title: "Class link ready",
+      message: "Your class has a Google Meet link — check your calendar for the invite.",
+      metadata: { bookingId },
+    });
+    await createNotification({
+      userId: booking.teacherId,
+      type: "MEETING_LINK_CREATED",
+      title: "Class link ready",
+      message: "A Meet link was added to your calendar for the booked class.",
+      metadata: { bookingId },
+    });
+  } catch (err) {
+    console.error("Failed to create Meet link for booking:", err);
+  }
 }
 
 /**
