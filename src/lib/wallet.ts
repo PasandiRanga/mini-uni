@@ -4,6 +4,7 @@ import { createNotification } from "./notifications";
 import { splitCommission, commissionPercent } from "./commission";
 import { DISPUTE_WINDOW_MS } from "./disputeReasons";
 import { createClassEvent, isGoogleConfigured } from "./googleCalendar";
+import { sendEmail, buildNoticeEmail } from "./email";
 
 /**
  * Escrow model
@@ -598,7 +599,7 @@ export async function abandonTopUp(transactionId: string, userId: string) {
  *
  * The teacher's escrow is credited exactly as it would be for a card payment.
  */
-export async function payBookingFromWallet(userId: string, bookingId: string) {
+export async function payBookingFromWallet(userId: string, bookingId: string, origin?: string) {
   const booking = await prisma.booking.findUnique({
     where: { id: bookingId },
     include: { payment: true },
@@ -689,7 +690,65 @@ export async function payBookingFromWallet(userId: string, bookingId: string) {
   // Put the class on the teacher's Google calendar with a Meet link, if connected.
   await createMeetLinkForBooking(booking.id);
 
+  // Email both sides that the class is booked. Best-effort.
+  await emailBookingConfirmation(booking.id, origin);
+
   return { paid: true, amount, currency };
+}
+
+/**
+ * Emails the student and teacher that a class is booked and confirmed. Honors
+ * each user's email preference and never throws — the booking stands regardless.
+ */
+export async function emailBookingConfirmation(bookingId: string, origin?: string) {
+  try {
+    const b = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      select: {
+        googleMeetLink: true,
+        student: { select: { email: true, notifyEmail: true } },
+        teacher: { select: { email: true, notifyEmail: true } },
+        timeSlot: { select: { startTime: true } },
+        inquiry: { select: { post: { select: { title: true, subject: true } } } },
+      },
+    });
+    if (!b) return;
+
+    const title = b.inquiry?.post?.title || b.inquiry?.post?.subject || "your class";
+    const when = b.timeSlot?.startTime
+      ? new Date(b.timeSlot.startTime).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })
+      : "the scheduled time";
+    const base = origin || "";
+    const meetLine = b.googleMeetLink ? " A Google Meet link has been added to your calendar." : "";
+
+    if (b.student?.email && b.student.notifyEmail !== false) {
+      await sendEmail({
+        to: b.student.email,
+        ...buildNoticeEmail({
+          subject: "Your class is booked",
+          heading: "Class confirmed",
+          body: `Your booking for "${title}" on ${when} is confirmed and paid from your wallet.${meetLine}`,
+          link: `${base}/student/dashboard?tab=classes`,
+          cta: "View your classes",
+        }),
+      }).catch((e) => console.error("Failed to email student booking confirmation:", e));
+    }
+
+    if (b.teacher?.email && b.teacher.notifyEmail !== false) {
+      await sendEmail({
+        to: b.teacher.email,
+        ...buildNoticeEmail({
+          subject: "New booking confirmed",
+          heading: "New booking",
+          body: `A student booked and paid for "${title}" on ${when}. It's confirmed on your schedule.${meetLine}`,
+          link: `${base}/teacher/dashboard?tab=classes`,
+          cta: "View your schedule",
+        }),
+      }).catch((e) => console.error("Failed to email teacher booking confirmation:", e));
+    }
+  } catch (err) {
+    console.error("Failed to send booking confirmation emails:", err);
+  }
 }
 
 /**

@@ -16,7 +16,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "bookingId is required" }, { status: 400 });
         }
 
-        const result = await payBookingFromWallet(session.sub, bookingId);
+        const result = await payBookingFromWallet(session.sub, bookingId, new URL(request.url).origin);
         return NextResponse.json({ success: true, ...result });
     } catch (error: any) {
         const known: Record<string, { error: string; status: number }> = {
