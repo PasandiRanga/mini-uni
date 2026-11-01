@@ -71,6 +71,19 @@ export async function PUT(
             }
         }
 
+        // A class that has already taken place can't be edited: once every
+        // scheduled slot has started, the post is in the past and locked.
+        const scheduled = await prisma.timeSlot.findMany({
+            where: { postId },
+            select: { startTime: true },
+        });
+        if (scheduled.length > 0 && !scheduled.some((s) => s.startTime.getTime() > Date.now())) {
+            return NextResponse.json(
+                { error: "This class has already taken place and can no longer be edited.", code: "CLASS_IN_PAST" },
+                { status: 400 }
+            );
+        }
+
         const data = await request.json();
 
         // Only persist real Post columns — the client also sends helper fields
@@ -120,7 +133,9 @@ export async function PUT(
             const isKept = (start: Date, end: Date) =>
                 kept.some((k) => k.startTime.getTime() === start.getTime() && k.endTime.getTime() === end.getTime());
             for (const slot of data.availabilitySlots) {
-                if (slot.start && slot.end && !isKept(new Date(slot.start), new Date(slot.end))) {
+                // Never add a slot in the past — a class can only be scheduled ahead.
+                const startsInFuture = slot.start && new Date(slot.start).getTime() > Date.now();
+                if (slot.start && slot.end && startsInFuture && !isKept(new Date(slot.start), new Date(slot.end))) {
                     await prisma.timeSlot.create({
                         data: { postId, startTime: new Date(slot.start), endTime: new Date(slot.end) },
                     });
