@@ -5,6 +5,7 @@ import { getAdminSession } from "@/lib/adminAuth";
 import { completeTopUp, failTopUp } from "@/lib/wallet";
 import { createNotification } from "@/lib/notifications";
 import { formatMoney } from "@/lib/currency";
+import { sendEmail, buildNoticeEmail } from "@/lib/email";
 
 /**
  * Admin decision on one wallet top-up request.
@@ -24,7 +25,14 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
     const tx = await prisma.walletTransaction.findUnique({
       where: { id: params.id },
-      include: { wallet: { select: { userId: true, user: { select: { currency: true } } } } },
+      include: {
+        wallet: {
+          select: {
+            userId: true,
+            user: { select: { currency: true, email: true, notifyEmail: true } },
+          },
+        },
+      },
     });
 
     if (!tx || tx.type !== "TOP_UP") {
@@ -40,6 +48,16 @@ export async function POST(request: Request, { params }: { params: { id: string 
     const studentId = tx.wallet.userId;
     const currency = tx.wallet.user?.currency || "LKR";
     const amountLabel = formatMoney(tx.amount.toString(), currency);
+    const studentEmail = tx.wallet.user?.email;
+    const emailOptedIn = tx.wallet.user?.notifyEmail !== false;
+    const origin = new URL(request.url).origin;
+    const emailStudent = async (subject: string, heading: string, body: string) => {
+      if (!studentEmail || !emailOptedIn) return;
+      await sendEmail({
+        to: studentEmail,
+        ...buildNoticeEmail({ subject, heading, body, link: `${origin}/student/dashboard?tab=wallet`, cta: "Open your wallet" }),
+      }).catch((e) => console.error("Failed to email top-up decision:", e));
+    };
 
     if (action === "approve") {
       const result = await completeTopUp(tx.id);
@@ -55,6 +73,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
         title: "Top-up approved",
         message: `${amountLabel} has been added to your wallet.`,
       });
+      await emailStudent("Top-up approved", "Money added to your wallet", `${amountLabel} has been added to your wallet balance.`);
       return NextResponse.json({ ok: true, credited: true, amount: result.amount });
     }
 
@@ -70,6 +89,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
         title: "Top-up not approved",
         message: `Your ${amountLabel} top-up couldn't be verified: ${note}`,
       });
+      await emailStudent("Top-up not approved", "Top-up couldn't be verified", `Your ${amountLabel} top-up couldn't be verified: ${note}`);
       return NextResponse.json({ ok: true, credited: false });
     }
 

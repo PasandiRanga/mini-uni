@@ -3,6 +3,7 @@ import bcrypt from "bcrypt";
 import prisma from "@/lib/prisma";
 import { UserRole } from "@prisma/client";
 import { encrypt } from "@/lib/auth";
+import { sendEmail, buildNoticeEmail } from "@/lib/email";
 
 export async function POST(request: Request) {
     try {
@@ -65,6 +66,27 @@ export async function POST(request: Request) {
                 createdAt: true,
             },
         });
+
+        // Welcome email — best-effort, never blocks sign-up.
+        try {
+            const origin = new URL(request.url).origin;
+            const dash = user.role === UserRole.TEACHER ? "teacher" : "student";
+            await sendEmail({
+                to: user.email,
+                ...buildNoticeEmail({
+                    subject: "Welcome to MiniUni",
+                    heading: `Welcome, ${user.firstName}!`,
+                    body:
+                        user.role === UserRole.TEACHER
+                            ? "Your account is ready. Verify your email, then complete your teaching profile to start offering classes."
+                            : "Your account is ready. Verify your email to start booking classes.",
+                    link: `${origin}/${dash}/dashboard`,
+                    cta: "Open MiniUni",
+                }),
+            });
+        } catch (e) {
+            console.error("Failed to send welcome email:", e);
+        }
 
         // Issue session immediately so the user lands signed-in after sign-up
         const token = await encrypt({
