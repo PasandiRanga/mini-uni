@@ -13,7 +13,7 @@ import IdentityVerificationForm from "@/components/teacher/IdentityVerificationF
 import AcademicBackgroundForm from "@/components/teacher/AcademicBackgroundForm";
 import { CurrencySettings } from "@/components/settings/CurrencySettings";
 import { ChangePasswordForm } from "@/components/settings/ChangePasswordForm";
-import { Loader2, Check, UserCog, Lock, Bell, Landmark, Coins, ShieldCheck, GraduationCap, Sparkles } from "lucide-react";
+import { Loader2, Check, UserCog, Lock, Bell, Landmark, Coins, ShieldCheck, GraduationCap, Sparkles, CalendarCheck, Video } from "lucide-react";
 
 const Section = ({
   icon: Icon,
@@ -183,6 +183,85 @@ const BankDetailsForm = () => {
   );
 };
 
+const GoogleCalendarSettings = () => {
+  const { toast } = useToast();
+  const [state, setState] = useState<{ configured: boolean; connected: boolean; email: string | null } | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const load = () => {
+    fetch("/api/google")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setState(d))
+      .catch(() => setState({ configured: false, connected: false, email: null }));
+  };
+
+  useEffect(() => {
+    load();
+    // Google redirects back with ?google=connected|error|denied — surface it once.
+    const params = new URLSearchParams(window.location.search);
+    const result = params.get("google");
+    if (result) {
+      const messages: Record<string, { title: string; variant?: "destructive" }> = {
+        connected: { title: "Google Calendar connected" },
+        denied: { title: "Connection cancelled", variant: "destructive" },
+        error: { title: "Couldn't connect Google — try again", variant: "destructive" },
+      };
+      const m = messages[result];
+      if (m) toast({ title: m.title, variant: m.variant });
+      params.delete("google");
+      const qs = params.toString();
+      window.history.replaceState({}, "", window.location.pathname + (qs ? `?${qs}` : ""));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const disconnect = async () => {
+    setBusy(true);
+    try {
+      await fetch("/api/google", { method: "DELETE" });
+      toast({ title: "Google Calendar disconnected" });
+      load();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!state) {
+    return <p className="text-sm text-muted-foreground">Loading…</p>;
+  }
+
+  if (!state.configured) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        Google Calendar isn&apos;t set up on this site yet. Once it is, you&apos;ll be able to connect your account here so booked classes get a Meet link automatically.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground">
+        Connect your Google account and every booked class is added to your calendar with a Google Meet link — the student gets the invite too.
+      </p>
+      {state.connected ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/[0.06] px-4 py-3 text-sm">
+          <span className="flex items-center gap-2">
+            <Check className="h-4 w-4 text-emerald-600" />
+            Connected{state.email ? ` as ${state.email}` : ""}
+          </span>
+          <Button variant="outline" size="sm" onClick={disconnect} disabled={busy}>
+            {busy && <Loader2 className="h-4 w-4 animate-spin" />} Disconnect
+          </Button>
+        </div>
+      ) : (
+        <Button variant="hero" onClick={() => { window.location.href = "/api/google/connect"; }}>
+          <Video className="h-4 w-4" /> Connect Google Calendar
+        </Button>
+      )}
+    </div>
+  );
+};
+
 const TeacherSettings = () => {
   return (
     <div className="mx-auto max-w-3xl space-y-8">
@@ -223,6 +302,14 @@ const TeacherSettings = () => {
         </Section>
         <Section icon={Bell} title="Notifications" description="Choose how you'd like to be notified.">
           <NotificationPrefs />
+        </Section>
+      </div>
+
+      {/* Classes */}
+      <div className="space-y-4">
+        <GroupHeading>Classes</GroupHeading>
+        <Section icon={CalendarCheck} title="Google Calendar & Meet" description="Auto-add booked classes to your calendar with a Meet link.">
+          <GoogleCalendarSettings />
         </Section>
       </div>
 

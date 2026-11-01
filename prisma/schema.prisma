@@ -134,10 +134,27 @@ model User {
   reviewsGiven    Review[] @relation("ReviewAuthor")
   reviewsReceived Review[] @relation("ReviewTeacher")
   disputesOpened  Dispute[] @relation("DisputeReporter")
+  googleAccount   GoogleAccount?
 
   @@index([email])
   @@index([role])
   @@map("users")
+}
+
+// A teacher's connected Google account, used to put booked classes on their
+// calendar and mint a Meet link. Only the refresh token is kept long-term; an
+// access token is minted from it on demand when creating an event.
+model GoogleAccount {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  email        String?  // the Google address they connected, shown in settings
+  refreshToken String   @db.Text
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("google_accounts")
 }
 
 model TeacherProfile {
