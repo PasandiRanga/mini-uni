@@ -20,6 +20,7 @@ import {
   Users,
   DollarSign,
   CheckCircle2,
+  Sparkles,
   ChevronRight,
   ArrowUpRight,
   Search,
@@ -74,20 +75,23 @@ const TeacherDashboard = () => {
   const [moreOpen, setMoreOpen] = useState(false);
   // Approval is a one-time confirmation — remember (per teacher) once it's been dismissed.
   const [approvedDismissed, setApprovedDismissed] = useState(false);
-  const [completion, setCompletion] = useState<{ percent: number; verificationStatus?: string; rejectionReason?: string | null; suspensionReason?: string | null } | null>(null);
+  const [profileNudgeDismissed, setProfileNudgeDismissed] = useState(false);
+  const [completion, setCompletion] = useState<{ percent: number; verificationStatus?: string; rejectionReason?: string | null; suspensionReason?: string | null; hasBio?: boolean; hasSubjects?: boolean } | null>(null);
   const [bookings, setBookings] = useState<any[]>([]);
   const [inquiries, setInquiries] = useState<any[]>([]);
   const [wallet, setWallet] = useState<any>(null);
   const { user, logout } = useAuth();
   const dismissKey = `miniuni:approvedBannerDismissed:${user?.id ?? ""}`;
+  const profileNudgeKey = `miniuni:profileNudgeDismissed:${user?.id ?? ""}`;
   useEffect(() => {
     if (!user?.id) return;
     try {
       setApprovedDismissed(localStorage.getItem(dismissKey) === "1");
+      setProfileNudgeDismissed(localStorage.getItem(profileNudgeKey) === "1");
     } catch {
       /* storage unavailable: show it */
     }
-  }, [user?.id, dismissKey]);
+  }, [user?.id, dismissKey, profileNudgeKey]);
   const { openCreatePost } = useCreatePostModal();
   const router = useRouter();
   const { toast } = useToast();
@@ -412,6 +416,35 @@ const TeacherDashboard = () => {
                 >
                   Dismiss
                 </button>
+              </div>
+            </div>
+          )}
+
+          {/* Nudge an approved teacher with a bare public profile — students see an empty page otherwise. */}
+          {completion && completion.verificationStatus === 'APPROVED' && completion.hasBio === false && !profileNudgeDismissed && (
+            <div className="mb-8 overflow-hidden rounded-3xl border border-border/70 bg-card p-5 shadow-soft sm:p-6">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <Sparkles className="h-[18px] w-[18px]" strokeWidth={1.75} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium">Add a bio so students know who you are</p>
+                  <p className="mt-0.5 text-sm text-muted-foreground">
+                    Your public profile has no description{completion.hasSubjects ? "" : " or subjects"} yet. Teachers with a bio get booked more often.
+                  </p>
+                  <div className="mt-3 flex flex-wrap items-center gap-3">
+                    <Button size="sm" onClick={() => setActiveTab("settings")}>Complete your profile</Button>
+                    <button
+                      onClick={() => {
+                        setProfileNudgeDismissed(true);
+                        try { localStorage.setItem(profileNudgeKey, "1"); } catch { /* ignore */ }
+                      }}
+                      className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                      Not now
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           )}

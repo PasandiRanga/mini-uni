@@ -16,11 +16,12 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatMoney } from "@/lib/currency";
-import { startPayHereCheckout, type PayHereCheckout } from "@/lib/payhereClient";
+import { compressImage } from "@/lib/imageCompress";
+import { BANK_DEPOSIT_ACCOUNT } from "@/lib/bankDeposit";
 import {
   ArrowDownLeft,
   ArrowUpRight,
-  CreditCard,
+  Building2,
   Loader2,
   Plus,
   Receipt,
@@ -28,6 +29,7 @@ import {
   RotateCcw,
   ShieldCheck,
   Clock,
+  Upload,
   Wallet as WalletIcon,
 } from "lucide-react";
 
@@ -107,8 +109,8 @@ const StudentWallet: React.FC = () => {
   const [filter, setFilter] = useState<FilterId>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [amount, setAmount] = useState("");
+  const [slip, setSlip] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [verifying, setVerifying] = useState(false);
   const [paying, setPaying] = useState<string | null>(null);
 
   const currency = wallet?.currency || user?.currency;
@@ -140,109 +142,40 @@ const StudentWallet: React.FC = () => {
   }, [wallet?.transactions, filter]);
 
   /**
-   * PayHere tells the browser the checkout is *finished*, not that it
-   * succeeded — the payment only counts once its notification reaches us. So we
-   * read the result back from our own records for a few seconds.
+   * Sends the deposit slip and amount for an admin to verify. Nothing is
+   * credited here — the balance updates once the top-up is approved.
    */
-  const settle = useCallback(async (orderId: string, localConfirm: boolean, successTitle: string) => {
-    setVerifying(true);
-    try {
-      // Sandbox on localhost, where PayHere can't reach the notify URL.
-      if (localConfirm) await fetch(`/api/payments/payhere/confirm/${orderId}`, { method: "POST" });
-
-      for (let attempt = 0; attempt < 8; attempt++) {
-        const res = await fetch(`/api/payments/payhere/status/${orderId}`);
-        const data = res.ok ? await res.json() : null;
-
-        if (data?.status === "COMPLETED") {
-          toast({ title: successTitle, description: "Your balance is up to date." });
-          return;
-        }
-        if (data?.status === "FAILED") {
-          toast({ title: "Payment didn't go through", description: "Nothing was charged.", variant: "destructive" });
-          return;
-        }
-        await new Promise((r) => setTimeout(r, 1500));
-      }
-
-      toast({
-        title: "Payment is still being confirmed",
-        description: "PayHere hasn't confirmed it yet. This screen updates as soon as it does.",
-      });
-    } finally {
-      setVerifying(false);
-      fetchWallet();
-    }
-  }, [fetchWallet, toast]);
-
   const topUp = async () => {
+    if (!slip) return;
     setSubmitting(true);
     try {
+      // Shrink the photo so it stays under the request-body cap, same as elsewhere.
+      const slipDataUrl = await compressImage(slip, { maxDimension: 2200, quality: 0.85 });
+
       const res = await fetch("/api/wallets/topup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: Number(amount) }),
+        body: JSON.stringify({ amount: Number(amount), slip: slipDataUrl }),
       });
-      const data: {
-        error?: string;
-        transactionId: string;
-        orderId: string;
-        checkout: PayHereCheckout;
-        localConfirm: boolean;
-      } = await res.json();
+      const data: { error?: string } = await res.json();
       if (!res.ok) throw new Error(data.error || "Top-up failed");
 
       setDialogOpen(false);
       setAmount("");
-
-      await startPayHereCheckout(data.checkout, {
-        onCompleted: (orderId) => settle(orderId || data.orderId, data.localConfirm, "Wallet topped up"),
-        onDismissed: () => {
-          // Nothing was paid — drop the pending transaction.
-          fetch(`/api/wallets/topup/${data.transactionId}`, { method: "DELETE" }).finally(fetchWallet);
-        },
-        onError: (error) => {
-          toast({ title: "Couldn't add money", description: error || "Try again", variant: "destructive" });
-          fetch(`/api/wallets/topup/${data.transactionId}`, { method: "DELETE" }).finally(fetchWallet);
-        },
+      setSlip(null);
+      toast({
+        title: "Slip submitted",
+        description: "We'll verify your deposit and add the money to your wallet shortly.",
       });
+      fetchWallet();
     } catch (err: unknown) {
       toast({
-        title: "Couldn't add money",
+        title: "Couldn't submit",
         description: err instanceof Error ? err.message : "Try again",
         variant: "destructive",
       });
     } finally {
       setSubmitting(false);
-    }
-  };
-
-  const payByCard = async (booking: UnpaidBooking) => {
-    setPaying(booking.bookingId);
-    try {
-      const res = await fetch("/api/payments/payhere/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ bookingId: booking.bookingId }),
-      });
-      const data: { error?: string; orderId: string; checkout: PayHereCheckout; localConfirm: boolean } =
-        await res.json();
-      if (!res.ok) throw new Error(data.error || "Couldn't start the payment");
-
-      await startPayHereCheckout(data.checkout, {
-        onCompleted: (orderId) => settle(orderId || data.orderId, data.localConfirm, "Class paid for"),
-        onDismissed: () => fetchWallet(),
-        onError: (error) =>
-          toast({ title: "Couldn't pay", description: error || "Try again", variant: "destructive" }),
-      });
-    } catch (err: unknown) {
-      toast({
-        title: "Couldn't pay",
-        description: err instanceof Error ? err.message : "Try again",
-        variant: "destructive",
-      });
-    } finally {
-      setPaying(null);
     }
   };
 
@@ -280,7 +213,13 @@ const StudentWallet: React.FC = () => {
       : amountNum < min ? `The minimum top-up is ${formatMoney(min, currency)}`
       : null;
 
-  const canSubmit = !submitting && amount !== "" && !amountError;
+  const canSubmit = !submitting && amount !== "" && !amountError && !!slip;
+
+  // Top-ups the student has submitted that an admin hasn't verified yet.
+  const pendingTopUps = useMemo(
+    () => (wallet?.transactions || []).filter((t) => t.type === "TOP_UP" && t.status === "PENDING"),
+    [wallet?.transactions]
+  );
 
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6">
@@ -299,10 +238,17 @@ const StudentWallet: React.FC = () => {
         </Button>
       </div>
 
-      {verifying && (
-        <div className="flex items-center gap-3 rounded-2xl border border-primary/30 bg-primary/[0.06] px-5 py-4 text-sm">
-          <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" />
-          <p>Confirming your payment with PayHere — this usually takes a few seconds.</p>
+      {pendingTopUps.length > 0 && (
+        <div className="flex items-start gap-3 rounded-2xl border border-warning/40 bg-warning/[0.08] px-5 py-4 text-sm">
+          <Clock className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+          <div>
+            <p className="font-medium">
+              {pendingTopUps.length === 1 ? "A top-up is" : `${pendingTopUps.length} top-ups are`} awaiting verification
+            </p>
+            <p className="mt-0.5 text-muted-foreground">
+              We&apos;re checking your deposit{pendingTopUps.length === 1 ? "" : "s"}. The money lands in your wallet as soon as it&apos;s approved.
+            </p>
+          </div>
         </div>
       )}
 
@@ -414,14 +360,6 @@ const StudentWallet: React.FC = () => {
                   </div>
                   <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 sm:gap-3">
                     <p className="font-semibold">{formatMoney(b.amount, currency)}</p>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => payByCard(b)}
-                      disabled={paying === b.bookingId}
-                    >
-                      <CreditCard className="h-4 w-4" /> Pay by card
-                    </Button>
                     {affordable ? (
                       <Button size="sm" onClick={() => payFromWallet(b)} disabled={paying === b.bookingId}>
                         {paying === b.bookingId
@@ -520,7 +458,7 @@ const StudentWallet: React.FC = () => {
           <DialogHeader>
             <DialogTitle>Add money to your wallet</DialogTitle>
             <DialogDescription>
-              Top up with PayHere, then pay for classes straight from your balance.
+              Transfer the amount to the account below, then upload your deposit slip. We&apos;ll verify it and add the money to your wallet.
             </DialogDescription>
           </DialogHeader>
 
@@ -560,21 +498,44 @@ const StudentWallet: React.FC = () => {
 
             <div className="rounded-2xl border border-border/70 bg-muted/40 p-4 text-sm">
               <p className="flex items-center gap-2 font-medium">
-                <CreditCard className="h-3.5 w-3.5" /> Paid securely through PayHere
+                <Building2 className="h-3.5 w-3.5" /> Deposit to this account
               </p>
-              <p className="mt-1 text-muted-foreground">
-                Card details go straight to PayHere, never to us. Money added to your wallet stays yours — spend it on any class, any time.
-              </p>
+              <dl className="mt-2 space-y-1 text-muted-foreground">
+                <div className="flex justify-between gap-4"><dt>Account name</dt><dd className="text-right font-medium text-foreground">{BANK_DEPOSIT_ACCOUNT.accountName}</dd></div>
+                <div className="flex justify-between gap-4"><dt>Bank</dt><dd className="text-right font-medium text-foreground">{BANK_DEPOSIT_ACCOUNT.bankName}</dd></div>
+                <div className="flex justify-between gap-4"><dt>Account no.</dt><dd className="text-right font-medium text-foreground">{BANK_DEPOSIT_ACCOUNT.accountNumber}</dd></div>
+                <div className="flex justify-between gap-4"><dt>Branch</dt><dd className="text-right font-medium text-foreground">{BANK_DEPOSIT_ACCOUNT.branch}</dd></div>
+              </dl>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="topup-slip">Deposit slip</Label>
+              <label
+                htmlFor="topup-slip"
+                className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-border/70 bg-background/40 px-4 py-3 text-sm transition-colors hover:bg-muted/50"
+              >
+                <Upload className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <span className="min-w-0 truncate">
+                  {slip ? slip.name : "Upload a photo of your bank slip (JPG or PNG)"}
+                </span>
+              </label>
+              <input
+                id="topup-slip"
+                type="file"
+                accept="image/*"
+                className="sr-only"
+                onChange={(e) => setSlip(e.target.files?.[0] ?? null)}
+              />
             </div>
           </div>
 
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setDialogOpen(false)} disabled={submitting}>
+            <Button variant="ghost" onClick={() => { setDialogOpen(false); setSlip(null); }} disabled={submitting}>
               Cancel
             </Button>
             <Button variant="hero" onClick={topUp} disabled={!canSubmit}>
               {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-              Add {amount && !amountError ? formatMoney(amountNum, currency) : "money"}
+              Submit slip
             </Button>
           </DialogFooter>
         </DialogContent>

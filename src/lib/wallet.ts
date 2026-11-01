@@ -482,11 +482,11 @@ export const MIN_TOP_UP: Record<string, number> = { LKR: 500, USD: 2 };
 export const minTopUp = (currency?: string) => MIN_TOP_UP[currency || "LKR"] ?? MIN_TOP_UP.LKR;
 
 /**
- * Records a top-up the student has started but not paid for yet. Its id is the
- * order id the payment gateway is given, so a notification always points back
- * at exactly one transaction.
+ * Records a top-up a student has deposited for but not had verified yet. It
+ * stays PENDING, carrying the bank slip, until an admin checks the amount and
+ * approves it — `completeTopUp` is what actually credits the balance.
  */
-export async function startTopUp(userId: string, amount: Prisma.Decimal) {
+export async function startTopUp(userId: string, amount: Prisma.Decimal, slipUrl: string) {
   const wallet = await getWalletForUser(userId);
 
   return prisma.walletTransaction.create({
@@ -495,9 +495,47 @@ export async function startTopUp(userId: string, amount: Prisma.Decimal) {
       type: "TOP_UP",
       amount,
       status: "PENDING",
-      description: "Wallet top-up",
+      description: "Wallet top-up — awaiting verification",
+      slipUrl,
     },
   });
+}
+
+/**
+ * Top-up requests for the admin review queue. Defaults to PENDING (the ones
+ * waiting on a decision); pass "COMPLETED", "FAILED" or "ALL" for the rest.
+ */
+export async function getTopUpRequestsForAdmin(status = "PENDING") {
+  const where: Prisma.WalletTransactionWhereInput = { type: "TOP_UP" };
+  if (status && status !== "ALL") where.status = status;
+
+  const items = await prisma.walletTransaction.findMany({
+    where,
+    orderBy: { createdAt: "desc" },
+    take: 100,
+    include: {
+      wallet: {
+        select: { user: { select: { id: true, firstName: true, lastName: true, email: true, currency: true } } },
+      },
+    },
+  });
+
+  return items.map((t) => ({
+    id: t.id,
+    amount: t.amount,
+    status: t.status,
+    slipUrl: t.slipUrl,
+    description: t.description,
+    createdAt: t.createdAt,
+    currency: t.wallet?.user?.currency || "LKR",
+    student: t.wallet?.user
+      ? {
+          id: t.wallet.user.id,
+          name: `${t.wallet.user.firstName ?? ""} ${t.wallet.user.lastName ?? ""}`.trim(),
+          email: t.wallet.user.email,
+        }
+      : null,
+  }));
 }
 
 /**
@@ -532,11 +570,11 @@ export async function completeTopUp(transactionId: string, gatewayPaymentId?: st
   });
 }
 
-/** Marks a top-up the student never paid for, so it stops showing as pending. */
-export async function failTopUp(transactionId: string) {
+/** Marks a top-up that was never completed (abandoned, or rejected by an admin). */
+export async function failTopUp(transactionId: string, reason?: string) {
   const updated = await prisma.walletTransaction.updateMany({
     where: { id: transactionId, status: "PENDING", type: "TOP_UP" },
-    data: { status: "FAILED", description: "Top-up not completed" },
+    data: { status: "FAILED", description: reason || "Top-up not completed" },
   });
   return { abandoned: updated.count > 0 };
 }

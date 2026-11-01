@@ -96,6 +96,8 @@ enum NotificationType {
   VERIFICATION_STATUS
   BOOKING_CONFIRMED
   BOOKING_CANCELLED
+  TOPUP_SUBMITTED
+  TOPUP_REVIEWED
 }
 
 model User {
@@ -407,7 +409,8 @@ model WalletTransaction {
   amount        Decimal               @db.Decimal(10, 2)
   description   String?               @db.Text
   status        String                @default("PENDING") // PENDING, COMPLETED, FAILED
-  reference     String?               @unique // gateway id for money moving in, e.g. the PayHere payment behind a top-up
+  reference     String?               @unique // gateway id for money moving in, e.g. a manual top-up's slip reference
+  slipUrl       String?               @db.Text // bank deposit slip for a manual TOP_UP, verified by an admin
   createdAt     DateTime              @default(now())
   updatedAt     DateTime              @updatedAt
 

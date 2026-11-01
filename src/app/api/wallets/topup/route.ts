@@ -4,20 +4,15 @@ import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { getSessionFromRequest } from "@/lib/auth";
 import { minTopUp, startTopUp } from "@/lib/wallet";
-import {
-    PAYHERE_CHECKOUT_URL,
-    PAYHERE_CURRENCIES,
-    PAYHERE_LOCAL_CONFIRM,
-    buildCheckout,
-    buildOrderId,
-    isPayHereConfigured,
-} from "@/lib/payhere";
+import { storeImage, ImageError } from "@/lib/blob";
+import { notifyAdminsOfTopUp } from "@/lib/adminAlerts";
 import { formatMoney } from "@/lib/currency";
 
 /**
- * Starts a wallet top-up. The transaction is created as PENDING and only
- * credits the balance once PayHere confirms the payment at
- * /api/payments/payhere/notify.
+ * Starts a wallet top-up by bank deposit. The student sends money to the
+ * MiniUni account (see lib/bankDeposit) and uploads the slip here. The
+ * transaction is created as PENDING and only credits the balance once an admin
+ * verifies the amount at /api/admin/topups/[id]. No card gateway is involved.
  */
 export async function POST(request: Request) {
     const session = await getSessionFromRequest(request);
@@ -26,13 +21,9 @@ export async function POST(request: Request) {
     }
 
     try {
-        if (!isPayHereConfigured()) {
-            return NextResponse.json({ error: "Payments aren't set up yet" }, { status: 503 });
-        }
-
         const user = await prisma.user.findUnique({
             where: { id: session.sub },
-            select: { role: true, currency: true, firstName: true, lastName: true, email: true, phone: true },
+            select: { role: true, currency: true, firstName: true, lastName: true },
         });
 
         if (user?.role !== "STUDENT") {
@@ -53,39 +44,34 @@ export async function POST(request: Request) {
                 { status: 400 }
             );
         }
-        if (!PAYHERE_CURRENCIES.includes(currency)) {
-            return NextResponse.json({ error: `PayHere can't charge in ${currency}` }, { status: 400 });
+
+        // The deposit slip proves the money was sent — it's what the admin checks.
+        let slipUrl: string | null;
+        try {
+            slipUrl = await storeImage(body?.slip, `topups/${session.sub}`);
+        } catch (err) {
+            if (err instanceof ImageError) {
+                return NextResponse.json({ error: err.message }, { status: 400 });
+            }
+            throw err;
+        }
+        if (!slipUrl) {
+            return NextResponse.json({ error: "Upload a photo of your deposit slip" }, { status: 400 });
         }
 
-        const transaction = await startTopUp(session.sub, amount);
+        const transaction = await startTopUp(session.sub, amount, slipUrl);
 
-        const checkout = buildCheckout({
-            orderId: buildOrderId("TOPUP", transaction.id),
-            amount,
-            currency,
-            items: "Wallet top-up",
-            payer: {
-                firstName: user.firstName,
-                lastName: user.lastName,
-                email: user.email,
-                phone: user.phone,
-            },
-            origin: new URL(request.url).origin,
-            returnPath: "/student/dashboard?tab=wallet",
-            cancelPath: "/student/dashboard?tab=wallet",
-        });
+        const studentName = `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || "A student";
+        await notifyAdminsOfTopUp({ studentName, amount, currency });
 
         return NextResponse.json(
-            {
-                transactionId: transaction.id,
-                orderId: checkout.order_id,
-                checkout,
-                checkoutUrl: PAYHERE_CHECKOUT_URL,
-                localConfirm: PAYHERE_LOCAL_CONFIRM,
-            },
+            { transactionId: transaction.id, status: transaction.status },
             { status: 201 }
         );
     } catch (error: any) {
+        if (error?.code === "P2000" || error?.message?.includes("413")) {
+            return NextResponse.json({ error: "That image is too large. Try a smaller photo." }, { status: 400 });
+        }
         console.error("Error starting wallet top-up:", error);
         return NextResponse.json({ error: error.message || "Failed to start top-up" }, { status: 400 });
     }
