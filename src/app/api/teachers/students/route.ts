@@ -34,6 +34,7 @@ export async function GET(request: Request) {
       },
       select: {
         status: true,
+        classType: true,
         student: { select: { id: true, firstName: true, lastName: true, email: true } },
         timeSlot: { select: { startTime: true } },
         inquiry: { select: { post: { select: { subject: true } } } },
@@ -50,6 +51,7 @@ export async function GET(request: Request) {
       classCount: number;
       completedCount: number;
       subjects: Set<string>;
+      types: Set<string>;
       lastClass: string | null;
     }>();
 
@@ -64,10 +66,12 @@ export async function GET(request: Request) {
         classCount: 0,
         completedCount: 0,
         subjects: new Set<string>(),
+        types: new Set<string>(),
         lastClass: null,
       };
       entry.classCount += 1;
       if (b.status === "COMPLETED") entry.completedCount += 1;
+      if (b.classType) entry.types.add(b.classType);
       const subject = b.inquiry?.post?.subject;
       if (subject) entry.subjects.add(subject);
       const start = b.timeSlot?.startTime ? new Date(b.timeSlot.startTime).toISOString() : null;
@@ -83,6 +87,7 @@ export async function GET(request: Request) {
       classCount: e.classCount,
       completedCount: e.completedCount,
       subjects: Array.from(e.subjects),
+      types: Array.from(e.types),
       lastClass: e.lastClass,
     }));
 

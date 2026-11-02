@@ -17,7 +17,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import SlotPickerCalendar, { type PickerSlot } from '@/components/calendar/SlotPickerCalendar';
 import { formatMoney } from '@/lib/currency';
-import { ImagePlus, Users, User, Clock, Loader2, ShieldAlert } from 'lucide-react';
+import { ImagePlus, Users, User, Clock, Loader2, ShieldAlert, Video } from 'lucide-react';
 import Link from 'next/link';
 import { useTeacherStatus } from '@/hooks/useTeacherStatus';
 import { compressImage } from '@/lib/imageCompress';
@@ -77,6 +77,13 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, e
   const [budget, setBudget] = useState<number | ''>('');
 
   const [submitting, setSubmitting] = useState(false);
+
+  // Google connection — to nudge teachers to connect so classes get Meet links.
+  const [googleStatus, setGoogleStatus] = useState<{ configured: boolean; connected: boolean } | null>(null);
+  useEffect(() => {
+    if (!open || !isTeacher) return;
+    fetch('/api/google').then((r) => (r.ok ? r.json() : null)).then((d) => d && setGoogleStatus(d)).catch(() => { /* ignore */ });
+  }, [open, isTeacher]);
 
   useEffect(() => {
     if (!open || !isAuthenticated || !isTeacher) return;
@@ -352,6 +359,19 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, e
             </DialogHeader>
 
             <form onSubmit={onSubmit} className="space-y-6 px-6 py-6 sm:px-8">
+              {/* Connect-Google notice: classes get a Meet link only when the teacher is connected. */}
+              {isTeacher && googleStatus?.configured && googleStatus?.connected === false && (
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-primary/[0.06] px-4 py-3 text-sm">
+                  <span className="flex items-center gap-2 text-foreground">
+                    <Video className="h-4 w-4 shrink-0 text-primary" />
+                    Connect Google Calendar so this class gets a Meet link automatically.
+                  </span>
+                  <Button variant="outline" size="sm" asChild onClick={() => onOpenChange(false)}>
+                    <Link href="/teacher/dashboard?tab=settings">Connect</Link>
+                  </Button>
+                </div>
+              )}
+
               {/* Title (teacher) */}
               {isTeacher && (
                 <div className="space-y-1.5">

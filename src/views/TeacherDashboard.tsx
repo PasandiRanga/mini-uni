@@ -28,6 +28,8 @@ import {
   MessageSquare,
   MoreHorizontal,
   ShieldAlert,
+  Video,
+  X,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import MyClasses from '@/components/classes/MyClasses';
@@ -80,18 +82,22 @@ const TeacherDashboard = () => {
   const [bookings, setBookings] = useState<any[]>([]);
   const [inquiries, setInquiries] = useState<any[]>([]);
   const [wallet, setWallet] = useState<any>(null);
+  const [googleStatus, setGoogleStatus] = useState<{ configured: boolean; connected: boolean } | null>(null);
+  const [googleNudgeDismissed, setGoogleNudgeDismissed] = useState(false);
   const { user, logout } = useAuth();
   const dismissKey = `miniuni:approvedBannerDismissed:${user?.id ?? ""}`;
   const profileNudgeKey = `miniuni:profileNudgeDismissed:${user?.id ?? ""}`;
+  const googleNudgeKey = `miniuni:googleNudgeDismissed:${user?.id ?? ""}`;
   useEffect(() => {
     if (!user?.id) return;
     try {
       setApprovedDismissed(localStorage.getItem(dismissKey) === "1");
       setProfileNudgeDismissed(localStorage.getItem(profileNudgeKey) === "1");
+      setGoogleNudgeDismissed(localStorage.getItem(googleNudgeKey) === "1");
     } catch {
       /* storage unavailable: show it */
     }
-  }, [user?.id, dismissKey, profileNudgeKey]);
+  }, [user?.id, dismissKey, profileNudgeKey, googleNudgeKey]);
   const { openCreatePost } = useCreatePostModal();
   const router = useRouter();
   const { toast } = useToast();
@@ -122,6 +128,10 @@ const TeacherDashboard = () => {
         // wallet for current user
         const wRes = await fetch(`/api/wallets/me`);
         if (wRes.ok) setWallet(await wRes.json());
+
+        // Google Calendar connection — drives the "connect to generate Meet links" nudge.
+        const gRes = await fetch(`/api/google`);
+        if (gRes.ok) setGoogleStatus(await gRes.json());
       } catch (err) {
         console.error('Failed to fetch teacher dashboard data', err);
       }
@@ -291,6 +301,34 @@ const TeacherDashboard = () => {
           ) : (
           <>
           <EmailVerificationBanner />
+
+          {/* Nudge an approved teacher with classes to connect Google so classes get a Meet link. */}
+          {verificationStatus === 'APPROVED' && bookings.length > 0 && googleStatus?.configured && googleStatus?.connected === false && !googleNudgeDismissed && (
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/30 bg-primary/[0.06] px-5 py-4">
+              <div className="flex items-start gap-3">
+                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+                  <Video className="h-4 w-4" />
+                </span>
+                <div>
+                  <p className="text-sm font-medium">Connect Google Calendar to add Meet links</p>
+                  <p className="mt-0.5 text-sm text-muted-foreground">
+                    Your booked classes will get a Google Meet link automatically and appear on your calendar.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="hero" size="sm" onClick={() => goTab("settings")}>Connect</Button>
+                <button
+                  type="button"
+                  aria-label="Dismiss"
+                  className="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  onClick={() => { setGoogleNudgeDismissed(true); try { localStorage.setItem(googleNudgeKey, "1"); } catch { /* ignore */ } }}
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Complete-your-profile banner — fills as the teacher completes the wizard steps */}
           {/* Hidden once approved: an approved teacher is already live, so it would contradict the "verified" banner. */}

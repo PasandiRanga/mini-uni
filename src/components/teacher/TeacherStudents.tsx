@@ -13,8 +13,37 @@ interface StudentSummary {
   classCount: number;
   completedCount: number;
   subjects: string[];
+  types: string[];
   lastClass: string | null;
 }
+
+const StudentRow = ({ s }: { s: StudentSummary }) => {
+  const name = `${s.firstName} ${s.lastName}`.trim();
+  const initials = `${s.firstName?.[0] || ""}${s.lastName?.[0] || ""}`.toUpperCase();
+  return (
+    <div className="flex items-center gap-4 rounded-2xl border border-border/70 bg-background/40 p-4 transition-colors hover:bg-muted/40">
+      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full gradient-hero text-sm font-semibold text-primary-foreground">
+        {initials || "S"}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-medium">{name}</p>
+        <p className="truncate text-xs text-muted-foreground">
+          {s.subjects.length ? s.subjects.join(", ") : "—"}
+        </p>
+      </div>
+      <div className="shrink-0 text-right">
+        <p className="flex items-center justify-end gap-1 text-sm font-medium">
+          <GraduationCap className="h-3.5 w-3.5 text-primary" />
+          {s.classCount} {s.classCount === 1 ? "class" : "classes"}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          {s.completedCount} completed
+          {s.lastClass ? ` · last ${format(new Date(s.lastClass), "MMM d")}` : ""}
+        </p>
+      </div>
+    </div>
+  );
+};
 
 const TeacherStudents = () => {
   const [students, setStudents] = useState<StudentSummary[]>([]);
@@ -58,34 +87,24 @@ const TeacherStudents = () => {
             <p className="text-sm text-muted-foreground">No students yet. They&apos;ll appear here once you have confirmed or completed classes.</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {students.map((s) => {
-              const name = `${s.firstName} ${s.lastName}`.trim();
-              const initials = `${s.firstName?.[0] || ""}${s.lastName?.[0] || ""}`.toUpperCase();
+          <div className="space-y-8">
+            {([
+              { key: "INDIVIDUAL", label: "Individual classes" },
+              { key: "GROUP", label: "Group classes" },
+            ] as const).map(({ key, label }) => {
+              const group = students.filter((s) => s.types?.includes(key));
+              if (group.length === 0) return null;
               return (
-                <div key={s.id} className="flex items-center gap-4 rounded-2xl border border-border/70 bg-background/40 p-4 transition-colors hover:bg-muted/40">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full gradient-hero text-sm font-semibold text-primary-foreground">
-                    {initials || "S"}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium">{name}</p>
-                    <p className="truncate text-xs text-muted-foreground">
-                      {s.subjects.length ? s.subjects.join(", ") : "—"}
-                    </p>
-                  </div>
-                  <div className="shrink-0 text-right">
-                    <p className="flex items-center justify-end gap-1 text-sm font-medium">
-                      <GraduationCap className="h-3.5 w-3.5 text-primary" />
-                      {s.classCount} {s.classCount === 1 ? "class" : "classes"}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {s.completedCount} completed
-                      {s.lastClass ? ` · last ${format(new Date(s.lastClass), "MMM d")}` : ""}
-                    </p>
-                  </div>
+                <div key={key} className="space-y-3">
+                  <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                    {label} <span className="text-muted-foreground/70">({group.length})</span>
+                  </p>
+                  {group.map((s) => <StudentRow key={s.id} s={s} />)}
                 </div>
               );
             })}
+            {/* Fallback for any student whose class type we couldn't read. */}
+            {students.every((s) => !s.types?.length) && students.map((s) => <StudentRow key={s.id} s={s} />)}
           </div>
         )}
       </div>

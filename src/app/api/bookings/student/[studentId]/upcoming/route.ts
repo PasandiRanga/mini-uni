@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireSelfOrAdmin } from "@/lib/adminAuth";
 import { settleFinishedBookings } from "@/lib/bookings";
+import { backfillMeetLinks } from "@/lib/wallet";
 import { withinDisputeWindow } from "@/lib/disputeReasons";
 
 const REPORTABLE = ["PAYMENT_COMPLETED", "CONFIRMED", "IN_PROGRESS", "COMPLETED"];
@@ -17,6 +18,8 @@ export async function GET(
         const { studentId } = params;
         // Finished classes become COMPLETED before they're listed.
         await settleFinishedBookings({ studentId });
+        // Fill Meet links for classes booked before the teacher connected Google.
+        await backfillMeetLinks({ studentId });
         // ?scope=all returns finished and cancelled classes too, for history
         // views and stats. The default stays limited to active bookings.
         const all = new URL(request.url).searchParams.get("scope") === "all";

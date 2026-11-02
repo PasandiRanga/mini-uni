@@ -2,15 +2,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { Calendar, Clock, CalendarClock, Wallet, ArrowUpRight } from "lucide-react";
 import MyClasses from '@/components/classes/MyClasses';
 import ExploreContent from "@/components/explore/ExploreContent";
 import EmailVerificationBanner from "@/components/auth/EmailVerificationBanner";
 import { CurrencySettings } from "@/components/settings/CurrencySettings";
-import { ChangePasswordForm } from "@/components/settings/ChangePasswordForm";
-import { formatMoney, formatMoneyCompact } from "@/lib/currency";
+import { PasswordSettings } from "@/components/settings/PasswordSettings";
+import { formatMoneyCompact } from "@/lib/currency";
 import ScheduleCalendar from "@/components/calendar/ScheduleCalendar";
 import MiniCalendar from "@/components/calendar/MiniCalendar";
 import StudentWallet from "@/components/student/StudentWallet";
@@ -22,10 +21,8 @@ import { CustomizeWidgets, useWidgetPrefs, type WidgetDef } from "@/components/d
 
 const STUDENT_WIDGETS: WidgetDef[] = [
   { id: "stats", label: "Key numbers", description: "Classes and wallet" },
-  { id: "enrolled", label: "Enrolled courses" },
   { id: "upcoming", label: "Upcoming classes" },
   { id: "calendar", label: "Calendar" },
-  { id: "foryou", label: "For you", description: "Recommended classes" },
   { id: "teachers", label: "Your teachers" },
 ];
 
@@ -38,9 +35,7 @@ const DashboardContent = () => {
   const {
     upcomingClasses,
     recentTeachers,
-    enrolledCourses,
     completedCount,
-    recommendations,
     calendarEvents,
     user,
     wallet,
@@ -52,8 +47,8 @@ const DashboardContent = () => {
   // Overview widgets the student can switch on and off.
   const widgetPrefs = useWidgetPrefs("miniuni.widgets.student");
   const show = widgetPrefs.isVisible;
-  const showLeft = show("enrolled") || show("upcoming") || show("calendar");
-  const showRight = show("foryou") || show("teachers");
+  const showLeft = show("upcoming") || show("calendar");
+  const showRight = show("teachers");
 
   if (activeTab === 'explore') return <ExploreContent />;
 
@@ -73,7 +68,7 @@ const DashboardContent = () => {
 
   if (activeTab === 'settings') {
     return (
-      <div className="max-w-2xl space-y-6">
+      <div className="mx-auto max-w-2xl space-y-6">
         <div>
           <h2 className="type-title">Settings</h2>
           <p className="mt-1 text-sm text-muted-foreground">Manage your account and verification.</p>
@@ -85,7 +80,7 @@ const DashboardContent = () => {
         <section className="space-y-3">
           <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Password</p>
           <div className="rounded-2xl border border-border/70 bg-card p-6">
-            <ChangePasswordForm />
+            <PasswordSettings />
           </div>
         </section>
         <section className="space-y-3">
@@ -149,40 +144,6 @@ const DashboardContent = () => {
         {/* Left: Enrolled Courses & secondary panels */}
         {showLeft && (
         <div className={`space-y-6 ${showRight ? "lg:col-span-2" : ""}`}>
-          {show("enrolled") && (
-          <section className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
-            <div className="flex items-center justify-between border-b border-border/60 px-6 py-5">
-              <h2 className="type-section">
-                Enrolled <span className="font-serif italic font-semibold">courses</span>
-              </h2>
-              <Button variant="ghost" size="sm" className="text-primary" onClick={() => router.push("/student/dashboard?tab=classes")}>Manage</Button>
-            </div>
-            <div className="divide-y divide-border/60">
-              {enrolledCourses.length === 0 && (
-                <p className="p-6 text-sm text-muted-foreground">You have no confirmed classes yet.</p>
-              )}
-              {enrolledCourses.map((c) => (
-                <div key={c.id} className="flex flex-col items-start justify-between gap-3 px-6 py-4 transition-colors hover:bg-muted/40 sm:flex-row sm:items-center">
-                  <div>
-                    <p className="font-medium">{c.subject}</p>
-                    <p className="text-sm text-muted-foreground">with {c.teacher}</p>
-                  </div>
-                  <div className="text-left sm:text-right">
-                    <Badge className="rounded-full bg-primary/10 text-primary hover:bg-primary/15">{c.status}</Badge>
-                    {c.googleMeetLink && (
-                      <div className="mt-2">
-                        <a href={c.googleMeetLink} target="_blank" rel="noreferrer" className="link-underline inline-flex items-center gap-1 text-sm text-primary">
-                          Join Meet <ArrowUpRight className="h-3.5 w-3.5" />
-                        </a>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-          )}
-
           {(show("upcoming") || show("calendar")) && (
           <div className={`grid grid-cols-1 gap-6 ${show("upcoming") && show("calendar") ? "md:grid-cols-2" : ""}`}>
             {show("upcoming") && (
@@ -225,32 +186,6 @@ const DashboardContent = () => {
         {/* Right: Recommendations & Your Teachers */}
         {showRight && (
         <div className={showLeft ? "space-y-6" : "grid gap-6 lg:grid-cols-2"}>
-          {show("foryou") && (
-          <section className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
-            <div className="flex items-center justify-between border-b border-border/60 px-6 py-5">
-              <h2 className="type-section">
-                For <span className="font-serif italic font-semibold">you</span>
-              </h2>
-              <Button variant="ghost" size="sm" onClick={() => router.push("/student/dashboard?tab=explore")}>See All</Button>
-            </div>
-            <div className="space-y-5 p-6">
-              {recommendations.length === 0 && <p className="text-sm text-muted-foreground">No recommendations yet.</p>}
-              {recommendations.map((r: any) => (
-                <div key={r.id} className="group flex items-center gap-3">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full gradient-hero font-serif text-base italic text-primary-foreground">
-                    {(r.user?.firstName || 'U').charAt(0)}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium">{r.title}</p>
-                    <p className="truncate text-sm text-muted-foreground">{r.subject}</p>
-                  </div>
-                  <Button size="sm" variant="outline" className="shrink-0 opacity-70 transition-opacity group-hover:opacity-100" onClick={() => router.push(`/student/dashboard?tab=explore&post=${r.id}`)}>View</Button>
-                </div>
-              ))}
-            </div>
-          </section>
-          )}
-
           {show("teachers") && (
           <section className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
             <div className="flex items-center justify-between border-b border-border/60 px-6 py-5">

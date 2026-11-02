@@ -12,7 +12,7 @@ import ProfileLoadError from "@/components/teacher/ProfileLoadError";
 import IdentityVerificationForm from "@/components/teacher/IdentityVerificationForm";
 import AcademicBackgroundForm from "@/components/teacher/AcademicBackgroundForm";
 import { CurrencySettings } from "@/components/settings/CurrencySettings";
-import { ChangePasswordForm } from "@/components/settings/ChangePasswordForm";
+import { PasswordSettings } from "@/components/settings/PasswordSettings";
 import { Loader2, Check, UserCog, Lock, Bell, Landmark, Coins, ShieldCheck, GraduationCap, Sparkles, CalendarCheck, Video } from "lucide-react";
 
 const Section = ({
@@ -295,7 +295,7 @@ const TeacherSettings = () => {
       <div className="space-y-4">
         <GroupHeading>Account</GroupHeading>
         <Section icon={Lock} title="Password" description="Change your account password.">
-          <ChangePasswordForm />
+          <PasswordSettings />
         </Section>
         <Section icon={Coins} title="Currency" description="Your account and payment currency.">
           <CurrencySettings />

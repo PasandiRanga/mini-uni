@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Lock } from "lucide-react";
 
 /** Change password from Settings. Signs out every other device; this one stays signed in. */
-export const ChangePasswordForm = () => {
+export const ChangePasswordForm = ({ onSuccess }: { onSuccess?: () => void } = {}) => {
   const { toast } = useToast();
   const [currentPassword, setCurrent] = useState("");
   const [newPassword, setNew] = useState("");
@@ -28,6 +28,7 @@ export const ChangePasswordForm = () => {
       toast({ title: "Password updated", description: "You've been signed out on your other devices." });
       setCurrent("");
       setNew("");
+      onSuccess?.();
     } catch (err: unknown) {
       toast({ title: "Couldn't update", description: err instanceof Error ? err.message : "Try again", variant: "destructive" });
     } finally {

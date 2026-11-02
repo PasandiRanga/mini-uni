@@ -57,6 +57,9 @@ export async function POST(request: Request) {
                 firstName: user.firstName,
                 lastName: user.lastName,
                 role: user.role,
+                isActive: user.isActive,
+                emailVerified: user.emailVerified,
+                currency: user.currency,
             },
             token,
         }, { status: 200 });

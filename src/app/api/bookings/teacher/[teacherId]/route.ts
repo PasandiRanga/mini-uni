@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireSelfOrAdmin } from "@/lib/adminAuth";
 import { settleFinishedBookings } from "@/lib/bookings";
+import { backfillMeetLinks } from "@/lib/wallet";
 
 export async function GET(
     request: Request,
@@ -14,6 +15,8 @@ export async function GET(
         const { teacherId } = params;
         // Finished classes become COMPLETED (and pay out once the report window closes) before they're listed.
         await settleFinishedBookings({ teacherId });
+        // Fill Meet links for classes booked before this teacher connected Google.
+        await backfillMeetLinks({ teacherId });
 
         const bookings = await prisma.booking.findMany({
             where: { teacherId },
