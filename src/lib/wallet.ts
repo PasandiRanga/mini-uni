@@ -820,6 +820,32 @@ export async function createMeetLinkForBooking(bookingId: string) {
 }
 
 /**
+ * Generates Meet links for a user's confirmed, not-yet-ended classes that are
+ * missing one — covering classes booked before the teacher connected Google.
+ * Idempotent and best-effort, so it's safe to call on every class-list read; it
+ * does nothing once the links exist (or when Google isn't set up).
+ */
+export async function backfillMeetLinks(where: Prisma.BookingWhereInput) {
+  try {
+    if (!isGoogleConfigured()) return;
+    const due = await prisma.booking.findMany({
+      where: {
+        ...where,
+        status: { in: ["PAYMENT_COMPLETED", "CONFIRMED", "IN_PROGRESS"] },
+        googleMeetLink: null,
+        timeSlot: { endTime: { gt: new Date() } },
+        teacher: { googleAccount: { isNot: null } },
+      },
+      select: { id: true },
+      take: 20,
+    });
+    for (const b of due) await createMeetLinkForBooking(b.id);
+  } catch (err) {
+    console.error("Failed to backfill Meet links:", err);
+  }
+}
+
+/**
  * Returns a cancelled booking's money to the student's wallet and takes the
  * matching escrow back off the teacher.
  *

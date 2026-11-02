@@ -19,6 +19,8 @@ interface AuthContextType {
   register: (email: string, password: string, firstName: string, lastName: string, phone: string, role: string) => Promise<User | null>;
   logout: () => Promise<void>;
   clearAuth: () => void;
+  /** Re-reads the current user from the server (e.g. after verifying email). */
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -130,6 +132,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setUser(null);
   };
 
+  const refreshUser = async () => {
+    try {
+      const response = await fetch('/api/auth/me');
+      if (response.ok) {
+        const userData = await response.json();
+        setUser(userData && typeof userData.role === 'string'
+          ? { ...userData, role: userData.role.toUpperCase() }
+          : userData);
+      }
+    } catch (error) {
+      console.error('Failed to refresh user session:', error);
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -140,6 +156,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         register,
         logout,
         clearAuth,
+        refreshUser,
       }}
     >
       {children}

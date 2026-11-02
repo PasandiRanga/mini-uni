@@ -45,6 +45,7 @@ type PostItem = {
   subject?: string;
   grade?: string;
   fee?: number;
+  syllabus?: string | null;
   ratePerHour?: number;
   currency?: string;
   classTypes?: string[];
@@ -367,6 +368,14 @@ const ExploreContent: React.FC = () => {
                 const slotDate = slotDateLabel(post.timeSlots);
                 const classTypeLabels = (post.classTypes || []).map((c) => CLASS_TYPE_LABELS[c] || c);
                 const isTeacherPost = post.type === 'TEACHER_OFFERING';
+                // A student request carries the student's budget encoded in `syllabus`.
+                const budget = (() => {
+                  if (post.type !== 'STUDENT_REQUEST' || !post.syllabus) return null;
+                  try {
+                    const b = JSON.parse(post.syllabus)?.budget;
+                    return b != null && b !== '' ? Number(b) : null;
+                  } catch { return null; }
+                })();
 
                 if (viewType === 'compact') {
                   const isExpanded = expandedId === post.id;
@@ -401,6 +410,9 @@ const ExploreContent: React.FC = () => {
                           {post.fee != null && (
                             <span className="text-sm font-bold text-primary">{formatMoney(post.fee, post.currency)}</span>
                           )}
+                          {budget != null && (
+                            <span className="text-sm font-bold text-primary">{formatMoney(budget, post.currency)}</span>
+                          )}
                           <ChevronDown
                             className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
                           />
@@ -428,6 +440,7 @@ const ExploreContent: React.FC = () => {
 
                             <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
                               {post.fee != null && <span className="font-semibold text-foreground">{formatMoney(post.fee, post.currency)} <span className="font-normal text-muted-foreground">/ class</span></span>}
+                              {budget != null && <span className="font-semibold text-foreground">Budget {formatMoney(budget, post.currency)} <span className="font-normal text-muted-foreground">/ class</span></span>}
                               {duration && <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{duration}</span>}
                               {slotDate && <span className="flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5" />{slotDate}</span>}
                             </div>
@@ -487,6 +500,7 @@ const ExploreContent: React.FC = () => {
                       {/* Price, duration and date */}
                       <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
                         {post.fee != null && <span className="font-semibold text-foreground">{formatMoney(post.fee, post.currency)} <span className="font-normal text-muted-foreground">/ class</span></span>}
+                        {budget != null && <span className="font-semibold text-foreground">Budget {formatMoney(budget, post.currency)} <span className="font-normal text-muted-foreground">/ class</span></span>}
                         {duration && <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{duration}</span>}
                         {slotDate && <span className="flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5" />{slotDate}</span>}
                       </div>

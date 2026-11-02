@@ -14,7 +14,7 @@ type Phase = "loading" | "ready" | "sending" | "code-sent" | "verifying" | "done
 const VerifyEmail = () => {
   const router = useRouter();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
 
   const [phase, setPhase] = useState<Phase>("loading");
   const [code, setCode] = useState("");
@@ -97,6 +97,9 @@ const VerifyEmail = () => {
       if (!res.ok) throw new Error(data.error || "Verification failed");
 
       setPhase("done");
+      // Refresh the cached auth user so gates like "verify your email to book"
+      // clear immediately, without needing a full page reload.
+      await refreshUser();
       toast({ title: "Email verified ✓", description: "Redirecting to your dashboard…" });
       setTimeout(() => router.replace(dashboardPath), 1200);
     } catch (err: unknown) {

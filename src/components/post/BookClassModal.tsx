@@ -79,6 +79,13 @@ const BookClassModal = ({ post, open, onOpenChange, onBooked }: BookClassModalPr
       .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
   }, [post, classType, capacity]);
 
+  // Whether the class has any future slot at all — used to explain an empty list:
+  // for an individual class, "no slots" and "all slots already booked" are different things.
+  const anyFutureSlots = useMemo(
+    () => (post?.timeSlots || []).some((s) => (s.status ? s.status === "AVAILABLE" : true) && new Date(s.startTime).getTime() > Date.now()),
+    [post]
+  );
+
   useEffect(() => {
     if (open) setClassType(offered[0]);
   }, [open, offered]);
@@ -181,7 +188,13 @@ const BookClassModal = ({ post, open, onOpenChange, onBooked }: BookClassModalPr
           <div className="space-y-2">
             <p className="flex items-center gap-1.5 text-sm font-medium"><CalendarClock className="h-4 w-4 text-primary" /> Choose a time</p>
             {slots.length === 0 ? (
-              <p className="rounded-xl border border-border/70 bg-muted/40 p-4 text-sm text-muted-foreground">No available times right now.</p>
+              <p className="rounded-xl border border-border/70 bg-muted/40 p-4 text-sm text-muted-foreground">
+                {classType === "INDIVIDUAL" && anyFutureSlots
+                  ? offered.includes("GROUP")
+                    ? "All individual times are already booked. Switch to a group seat above to join a shared class."
+                    : "All individual times for this class are already booked."
+                  : "No available times right now."}
+              </p>
             ) : (
               <div className="max-h-52 space-y-2 overflow-auto pr-1">
                 {slots.map((s) => {
