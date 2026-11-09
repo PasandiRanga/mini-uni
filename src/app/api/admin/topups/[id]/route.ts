@@ -82,7 +82,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       if (!note) {
         return NextResponse.json({ error: "A reason is required to reject" }, { status: 400 });
       }
-      await failTopUp(tx.id, `Top-up rejected — ${note}`);
+      await failTopUp(tx.id, `Top-up rejected : ${note}`);
       await createNotification({
         userId: studentId,
         type: "TOPUP_REVIEWED",

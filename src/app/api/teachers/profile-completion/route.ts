@@ -28,7 +28,7 @@ export async function GET(request: Request) {
     const p = user.teacherProfile;
     const { percent, complete, steps } = computeProfileCompletion(p);
 
-    // On rejection the admin's reason is stored on the documents — surface it
+    // On rejection the admin's reason is stored on the documents : surface it
     // so the dashboard banner can tell the teacher what to fix.
     const rejectionReason =
       p.verificationStatus === "REJECTED"

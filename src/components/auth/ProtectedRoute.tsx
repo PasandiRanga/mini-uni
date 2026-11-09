@@ -25,7 +25,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       if (!isAuthenticated || !user) {
         router.replace('/auth');
       } else if (requiredRole && user.role !== requiredRole) {
-        // Wrong role for this page — send them to their own dashboard, not home,
+        // Wrong role for this page - send them to their own dashboard, not home,
         // so a teacher never lingers on a student page (and vice versa).
         router.replace(homeForRole(user.role));
       }

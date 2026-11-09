@@ -31,7 +31,7 @@ export const CreatePostModalProvider: React.FC<{ children: ReactNode }> = ({ chi
   const closeCreatePost = useCallback(() => setOpen(false), []);
 
   const handleSuccess = useCallback((post: unknown, action: 'created' | 'updated') => {
-    // Push the change to open lists immediately (optimistic) — no slow refetch.
+    // Push the change to open lists immediately (optimistic) : no slow refetch.
     emitPostChanged({ action, post });
   }, []);
 

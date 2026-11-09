@@ -67,7 +67,7 @@ export async function POST(request: Request) {
             },
         });
 
-        // Welcome email — best-effort, never blocks sign-up.
+        // Welcome email : best-effort, never blocks sign-up.
         try {
             const origin = new URL(request.url).origin;
             const dash = user.role === UserRole.TEACHER ? "teacher" : "student";

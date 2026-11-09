@@ -13,7 +13,7 @@ const RELATIONSHIP_STATUSES: BookingStatus[] = [
 ];
 
 /**
- * GET — unique students the current teacher has confirmed/completed classes with.
+ * GET : unique students the current teacher has confirmed/completed classes with.
  * Aggregates per student: class count, completed count, subjects, last class time.
  */
 export async function GET(request: Request) {

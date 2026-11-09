@@ -65,7 +65,7 @@ const TeacherSignUp = ({ onBack }: TeacherSignUpProps) => {
 
       toast({
         title: "Account created!",
-        description: "Welcome to MiniUni — taking you to your dashboard.",
+        description: "Welcome to MiniUni - taking you to your dashboard.",
       });
 
       router.push("/teacher/dashboard");
@@ -81,8 +81,9 @@ const TeacherSignUp = ({ onBack }: TeacherSignUpProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4 py-12">
-      <Card className="w-full max-w-md">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4 py-12 grain">
+      <div className="pointer-events-none absolute -right-40 -top-40 h-[30rem] w-[30rem] rounded-full bg-accent/[0.07] blur-3xl" />
+      <Card className="relative w-full max-w-md bg-card/85 shadow-elevated backdrop-blur-xl">
         <CardHeader>
           <Button
             variant="ghost"

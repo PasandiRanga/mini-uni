@@ -13,7 +13,7 @@ const PostPage = ({ id }: { id: string }) => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <main className="container mx-auto max-w-5xl px-4 pb-16 pt-24">
+      <main className="container mx-auto max-w-5xl px-4 pb-20 pt-28">
         <button
           type="button"
           onClick={back}
@@ -21,7 +21,7 @@ const PostPage = ({ id }: { id: string }) => {
         >
           <ArrowLeft className="h-4 w-4" /> Back
         </button>
-        <div className="overflow-hidden rounded-3xl bg-card shadow-card">
+        <div className="overflow-hidden rounded-[2rem] border border-border/70 bg-card shadow-elevated">
           <PostDetail postId={id} />
         </div>
       </main>

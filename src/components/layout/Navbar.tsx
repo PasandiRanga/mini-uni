@@ -21,21 +21,21 @@ const Navbar = () => {
   const getDashboardPath = () => user?.role === 'TEACHER' ? '/teacher/dashboard' : '/student/dashboard';
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/75 backdrop-blur-xl border-b border-border/60">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
+    <nav className="fixed left-0 right-0 top-0 z-50 px-3 pt-3 sm:px-5">
+      <div className="surface-glass mx-auto max-w-7xl rounded-2xl">
+        <div className="flex h-[3.75rem] items-center justify-between px-3 sm:px-5">
           {/* Logo */}
           <Link href={isAuthenticated ? (getDashboardPath()) : "/"} className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 rounded-full gradient-hero flex items-center justify-center shadow-soft transition-all duration-300 group-hover:shadow-card group-hover:rotate-[8deg]">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl gradient-hero shadow-soft transition-all duration-300 group-hover:shadow-card group-hover:rotate-[8deg]">
               <GraduationCap className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="text-xl font-semibold tracking-tight text-foreground">
+            <span className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">
               Mini<span className="font-serif italic font-normal">Uni</span>
             </span>
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden items-center gap-8 md:flex">
             {!isAuthenticated ? (
               // Guest nav: Home, Explore, How It Works
               <>
@@ -75,7 +75,7 @@ const Navbar = () => {
           </div>
 
           {/* Desktop Auth Buttons */}
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden items-center gap-3 md:flex">
             {isAuthenticated ? (
               <>
                 <span className="text-sm text-muted-foreground">
@@ -100,7 +100,8 @@ const Navbar = () => {
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden p-2 rounded-lg hover:bg-muted transition-colors"
+            aria-label={isOpen ? "Close menu" : "Open menu"}
+            className="rounded-xl p-2 transition-colors hover:bg-muted md:hidden"
             onClick={() => setIsOpen(!isOpen)}
           >
             {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}

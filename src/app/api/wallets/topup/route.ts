@@ -45,7 +45,7 @@ export async function POST(request: Request) {
             );
         }
 
-        // The deposit slip proves the money was sent — it's what the admin checks.
+        // The deposit slip proves the money was sent : it's what the admin checks.
         let slipUrl: string | null;
         try {
             slipUrl = await storeImage(body?.slip, `topups/${session.sub}`);

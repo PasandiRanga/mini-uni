@@ -52,7 +52,7 @@ export async function POST(
                 },
             });
 
-            // Both sides agree the class happened — clear the escrow now rather
+            // Both sides agree the class happened : clear the escrow now rather
             // than waiting for the slot's end time to pass.
             await releaseBookingEscrow(completedBooking.id);
 

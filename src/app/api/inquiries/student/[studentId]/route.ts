@@ -17,7 +17,7 @@ export async function GET(request: Request, { params }: { params: { studentId: s
   if (!session || !session.sub) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  // It's the student's own inbox — don't let one user read another's.
+  // It's the student's own inbox : don't let one user read another's.
   if (session.sub !== params.studentId) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

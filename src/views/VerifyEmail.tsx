@@ -71,7 +71,7 @@ const VerifyEmail = () => {
       setCooldown(data.retryAfter ?? 120);
       setPhase("code-sent");
       if (data.devCode) {
-        toast({ title: "Dev mode — code not emailed", description: `Your code is ${data.devCode}` });
+        toast({ title: "Dev mode - code not emailed", description: `Your code is ${data.devCode}` });
       } else {
         toast({ title: "Code sent", description: "Check your inbox for the 6-digit code." });
       }
@@ -135,7 +135,7 @@ const VerifyEmail = () => {
           </Link>
         </div>
 
-        <div className="rounded-3xl border border-border/70 bg-card p-8 shadow-elevated">
+        <div className="rounded-[2rem] border border-border/70 bg-card/85 p-8 shadow-elevated backdrop-blur-xl">
           {phase === "done" ? (
             <div className="text-center">
               <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-success/15 text-success">

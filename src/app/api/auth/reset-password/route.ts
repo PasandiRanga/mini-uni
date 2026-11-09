@@ -14,7 +14,7 @@ const findUser = (uid: unknown) =>
       })
     : null;
 
-/** GET ?uid&token — whether a reset link is still usable, so the page can say so up front. */
+/** GET ?uid&token : whether a reset link is still usable, so the page can say so up front. */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const user = await findUser(searchParams.get("uid"));
@@ -22,7 +22,7 @@ export async function GET(request: Request) {
   return NextResponse.json({ valid });
 }
 
-/** POST { uid, token, password } — sets the new password and uses up the link. */
+/** POST { uid, token, password } : sets the new password and uses up the link. */
 export async function POST(request: Request) {
   try {
     const { uid, token, password } = await request.json().catch(() => ({}));

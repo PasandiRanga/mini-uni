@@ -60,12 +60,12 @@ const AppSidebar = ({ sections, activeId, onSelect, user, roleLabel, onLogout }:
 
   return (
     <aside
-      className={`hidden lg:flex sticky top-0 h-screen shrink-0 flex-col p-4 transition-[width] duration-300 ${collapsed ? "w-[96px]" : "w-[252px]"}`}
+      className={`sticky top-0 hidden h-screen shrink-0 flex-col p-4 lg:flex transition-[width] duration-300 ${collapsed ? "w-[96px]" : "w-[268px]"}`}
     >
-      <div className="relative flex h-full flex-col overflow-hidden rounded-3xl border border-border/70 bg-card/80 shadow-card backdrop-blur-xl grain">
+      <div className="relative flex h-full flex-col overflow-hidden rounded-[2rem] border border-border/70 bg-card/80 shadow-elevated backdrop-blur-xl grain">
         <div className={`flex items-center pb-4 pt-6 ${collapsed ? "flex-col gap-3 px-3" : "justify-between px-6"}`}>
           <Link href="/" className="flex items-center gap-2.5" title="MiniUni home">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full gradient-hero">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl gradient-hero shadow-soft">
               <GraduationCap className="h-5 w-5 text-primary-foreground" />
             </div>
             {!collapsed && (
@@ -105,7 +105,7 @@ const AppSidebar = ({ sections, activeId, onSelect, user, roleLabel, onLogout }:
                     onClick={() => onSelect(item.id)}
                     title={collapsed ? item.label : undefined}
                     aria-current={active ? "page" : undefined}
-                    className={`group relative flex w-full items-center rounded-2xl py-2.5 text-sm transition-all duration-300 ${
+                    className={`group relative flex w-full items-center rounded-xl py-3 text-sm transition-all duration-300 ${
                       collapsed ? "justify-center px-0" : "gap-3 px-4"
                     } ${
                       active

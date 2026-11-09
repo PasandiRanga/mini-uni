@@ -45,8 +45,8 @@ import { DISPUTE_REASONS, DISPUTE_WINDOW_HOURS, type DisputeReason } from "@/lib
 
 const DOC_LABELS: Record<string, string> = {
   ID: "Identity document",
-  ID_FRONT: "ID — front",
-  ID_BACK: "ID — back",
+  ID_FRONT: "ID - front",
+  ID_BACK: "ID - back",
   UNIVERSITY_ID: "University ID",
   ADDRESS_PROOF: "Proof of address",
   BANK_DETAILS: "Bank details",
@@ -76,7 +76,7 @@ const StatusBadge = ({ status }: { status: string }) => (
 );
 
 const fmtDate = (d?: string | null) =>
-  d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—";
+  d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "-";
 
 /** Number of items waiting, shown on a tab. Hidden at zero. */
 const CountBadge = ({ n }: { n: number }) =>
@@ -138,10 +138,12 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="relative min-h-screen overflow-hidden bg-background">
+      <div className="pointer-events-none absolute -right-48 -top-48 h-[38rem] w-[38rem] rounded-full bg-primary/[0.07] blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-48 -left-48 h-[32rem] w-[32rem] rounded-full bg-accent/[0.05] blur-3xl" />
       {/* Top bar */}
-      <header className="sticky top-0 z-40 border-b border-border/70 bg-card/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-8">
+      <header className="sticky top-0 z-40 border-b border-border/70 bg-card/70 backdrop-blur-xl">
+        <div className="page-container flex items-center justify-between py-4">
           <Link href="/" className="flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-full gradient-hero">
               <GraduationCap className="h-5 w-5 text-primary-foreground" />
@@ -165,8 +167,8 @@ const AdminDashboard = () => {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-5 py-8 sm:px-8">
-        <div className="mb-6">
+      <main className="page-container relative py-8 lg:py-10">
+        <div className="mb-8 rounded-[1.75rem] border border-border/70 bg-card/75 p-6 shadow-card backdrop-blur-xl sm:p-8">
           <h1 className="type-title">Admin <span className="font-serif font-semibold">console</span></h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Review teacher verifications, process withdrawal payouts and settle reported classes.
@@ -174,7 +176,7 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs defaultValue="teachers" className="w-full">
-          <TabsList className="mb-6 h-auto max-w-full flex-wrap justify-start">
+          <TabsList className="mb-6 h-auto max-w-full flex-wrap justify-start rounded-2xl border border-border/70 bg-card/75 p-1.5 shadow-soft backdrop-blur-xl">
             <TabsTrigger value="teachers" className="gap-2">
               <ShieldCheck className="h-4 w-4" /> Teacher verification
               <CountBadge n={counts.teachers} />
@@ -360,7 +362,7 @@ const openDocument = async (e: React.MouseEvent, url: string) => {
 const Field = ({ label, value }: { label: string; value?: string | null }) => (
   <div>
     <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
-    <p className="text-sm">{value && value.trim() ? value : "—"}</p>
+    <p className="text-sm">{value && value.trim() ? value : "-"}</p>
   </div>
 );
 
@@ -476,11 +478,11 @@ const TeacherDetailDialog = ({
                 <Mail className="h-4 w-4 text-muted-foreground" /> {detail.user.email}
               </div>
               <div className="flex items-center gap-2 text-sm">
-                <Phone className="h-4 w-4 text-muted-foreground" /> {p?.contactNumber || detail.user.phone || "—"}
+                <Phone className="h-4 w-4 text-muted-foreground" /> {p?.contactNumber || detail.user.phone || "-"}
               </div>
               <div className="flex items-center gap-2 text-sm sm:col-span-2">
                 <MapPin className="h-4 w-4 text-muted-foreground" />
-                {[p?.address, p?.postalCode, p?.country].filter(Boolean).join(", ") || "—"}
+                {[p?.address, p?.postalCode, p?.country].filter(Boolean).join(", ") || "-"}
               </div>
             </div>
 

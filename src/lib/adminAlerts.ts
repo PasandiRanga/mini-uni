@@ -70,7 +70,7 @@ export async function notifyAdminsOfSubmission(opts: { teacherUserId: string; re
 
 /**
  * Tells every admin that a student has submitted a wallet top-up slip to verify.
- * Best-effort and in-app only — it never throws, so the student's submission
+ * Best-effort and in-app only : it never throws, so the student's submission
  * always succeeds.
  */
 export async function notifyAdminsOfTopUp(opts: {

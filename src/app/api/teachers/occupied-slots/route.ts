@@ -5,7 +5,7 @@ import { getSessionFromRequest } from "@/lib/auth";
 import { BookingStatus } from "@prisma/client";
 
 /**
- * GET — time ranges the teacher is already committed to, so the slot picker can
+ * GET : time ranges the teacher is already committed to, so the slot picker can
  * render them as disabled. Sourced from confirmed/in-progress bookings.
  */
 export async function GET(request: Request) {

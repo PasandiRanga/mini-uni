@@ -190,7 +190,7 @@ const PersonalDetailsForm = ({ onSaved }: PersonalDetailsFormProps) => {
           required: true,
           placeholder: "J. A. Perera",
           readOnly: verified,
-          hint: verified ? undefined : initialsEdited ? undefined : "Filled in from your full name — edit if it's different.",
+          hint: verified ? undefined : initialsEdited ? undefined : "Filled in from your full name - edit if it's different.",
         })}
         {field("contactNumber", "Primary contact number", {
           required: true,
@@ -202,7 +202,7 @@ const PersonalDetailsForm = ({ onSaved }: PersonalDetailsFormProps) => {
         {field("contactNumber2", "Secondary contact number", { type: "tel", inputMode: "tel", placeholder: "+94 11 234 5678" })}
       </div>
 
-      {/* Email — read-only with an inline verification indicator */}
+      {/* Email - read-only with an inline verification indicator */}
       <div className="space-y-1.5">
         <Label htmlFor="email">Email</Label>
         <div className="relative">
@@ -221,7 +221,7 @@ const PersonalDetailsForm = ({ onSaved }: PersonalDetailsFormProps) => {
                 )}
               </TooltipTrigger>
               <TooltipContent>
-                {emailVerified ? "Email verified" : "Email not verified — click to verify"}
+                {emailVerified ? "Email verified" : "Email not verified - click to verify"}
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>

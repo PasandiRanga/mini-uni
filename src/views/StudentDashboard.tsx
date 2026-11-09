@@ -94,7 +94,7 @@ const DashboardContent = () => {
   }
 
   // Until the first load lands, show a dash rather than a misleading 0.
-  const pending = (v: string | number) => (statsLoading ? "–" : v);
+  const pending = (v: string | number) => (statsLoading ? "-" : v);
   const stats = [
     { icon: Calendar, label: "Classes completed", value: pending(completedCount) },
     { icon: CalendarClock, label: "Upcoming classes", value: pending(upcomingClasses.length) },
@@ -105,7 +105,7 @@ const DashboardContent = () => {
 
   return (
     <>
-      <div className="mb-4 flex justify-end">
+      <div className="mb-5 flex justify-end">
         <CustomizeWidgets widgets={STUDENT_WIDGETS} {...widgetPrefs} />
       </div>
 
@@ -147,7 +147,7 @@ const DashboardContent = () => {
           {(show("upcoming") || show("calendar")) && (
           <div className={`grid grid-cols-1 gap-6 ${show("upcoming") && show("calendar") ? "md:grid-cols-2" : ""}`}>
             {show("upcoming") && (
-            <section className="rounded-3xl border border-border/70 bg-card p-6 shadow-soft">
+            <section className="rounded-[1.5rem] border border-border/70 bg-card/80 p-6 shadow-card backdrop-blur-sm">
               <h3 className="type-eyebrow mb-4">Upcoming classes</h3>
               <div className="space-y-4">
                 {upcomingClasses.length === 0 && <p className="text-sm text-muted-foreground">No upcoming classes</p>}
@@ -170,7 +170,7 @@ const DashboardContent = () => {
             )}
 
             {show("calendar") && (
-            <section className="rounded-3xl border border-border/70 bg-card p-6 shadow-soft">
+            <section className="rounded-[1.5rem] border border-border/70 bg-card/80 p-6 shadow-card backdrop-blur-sm">
               <h3 className="type-eyebrow mb-4">This month</h3>
               <MiniCalendar
                 events={calendarEvents as any}
@@ -187,7 +187,7 @@ const DashboardContent = () => {
         {showRight && (
         <div className={showLeft ? "space-y-6" : "grid gap-6 lg:grid-cols-2"}>
           {show("teachers") && (
-          <section className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
+          <section className="overflow-hidden rounded-[1.5rem] border border-border/70 bg-card/80 shadow-card backdrop-blur-sm">
             <div className="flex items-center justify-between border-b border-border/60 px-6 py-5">
               <h2 className="type-section">
                 Your <span className="font-serif italic font-semibold">teachers</span>
@@ -222,7 +222,7 @@ const StudentDashboard = () => {
   return (
     <DashboardLayout>
       <div className="px-5 py-8 sm:px-8 lg:px-10">
-        {/* Stable top-level import — survives DashboardContent remounts so the OTP flow keeps its state */}
+        {/* Stable top-level import - survives DashboardContent remounts so the OTP flow keeps its state */}
         <EmailVerificationBanner />
         <DashboardContent />
       </div>

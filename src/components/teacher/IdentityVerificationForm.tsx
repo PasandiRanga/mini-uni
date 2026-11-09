@@ -169,7 +169,7 @@ const IdentityVerificationForm = ({ onSaved }: IdentityVerificationFormProps) =>
           <Upload className="h-5 w-5 shrink-0 text-muted-foreground" strokeWidth={1.75} />
         )}
         <span className="min-w-0 flex-1 truncate text-sm">
-          {file ? file.name : onFile ? "Uploaded — choose a new file to replace" : "Click to upload (image or PDF)"}
+          {file ? file.name : onFile ? "Uploaded - choose a new file to replace" : "Click to upload (image or PDF)"}
         </span>
         <input
           type="file"

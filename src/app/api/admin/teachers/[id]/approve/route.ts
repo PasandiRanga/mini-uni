@@ -8,7 +8,7 @@ import { computeProfileCompletion } from "@/lib/teacherVerification";
 
 /**
  * Approves a teacher: marks the profile APPROVED and stamps every uploaded
- * document as reviewed/approved. Approval is what lets a teacher go live —
+ * document as reviewed/approved. Approval is what lets a teacher go live :
  * post classes, get booked, and earn. Keyed by user id.
  */
 export async function POST(request: Request, { params }: { params: { id: string } }) {
@@ -71,7 +71,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       metadata: { status: "APPROVED" },
     });
 
-    // Email too — best-effort, never block the decision on it.
+    // Email too : best-effort, never block the decision on it.
     if (profile.user?.email) {
       const mail = buildVerificationStatusEmail("APPROVED", profile.user.firstName);
       sendEmail({ to: profile.user.email, ...mail }).catch((e) =>

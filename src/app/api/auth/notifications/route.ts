@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getSessionFromRequest } from "@/lib/auth";
 
-// GET — current notification preferences
+// GET : current notification preferences
 export async function GET(request: Request) {
   try {
     const session = await getSessionFromRequest(request);
@@ -22,7 +22,7 @@ export async function GET(request: Request) {
   }
 }
 
-// PUT — update notification preferences
+// PUT : update notification preferences
 export async function PUT(request: Request) {
   try {
     const session = await getSessionFromRequest(request);

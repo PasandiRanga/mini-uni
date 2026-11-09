@@ -106,14 +106,13 @@ const DashboardLayout: React.FC<PropsWithChildren> = ({ children }) => {
 
         {/* Main column */}
         <div className="flex min-w-0 flex-1 flex-col pb-24 lg:pb-0">
-          {/* Editorial greeting header */}
-          <header className="px-5 pt-8 sm:px-8 lg:px-10 lg:pt-10">
-            <div className="flex flex-wrap items-end justify-between gap-4">
-              <div className="animate-fade-up">
-                <p className="mb-1 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">{todayLabel()}</p>
+          <header className="px-5 pb-2 pt-7 sm:px-8 lg:px-10 lg:pt-9">
+            <div className="flex flex-wrap items-end justify-between gap-5">
+              <div className="animate-fade-up border-l-2 border-primary/70 pl-4 sm:pl-5">
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-primary/80">{todayLabel()}</p>
                 <h1 className="type-page-title">
                   {greeting()},{" "}
-                  <span className="font-serif italic text-gradient font-semibold">{user?.firstName || "Student"}.</span>
+                  <span className="font-serif font-semibold text-gradient">{user?.firstName || "Student"}.</span>
                 </h1>
               </div>
               <div className="flex items-center gap-2.5">
@@ -134,7 +133,7 @@ const DashboardLayout: React.FC<PropsWithChildren> = ({ children }) => {
           <main className="flex-1">{children}</main>
         </div>
 
-        {/* Mobile — bottom dock */}
+        {/* Mobile - bottom dock */}
         <nav className="fixed inset-x-4 bottom-4 z-50 lg:hidden">
           <div className="flex items-center justify-around gap-1 rounded-full border border-border/70 bg-card/90 px-3 py-2 shadow-elevated backdrop-blur-xl">
             {navItems.filter((i) => i.id === "overview" || i.id === "schedule").map((item) => {

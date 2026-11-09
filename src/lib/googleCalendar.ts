@@ -6,7 +6,7 @@
  * booked, we create an event on the teacher's calendar with a Meet link and the
  * student as an attendee, so it lands on both their Google calendars.
  *
- * Nothing here throws for a missing config or a disconnected teacher — a class
+ * Nothing here throws for a missing config or a disconnected teacher : a class
  * must still confirm even if the calendar step can't run.
  */
 
@@ -73,7 +73,7 @@ export async function exchangeCodeForTokens(code: string, origin: string) {
     });
     if (info.ok) email = (await info.json())?.email ?? null;
   } catch {
-    /* email is only for display — ignore if it fails */
+    /* email is only for display : ignore if it fails */
   }
 
   return { refreshToken: data.refresh_token ?? null, email };

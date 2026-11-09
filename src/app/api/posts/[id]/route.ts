@@ -86,7 +86,7 @@ export async function PUT(
 
         const data = await request.json();
 
-        // Only persist real Post columns — the client also sends helper fields
+        // Only persist real Post columns : the client also sends helper fields
         // (availabilitySlots, durationMin, …) that are not scalar columns.
         const updateData: any = {
             title: data.title,
@@ -133,7 +133,7 @@ export async function PUT(
             const isKept = (start: Date, end: Date) =>
                 kept.some((k) => k.startTime.getTime() === start.getTime() && k.endTime.getTime() === end.getTime());
             for (const slot of data.availabilitySlots) {
-                // Never add a slot in the past — a class can only be scheduled ahead.
+                // Never add a slot in the past : a class can only be scheduled ahead.
                 const startsInFuture = slot.start && new Date(slot.start).getTime() > Date.now();
                 if (slot.start && slot.end && startsInFuture && !isKept(new Date(slot.start), new Date(slot.end))) {
                     await prisma.timeSlot.create({

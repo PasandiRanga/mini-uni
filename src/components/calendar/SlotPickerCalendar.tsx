@@ -35,9 +35,9 @@ interface SlotPickerCalendarProps {
   busy?: BusySlot[];
   /** Class length in minutes (a click adds a slot of this length). */
   durationMin: number;
-  /** Called when a drag defines a custom span — keeps the duration field in sync. */
+  /** Called when a drag defines a custom span - keeps the duration field in sync. */
   onDurationChange?: (min: number) => void;
-  /** When true, only a single slot can be picked — a new selection replaces the old one. */
+  /** When true, only a single slot can be picked - a new selection replaces the old one. */
   single?: boolean;
   dayStart?: number;
   dayEnd?: number;
@@ -197,10 +197,10 @@ const SlotPickerCalendar = ({
     return d;
   };
 
-  // Validate a start/end pair and apply it as the slot (no button — runs on change).
+  // Validate a start/end pair and apply it as the slot (no button - runs on change).
   const applyManual = (s: string, e: string) => {
     if (!pickedDay) return;
-    if (!/^\d{1,2}:\d{2}$/.test(s) || !/^\d{1,2}:\d{2}$/.test(e)) return; // incomplete typing — wait
+    if (!/^\d{1,2}:\d{2}$/.test(s) || !/^\d{1,2}:\d{2}$/.test(e)) return; // incomplete typing - wait
     const start = timeToDate(s);
     const end = timeToDate(e);
     if (end.getTime() <= start.getTime()) { setManualError("End time must be after the start time."); return; }
@@ -237,7 +237,7 @@ const SlotPickerCalendar = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pickedDay]);
 
-  // On edit, the selection is filled in asynchronously after mount — open the slot's day
+  // On edit, the selection is filled in asynchronously after mount - open the slot's day
   // once it arrives (but never fight the user once they've navigated the calendar).
   const initedFromSelected = useRef(false);
   useEffect(() => {
@@ -363,7 +363,7 @@ const SlotPickerCalendar = ({
   // ── Time-slot view (for the picked day) ──────────────────────────────────────
   const daySelected = selected.map((s, i) => ({ s, i })).filter(({ s }) => isSameDay(s.start, pickedDay));
   const dayBusy = busyParsed.filter((b) => isSameDay(b.start, pickedDay));
-  // Times before this are in the past / too soon to book — shown disabled.
+  // Times before this are in the past / too soon to book - shown disabled.
   const earliestMs = earliestStartMs();
   const hourMs = (h: number) => { const d = new Date(pickedDay); d.setHours(h, 0, 0, 0); return d.getTime(); };
 
@@ -377,7 +377,7 @@ const SlotPickerCalendar = ({
         <Button type="button" variant="ghost" size="sm" className="rounded-full border border-border/70" onClick={() => setPickedDay(null)}>Change date</Button>
       </div>
 
-      {/* Manual time entry — alternative to dragging on the grid */}
+      {/* Manual time entry - alternative to dragging on the grid */}
       <div className="border-b border-border/60 px-4 py-3">
         <div className="flex flex-wrap items-end gap-3">
           <div className="space-y-1">
@@ -421,7 +421,7 @@ const SlotPickerCalendar = ({
               <div key={h} className="pointer-events-none absolute inset-x-0 border-t border-border/40" style={{ top: i * hourHeight }} />
             ))}
 
-            {/* Past / too-soon band (disabled) — times before the earliest selectable slot today */}
+            {/* Past / too-soon band (disabled) - times before the earliest selectable slot today */}
             {(() => {
               const minMs = earliestStartMs();
               const ds = new Date(pickedDay); ds.setHours(dayStart, 0, 0, 0);
@@ -452,7 +452,7 @@ const SlotPickerCalendar = ({
               return (
                 <div key={`s${i}`} data-slot className="group absolute inset-x-1 overflow-hidden rounded-md border border-primary/50 bg-primary/20 px-1.5 py-0.5 text-[10px] text-primary" style={{ top, height }}>
                   <div className="flex items-start justify-between">
-                    <span className="font-medium">{format(s.start, "h:mm")}–{format(s.end, "h:mm a")}</span>
+                    <span className="font-medium">{format(s.start, "h:mm")}-{format(s.end, "h:mm a")}</span>
                     <button type="button" onClick={() => removeSlot(i)} className="rounded-full p-0.5 hover:bg-primary/20" aria-label="Remove slot">
                       <X className="h-3 w-3" />
                     </button>

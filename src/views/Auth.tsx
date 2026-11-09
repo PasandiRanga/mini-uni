@@ -47,7 +47,7 @@ const Auth = () => {
     try {
       if (mode === "login") {
         // Attempt real login via Auth context. Redirect by the ACTUAL authenticated
-        // role returned from the server — not the role hint in the URL (which defaults
+        // role returned from the server - not the role hint in the URL (which defaults
         // to "student" and otherwise sends teachers to the wrong dashboard).
         const loggedInUser = await login(formData.email, formData.password, role.toUpperCase());
         toast({ title: "Welcome back!", description: "Redirecting to your dashboard..." });
@@ -92,9 +92,11 @@ const Auth = () => {
   const verifiedCount = teachers.filter((t) => t.verified).length;
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="relative flex min-h-screen overflow-hidden bg-background">
+      <div className="pointer-events-none absolute -right-40 -top-40 h-[34rem] w-[34rem] rounded-full bg-primary/[0.08] blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-48 left-1/3 h-[28rem] w-[28rem] rounded-full bg-accent/[0.06] blur-3xl" />
       {/* Left Panel - Form */}
-      <div className="flex-1 flex flex-col justify-center px-6 py-12 lg:px-12">
+      <div className="relative flex flex-1 flex-col justify-center px-6 py-12 lg:px-12">
         <div className="mx-auto w-full max-w-md">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 mb-10">
@@ -132,7 +134,8 @@ const Auth = () => {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="rounded-[2rem] border border-border/70 bg-card/80 p-6 shadow-elevated backdrop-blur-xl sm:p-8">
+            <div className="space-y-5">
             {/* Inline signup name field removed. Use /signup for new accounts. */}
 
             <div className="space-y-2">
@@ -201,6 +204,7 @@ const Auth = () => {
                 </>
               )}
             </Button>
+            </div>
           </form>
 
           {/* Signup handled on dedicated /signup page */}
@@ -237,7 +241,7 @@ const Auth = () => {
               <p className="text-sm text-primary-foreground/80">Active Students</p>
             </div>
             <div className="bg-primary-foreground/10 rounded-2xl p-4 backdrop-blur-sm">
-              <p className="text-3xl font-bold">{verifiedCount > 0 ? verifiedCount : '—'}</p>
+              <p className="text-3xl font-bold">{verifiedCount > 0 ? verifiedCount : '-'}</p>
               <p className="text-sm text-primary-foreground/80">Verified Teachers</p>
             </div>
             <div className="bg-primary-foreground/10 rounded-2xl p-4 backdrop-blur-sm">

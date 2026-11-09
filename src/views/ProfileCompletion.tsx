@@ -92,7 +92,7 @@ const ProfileCompletion = () => {
     <div className="relative min-h-screen overflow-hidden bg-background grain">
       <div className="absolute -top-40 right-[-10%] -z-10 h-[480px] w-[480px] rounded-full bg-primary/[0.05] blur-3xl" />
 
-      <div className="mx-auto max-w-3xl px-4 py-10 sm:py-14">
+      <div className="page-container max-w-3xl py-10 sm:py-14">
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
@@ -111,7 +111,7 @@ const ProfileCompletion = () => {
           </Link>
         </div>
 
-        <div className="mb-2">
+        <div className="mb-2 rounded-[1.75rem] border border-border/70 bg-card/75 p-6 shadow-card backdrop-blur-xl sm:p-8">
           <h1 className="type-page-title">
             Complete your <span className="font-serif italic text-gradient font-semibold">profile</span>
           </h1>
@@ -157,7 +157,7 @@ const ProfileCompletion = () => {
 
         {allDone && !needsChanges ? (
           <div
-            className={`rounded-3xl border p-8 text-center ${
+            className={`rounded-[1.75rem] border p-8 text-center shadow-card ${
               status === "SUSPENDED" ? "border-destructive/40 bg-destructive/[0.06]" : "border-success/40 bg-success/[0.07]"
             }`}
           >

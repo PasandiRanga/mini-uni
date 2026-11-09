@@ -5,6 +5,7 @@ import { SuggestInput } from "@/components/ui/suggest-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -58,9 +59,6 @@ type PostItem = {
 };
 
 const ALL_SUBJECTS = "All Subjects";
-/** Chips shown before "More subjects". */
-const SUBJECT_CHIP_LIMIT = 10;
-
 const ExploreContent: React.FC = () => {
   const [posts, setPosts] = useState<PostItem[]>([]);
   const [isLoadingPosts, setIsLoadingPosts] = useState(false);
@@ -104,7 +102,6 @@ const ExploreContent: React.FC = () => {
   const [selectedSubject, setSelectedSubject] = useState(ALL_SUBJECTS);
   const [postType, setPostType] = useState<"all" | "teachers" | "students">("all");
   const [grade, setGrade] = useState<string | null>(null);
-  const [showAllSubjects, setShowAllSubjects] = useState(false);
 
   // Subject chips follow the picked level, so O/L shows O/L subjects.
   const levelSubjects = useMemo(() => {
@@ -117,14 +114,6 @@ const ExploreContent: React.FC = () => {
   useEffect(() => {
     if (selectedSubject !== ALL_SUBJECTS && !levelSubjects.includes(selectedSubject)) setSelectedSubject(ALL_SUBJECTS);
   }, [levelSubjects, selectedSubject]);
-
-  const subjectChips = useMemo(() => {
-    if (showAllSubjects || levelSubjects.length <= SUBJECT_CHIP_LIMIT) return levelSubjects;
-    const shown = levelSubjects.slice(0, SUBJECT_CHIP_LIMIT);
-    // Keep the picked subject visible after collapsing.
-    return shown.includes(selectedSubject) || selectedSubject === ALL_SUBJECTS ? shown : [...shown, selectedSubject];
-  }, [levelSubjects, showAllSubjects, selectedSubject]);
-  const hiddenSubjectCount = levelSubjects.length - SUBJECT_CHIP_LIMIT;
 
   const [minPrice, setMinPrice] = useState<number | null>(null);
   const [maxPrice, setMaxPrice] = useState<number | null>(null);
@@ -143,10 +132,11 @@ const ExploreContent: React.FC = () => {
   const lockedHint = "Available once your teacher profile is approved";
   const isGuest = !isAuthenticated;
 
-  const activeFilterCount = [grade, minPrice, maxPrice, classType].filter((v) => v != null && v !== '').length;
+  const activeFilterCount = [selectedSubject !== ALL_SUBJECTS ? selectedSubject : null, grade, minPrice, maxPrice, classType].filter((v) => v != null && v !== '').length;
 
   const resetFilters = () => {
     setGrade(null);
+    setSelectedSubject(ALL_SUBJECTS);
     setMinPrice(null);
     setMaxPrice(null);
     setClassType(null);
@@ -155,7 +145,7 @@ const ExploreContent: React.FC = () => {
   const filteredPosts = useMemo(() => {
     return posts
       .filter((post) => {
-        // Every slot already finished — the offering is no longer bookable.
+        // Every slot already finished - the offering is no longer bookable.
         if (isPostExpired(post.timeSlots)) return false;
 
         if (postType === "teachers" && post.type !== "TEACHER_OFFERING") return false;
@@ -185,9 +175,9 @@ const ExploreContent: React.FC = () => {
   return (
     <div className="pt-2">
       <div>
-        <div className="container mx-auto px-4 pt-4">
-          <section className="overflow-hidden rounded-3xl border border-border/70 bg-card/80 shadow-card backdrop-blur-xl">
-            <div className="px-6 py-8 sm:px-8">
+        <div className="page-container pt-4">
+          <section className="page-section relative overflow-hidden shadow-elevated grain">
+            <div className="relative px-6 py-10 sm:px-10">
               <div className="mx-auto max-w-3xl text-center">
                 <h1 className="type-page-title">
                   Explore <span className="font-serif italic text-gradient font-semibold">Classes</span>
@@ -221,50 +211,39 @@ const ExploreContent: React.FC = () => {
                   </Button>
                 </div>
 
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {[ALL_SUBJECTS, ...subjectChips].map((subject) => (
-                    <button
-                      key={subject}
-                      onClick={() => setSelectedSubject(subject)}
-                      aria-pressed={selectedSubject === subject}
-                      className={`rounded-full px-4 py-2 text-sm font-medium transition-all duration-300 ${selectedSubject === subject
-                        ? "gradient-hero text-primary-foreground shadow-soft"
-                        : "border border-border/70 bg-background/60 text-muted-foreground hover:border-primary/30 hover:text-foreground"
-                        }`}
-                    >
-                      {subject}
-                    </button>
-                  ))}
-                  {hiddenSubjectCount > 0 && (
-                    <button
-                      onClick={() => setShowAllSubjects((s) => !s)}
-                      aria-expanded={showAllSubjects}
-                      className="rounded-full px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
-                    >
-                      {showAllSubjects ? "Fewer subjects" : `+${hiddenSubjectCount} more`}
-                    </button>
-                  )}
-                </div>
-                {grade && (
-                  <p className="mt-2 text-xs text-muted-foreground">Showing subjects for {grade}. Change the level in Filters.</p>
-                )}
               </div>
             </div>
 
             {showFilters && (
-              <div className="border-t border-border/60 bg-background/40 px-6 py-6 sm:px-8">
-                <div className="mx-auto max-w-4xl">
-                  <div className="mb-4 flex items-center justify-between">
+              <div className="border-t border-border/60 bg-muted/[0.22] px-6 py-7 sm:px-10">
+                <div className="mx-auto max-w-5xl">
+                  <div className="mb-6 flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold">Refine your results</p>
+                      <p className="mt-1 text-xs text-muted-foreground">Narrow classes by subject, level, price, or format.</p>
+                    </div>
                     {activeFilterCount > 0 && (
-                      <Button variant="ghost" size="sm" className="h-8 text-muted-foreground" onClick={resetFilters}>
+                      <Button variant="ghost" size="sm" className="h-9 rounded-full text-muted-foreground" onClick={resetFilters}>
                         <X className="mr-1 h-3.5 w-3.5" />
                         Clear all
                       </Button>
                     )}
                   </div>
 
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    <div className="space-y-1.5">
+                  <div className="grid gap-5 lg:grid-cols-[1.15fr_1.15fr_1fr]">
+                    <div className="space-y-2">
+                      <label htmlFor="filter-subject" className="text-xs font-medium text-muted-foreground">Subject</label>
+                      <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+                        <SelectTrigger id="filter-subject" className="h-12 rounded-2xl border-border/70 bg-card shadow-soft">
+                          <SelectValue placeholder="All subjects" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={ALL_SUBJECTS}>{ALL_SUBJECTS}</SelectItem>
+                          {levelSubjects.map((subject) => <SelectItem key={subject} value={subject}>{subject}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
                       <label htmlFor="filter-grade" className="text-xs font-medium text-muted-foreground">Grade / Level</label>
                       <SuggestInput
                         id="filter-grade"
@@ -276,23 +255,23 @@ const ExploreContent: React.FC = () => {
                       />
                     </div>
 
-                    <div className="space-y-1.5">
+                    <div className="space-y-2">
                       <label className="text-xs font-medium text-muted-foreground">Price per class</label>
                       <div className="flex items-center gap-2">
                         <Input
                           type="number"
                           min={0}
-                          className="h-10 rounded-xl"
+                          className="h-12 rounded-2xl bg-card shadow-soft"
                           placeholder="Min"
                           aria-label="Minimum price"
                           value={minPrice ?? ''}
                           onChange={(e) => setMinPrice(e.target.value ? Number(e.target.value) : null)}
                         />
-                        <span className="text-muted-foreground">–</span>
+                        <span className="text-xs text-muted-foreground">to</span>
                         <Input
                           type="number"
                           min={0}
-                          className="h-10 rounded-xl"
+                          className="h-12 rounded-2xl bg-card shadow-soft"
                           placeholder="Max"
                           aria-label="Maximum price"
                           value={maxPrice ?? ''}
@@ -301,9 +280,9 @@ const ExploreContent: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="space-y-1.5">
+                    <div className="space-y-2 lg:col-span-3">
                       <label className="text-xs font-medium text-muted-foreground">Class type</label>
-                      <div className="flex flex-wrap gap-1.5">
+                      <div className="flex flex-wrap gap-2">
                         {Object.entries(CLASS_TYPE_LABELS).map(([value, label]) => {
                           const active = classType === value;
                           return (
@@ -311,9 +290,9 @@ const ExploreContent: React.FC = () => {
                               key={value}
                               onClick={() => setClassType(active ? null : value)}
                               aria-pressed={active}
-                              className={`rounded-full px-3 py-2 text-xs font-medium transition-colors ${active
-                                ? "bg-primary text-primary-foreground"
-                                : "border border-border/70 bg-background/60 text-muted-foreground hover:text-foreground"
+                              className={`rounded-xl px-4 py-2.5 text-xs font-medium transition-all ${active
+                                ? "bg-primary text-primary-foreground shadow-soft"
+                                : "border border-border/70 bg-card text-muted-foreground shadow-soft hover:-translate-y-0.5 hover:text-foreground"
                                 }`}
                             >
                               {label}
@@ -329,10 +308,10 @@ const ExploreContent: React.FC = () => {
           </section>
         </div>
 
-        <div className="container mx-auto px-4 py-8">
-          <div className="max-w-3xl mx-auto transition-all duration-300">
+        <div className="page-container py-8">
+          <div className="mx-auto max-w-5xl transition-all duration-300">
             <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-              <div className="flex rounded-full bg-muted p-1">
+              <div className="flex rounded-full border border-border/60 bg-muted/80 p-1">
                 {([['all', 'All Posts'], ['teachers', 'Teachers'], ['students', 'Students']] as const).map(([id, label]) => (
                   <button
                     key={id}
@@ -349,7 +328,7 @@ const ExploreContent: React.FC = () => {
                   <button onClick={() => setViewType('grid')} className={`rounded-full p-2 transition-all ${viewType === 'grid' ? 'bg-card shadow-soft text-primary' : 'text-muted-foreground'}`} title="Grid View"><LayoutGrid className="h-4 w-4" /></button>
                   <button onClick={() => setViewType('compact')} className={`rounded-full p-2 transition-all ${viewType === 'compact' ? 'bg-card shadow-soft text-primary' : 'text-muted-foreground'}`} title="Compact View"><LayoutList className="h-4 w-4" /></button>
                 </div>
-                <Button variant="hero" className="gap-2 rounded-full" disabled={teacherLocked} title={teacherLocked ? lockedHint : undefined} onClick={() => { if (isGuest) { toast({ title: 'Create an account', description: 'Please register or log in to create posts.' }); router.push('/auth'); return; } openCreatePost(); }}>
+                <Button variant="hero" className="gap-2 rounded-full shadow-card" disabled={teacherLocked} title={teacherLocked ? lockedHint : undefined} onClick={() => { if (isGuest) { toast({ title: 'Create an account', description: 'Please register or log in to create posts.' }); router.push('/auth'); return; } openCreatePost(); }}>
                   <Plus className="h-4 w-4" />
                   Create Post
                 </Button>
@@ -385,7 +364,7 @@ const ExploreContent: React.FC = () => {
                       key={post.id}
                       className={`overflow-hidden rounded-2xl border bg-card transition-all duration-300 ${isExpanded ? 'border-primary/40 shadow-elevated' : 'border-border/70 shadow-card hover:border-primary/30'}`}
                     >
-                      {/* Row — the whole strip toggles the panel below */}
+                      {/* Row - the whole strip toggles the panel below */}
                       <button
                         type="button"
                         onClick={() => setExpandedId(isExpanded ? null : post.id)}
