@@ -155,13 +155,18 @@ const PostDetail = ({ postId, initialPost, onNavigate }: PostDetailProps) => {
     onNavigate?.();
     router.push(href);
   };
+  const displayTitle = post.title.replace(/\s+[—–-]\s+/g, " · ");
 
   const primaryAction = (() => {
     if (!user) {
       return (
-        <Button variant="hero" className="w-full" onClick={() => go("/auth")}>
-          Sign in to {isTeacherPost ? "book" : "respond"}
-        </Button>
+        <button
+          type="button"
+          onClick={() => go("/auth")}
+          className="text-sm font-semibold text-primary underline-offset-4 transition-colors hover:text-primary/80 hover:underline"
+        >
+          Sign in to {isTeacherPost ? "book this class" : "respond"}
+        </button>
       );
     }
     if (isOwner) {
@@ -210,9 +215,9 @@ const PostDetail = ({ postId, initialPost, onNavigate }: PostDetailProps) => {
   })();
 
   return (
-    <div>
+    <div className="overflow-hidden bg-background">
       {post.thumbnailUrl && (
-        <div className="flex max-h-[420px] justify-center overflow-hidden bg-muted/60">
+        <div className="flex max-h-[360px] justify-center overflow-hidden bg-muted/40">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={post.thumbnailUrl} alt={post.title} className="max-h-[420px] w-auto max-w-full object-contain" />
         </div>
@@ -220,11 +225,11 @@ const PostDetail = ({ postId, initialPost, onNavigate }: PostDetailProps) => {
 
       {/* Phones: details, then price/times/action, then comments. Wide screens:
           price/times/action stick in a right-hand column beside both. */}
-      <div className={`grid gap-8 px-5 py-6 sm:px-8 ${isTeacherPost ? "lg:grid-cols-[minmax(0,1fr)_300px]" : ""}`}>
+      <div className={`grid gap-8 px-5 py-7 sm:px-8 sm:py-8 ${isTeacherPost ? "lg:grid-cols-[minmax(0,1fr)_300px]" : ""}`}>
         <div className="min-w-0 space-y-6 lg:col-start-1">
-          <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start justify-between gap-4">
             <div className="flex min-w-0 items-center gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl gradient-hero text-sm font-semibold text-primary-foreground">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl gradient-hero text-sm font-semibold text-primary-foreground shadow-soft">
                 {initials}
               </div>
               <div className="min-w-0">
@@ -235,32 +240,32 @@ const PostDetail = ({ postId, initialPost, onNavigate }: PostDetailProps) => {
                 ) : (
                   <p className="truncate font-semibold">{authorName}</p>
                 )}
-                <p className="text-xs text-muted-foreground">
+                <p className="mt-0.5 text-xs text-muted-foreground">
                   {isTeacherPost ? "Teacher" : "Student"}
-                  {post.createdAt && <> · {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}</>}
+                  {post.createdAt && <> <span className="px-1 text-border">·</span> {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}</>}
                 </p>
               </div>
             </div>
-            <Badge variant="outline" className="shrink-0 border-primary text-primary">
+            <Badge variant="outline" className="shrink-0 rounded-full border-primary/40 bg-primary/[0.06] px-3 py-1 text-primary">
               {isTeacherPost ? <GraduationCap className="mr-1 h-3 w-3" /> : <BookOpen className="mr-1 h-3 w-3" />}
               {isTeacherPost ? "Class" : "Request"}
             </Badge>
           </div>
 
-          <div className="space-y-3">
-            <h1 className="type-title">{post.title}</h1>
+          <div className="space-y-4">
+            <h1 className="max-w-3xl text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">{displayTitle}</h1>
             <div className="flex flex-wrap gap-2">
-              {post.subject && <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">{post.subject}</span>}
-              {post.grade && <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium">{post.grade}</span>}
+              {post.subject && <span className="rounded-full bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary">{post.subject}</span>}
+              {post.grade && <span className="rounded-full bg-muted px-3 py-1.5 text-xs font-medium">{post.grade}</span>}
               {classTypes.map((c) => (
-                <span key={c} className="rounded-full bg-muted px-3 py-1 text-xs font-medium">{CLASS_TYPE_LABELS[c] || c}</span>
+                <span key={c} className="rounded-full bg-muted px-3 py-1.5 text-xs font-medium">{CLASS_TYPE_LABELS[c] || c}</span>
               ))}
             </div>
           </div>
 
-          <p className="whitespace-pre-wrap break-words text-[15px] leading-relaxed text-foreground/85">{post.description}</p>
+          <p className="max-w-2xl whitespace-pre-wrap break-words text-[15px] leading-8 text-foreground/80">{post.description}</p>
 
-          <div className="border-t border-border/60 pt-3">
+          <div className="border-t border-border/60 pt-4">
             <PostActions
               post={post}
               commentCountOverride={commentCount}
@@ -332,7 +337,9 @@ const PostDetail = ({ postId, initialPost, onNavigate }: PostDetailProps) => {
             </div>
           )}
 
-          {primaryAction}
+          <div className={user ? "rounded-2xl border border-primary/15 bg-primary/[0.045] p-4" : "pt-1"}>
+            {primaryAction}
+          </div>
           {loading && (
             <p className="flex items-center gap-2 text-xs text-muted-foreground">
               <Loader2 className="h-3 w-3 animate-spin" /> Updating…
@@ -341,10 +348,13 @@ const PostDetail = ({ postId, initialPost, onNavigate }: PostDetailProps) => {
         </aside>
 
         <div className="min-w-0 lg:col-start-1">
-            <section ref={commentsRef} className="scroll-mt-4 space-y-4">
-              <h2 className="text-base font-semibold">
+            <section ref={commentsRef} className="scroll-mt-4 space-y-4 rounded-2xl border border-border/60 bg-muted/[0.18] p-4 sm:p-5">
+              <div className="flex items-center justify-between">
+                <h2 className="text-base font-semibold">
                 Comments{commentCount > 0 && <span className="ml-1.5 font-normal text-muted-foreground">{commentCount}</span>}
-              </h2>
+                </h2>
+                <span className="text-xs text-muted-foreground">Join the conversation</span>
+              </div>
               <CommentThread
                 post={post}
                 onCountChange={setCommentCount}
