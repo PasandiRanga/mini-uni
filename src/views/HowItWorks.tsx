@@ -12,20 +12,20 @@ const HowItWorks = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      <main className="pt-20">
-        <div className="container mx-auto px-4 py-16">
+      <main className="pt-24">
+        <div className="container mx-auto px-4 py-20">
           <div className="max-w-4xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
               <Check className="w-4 h-4" />
               The MiniUni Guide
             </div>
 
             <h1 className="mb-4 text-4xl font-normal leading-tight sm:text-5xl">How MiniUni <span className="font-serif italic text-gradient font-semibold">works</span></h1>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">Step-by-step flows for students and teachers — from discovery to verified teaching, secure bookings, and completed classes.</p>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">Step-by-step flows for students and teachers - from discovery to verified teaching, secure bookings, and completed classes.</p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6 mt-8">
-            <Card className="p-6">
+          <div className="mt-10 grid gap-6 md:grid-cols-2">
+            <Card className="bg-card/80 p-6 shadow-card backdrop-blur-sm">
               <CardHeader>
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -45,7 +45,7 @@ const HowItWorks = () => {
               </CardContent>
             </Card>
 
-            <Card className="p-6">
+            <Card className="bg-card/80 p-6 shadow-card backdrop-blur-sm">
               <CardHeader>
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-lg bg-secondary/10 flex items-center justify-center">
@@ -66,23 +66,23 @@ const HowItWorks = () => {
             </Card>
           </div>
 
-          <div className="mt-8 grid md:grid-cols-3 gap-4">
-            <div className="bg-card rounded-xl p-5 text-center">
+          <div className="mt-8 grid gap-4 md:grid-cols-3">
+            <div className="rounded-2xl border border-border/70 bg-card/75 p-6 text-center shadow-soft">
               <ShieldCheck className="mx-auto w-6 h-6 text-success mb-2" />
               <h3 className="font-semibold">Verification</h3>
               <p className="text-sm text-muted-foreground mt-2">Teachers may verify identity & credentials. Verified teachers get a badge.</p>
             </div>
 
-            <div className="bg-card rounded-xl p-5 text-center">
+            <div className="rounded-2xl border border-border/70 bg-card/75 p-6 text-center shadow-soft">
               <CreditCard className="mx-auto w-6 h-6 text-primary mb-2" />
               <h3 className="font-semibold">Payments & Booking</h3>
               <p className="text-sm text-muted-foreground mt-2">Secure payments, receipts, and booking management in your dashboard.</p>
             </div>
 
-            <div className="bg-card rounded-xl p-5 text-center">
+            <div className="rounded-2xl border border-border/70 bg-card/75 p-6 text-center shadow-soft">
               <Star className="mx-auto w-6 h-6 text-warning mb-2" />
               <h3 className="font-semibold">Ratings</h3>
-              <p className="text-sm text-muted-foreground mt-2">Students rate teachers after classes — ratings improve discoverability.</p>
+              <p className="text-sm text-muted-foreground mt-2">Students rate teachers after classes - ratings improve discoverability.</p>
             </div>
           </div>
 

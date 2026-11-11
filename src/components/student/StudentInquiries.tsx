@@ -120,7 +120,7 @@ const StudentInquiries = () => {
             Your <span className="font-serif italic font-semibold">inquiries</span>
           </h2>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            Messages about classes — ones you&apos;ve received and ones you&apos;ve sent.
+            Messages about classes - ones you&apos;ve received and ones you&apos;ve sent.
           </p>
         </div>
         <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={load} disabled={loading}>
@@ -215,7 +215,7 @@ const StudentInquiries = () => {
 
                     {/* Sent + accepted → nudge to book */}
                     {!isReceived && status === "ACCEPTED" && (
-                      <p className="mt-2 text-sm text-success">Accepted — you can now book this class.</p>
+                      <p className="mt-2 text-sm text-success">Accepted - you can now book this class.</p>
                     )}
 
                     {/* Actions */}

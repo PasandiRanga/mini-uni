@@ -4,7 +4,7 @@ import prisma from "@/lib/prisma";
 import { getSessionFromRequest } from "@/lib/auth";
 import { CURRENCIES } from "@/lib/currency";
 
-// GET — current account currency
+// GET : current account currency
 export async function GET(request: Request) {
   try {
     const session = await getSessionFromRequest(request);
@@ -23,7 +23,7 @@ export async function GET(request: Request) {
   }
 }
 
-// PUT — change account currency. Does not convert existing balances; affects
+// PUT : change account currency. Does not convert existing balances; affects
 // formatting and the currency of future posts/payments.
 export async function PUT(request: Request) {
   try {

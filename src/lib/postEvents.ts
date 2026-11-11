@@ -26,7 +26,7 @@ export function applyPostChange<T extends { id: string }>(list: T[], change: Pos
   if (exists) {
     return list.map((p) => (p.id === post.id ? { ...p, ...post } : p));
   }
-  // Newly created (or not yet in this list) — put it on top.
+  // Newly created (or not yet in this list) : put it on top.
   return [post, ...list];
 }
 

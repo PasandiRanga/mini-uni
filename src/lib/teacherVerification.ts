@@ -12,7 +12,7 @@ export function computeProfileCompletion(p: ProfileWithDocs) {
   const has = (v: unknown) => typeof v === "string" && v.trim() !== "";
   const docTypes = p.verificationDocs.map((d) => d.documentType);
 
-  // Step 1 — personal details
+  // Step 1 : personal details
   const personalComplete =
     has(p.fullName) &&
     has(p.nameWithInitials) &&
@@ -21,12 +21,12 @@ export function computeProfileCompletion(p: ProfileWithDocs) {
     has(p.country) &&
     has(p.postalCode);
 
-  // Step 2 — identity: type chosen + required scans uploaded (back required for NIC/LICENSE)
+  // Step 2 : identity: type chosen + required scans uploaded (back required for NIC/LICENSE)
   const needsBack = p.idType === "NIC" || p.idType === "LICENSE";
   const identityComplete =
     has(p.idType) && docTypes.includes("ID_FRONT") && (!needsBack || docTypes.includes("ID_BACK"));
 
-  // Step 3 — academic/professional (conditional on employment status)
+  // Step 3 : academic/professional (conditional on employment status)
   let academicComplete = false;
   if (p.employmentStatus === "STUDENT") {
     // School students: school, country, A/L stream and exam year.

@@ -6,7 +6,7 @@ import { computeProfileCompletion } from "@/lib/teacherVerification";
 import { OPEN_BOOKING_STATUSES } from "@/lib/bookings";
 
 /**
- * Full detail for one teacher under review — everything an admin needs to make
+ * Full detail for one teacher under review : everything an admin needs to make
  * a decision: personal details, identity, academic background, and the
  * uploaded verification documents (with their URLs). Keyed by user id.
  */

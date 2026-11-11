@@ -75,7 +75,7 @@ const TeacherDashboard = () => {
     if (t) setActiveTab(t);
   }, [searchParams]);
   const [moreOpen, setMoreOpen] = useState(false);
-  // Approval is a one-time confirmation — remember (per teacher) once it's been dismissed.
+  // Approval is a one-time confirmation - remember (per teacher) once it's been dismissed.
   const [approvedDismissed, setApprovedDismissed] = useState(false);
   const [profileNudgeDismissed, setProfileNudgeDismissed] = useState(false);
   const [completion, setCompletion] = useState<{ percent: number; verificationStatus?: string; rejectionReason?: string | null; suspensionReason?: string | null; hasBio?: boolean; hasSubjects?: boolean } | null>(null);
@@ -129,7 +129,7 @@ const TeacherDashboard = () => {
         const wRes = await fetch(`/api/wallets/me`);
         if (wRes.ok) setWallet(await wRes.json());
 
-        // Google Calendar connection — drives the "connect to generate Meet links" nudge.
+        // Google Calendar connection - drives the "connect to generate Meet links" nudge.
         const gRes = await fetch(`/api/google`);
         if (gRes.ok) setGoogleStatus(await gRes.json());
       } catch (err) {
@@ -228,14 +228,13 @@ const TeacherDashboard = () => {
 
       {/* Main column */}
       <main className="flex min-w-0 flex-1 flex-col pb-24 lg:pb-0">
-        {/* Editorial greeting header */}
-        <header className="px-5 pt-8 sm:px-8 lg:px-10 lg:pt-10">
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div className="animate-fade-up">
-              <p className="mb-1 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">{todayLabel()}</p>
+        <header className="px-5 pb-2 pt-7 sm:px-8 lg:px-10 lg:pt-9">
+          <div className="flex flex-wrap items-end justify-between gap-5">
+            <div className="animate-fade-up border-l-2 border-primary/70 pl-4 sm:pl-5">
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-primary/80">{todayLabel()}</p>
               <h1 className="type-page-title">
                 {greeting()},{" "}
-                <span className="font-serif italic text-gradient font-semibold">{user?.firstName || "Teacher"}.</span>
+                <span className="font-serif font-semibold text-gradient">{user?.firstName || "Teacher"}.</span>
               </h1>
               {verificationStatus && (
                 <span
@@ -330,7 +329,7 @@ const TeacherDashboard = () => {
             </div>
           )}
 
-          {/* Complete-your-profile banner — fills as the teacher completes the wizard steps */}
+          {/* Complete-your-profile banner - fills as the teacher completes the wizard steps */}
           {/* Hidden once approved: an approved teacher is already live, so it would contradict the "verified" banner. */}
           {completion && completion.percent < 100 && completion.verificationStatus === 'PENDING' && (
             <button
@@ -341,7 +340,7 @@ const TeacherDashboard = () => {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="font-medium">
-                    Complete your <span className="font-serif italic">profile</span> — {completion.percent}% done
+                    Complete your <span className="font-serif italic">profile</span> - {completion.percent}% done
                   </p>
                   <p className="mt-0.5 text-sm text-muted-foreground">Finish your personal, identity and academic details to start teaching.</p>
                 </div>
@@ -358,7 +357,7 @@ const TeacherDashboard = () => {
             </button>
           )}
 
-          {/* Submitted — pending admin approval (profile fully complete, not yet approved) */}
+          {/* Submitted - pending admin approval (profile fully complete, not yet approved) */}
           {completion && completion.percent === 100 && completion.verificationStatus === 'PENDING' && (
             <div className="mb-8 overflow-hidden rounded-3xl border border-warning/40 bg-warning/[0.08] p-5 sm:p-6">
               <div className="flex items-start gap-3">
@@ -367,7 +366,7 @@ const TeacherDashboard = () => {
                 </div>
                 <div>
                   <p className="font-medium">
-                    Profile submitted — <span className="font-serif italic">pending approval</span>
+                    Profile submitted - <span className="font-serif italic">pending approval</span>
                   </p>
                   <p className="mt-0.5 text-sm text-muted-foreground">
                     Our team is reviewing your details. You&apos;ll be able to create classes once your profile is approved.
@@ -377,7 +376,7 @@ const TeacherDashboard = () => {
             </div>
           )}
 
-          {/* Rejected — needs changes */}
+          {/* Rejected - needs changes */}
           {completion && completion.verificationStatus === 'REJECTED' && (
             <button
               onClick={() => router.push('/teacher/profile-completion')}
@@ -405,7 +404,7 @@ const TeacherDashboard = () => {
             </button>
           )}
 
-          {/* Suspended by an admin — no resubmit; they contact support */}
+          {/* Suspended by an admin - no resubmit; they contact support */}
           {completion && completion.verificationStatus === 'SUSPENDED' && (
             <div className="mb-8 overflow-hidden rounded-3xl border border-destructive/40 bg-destructive/[0.07] p-5 sm:p-6">
               <div className="flex items-start gap-3">
@@ -430,7 +429,7 @@ const TeacherDashboard = () => {
             </div>
           )}
 
-          {/* Approved — one-time confirmation the teacher can dismiss */}
+          {/* Approved - one-time confirmation the teacher can dismiss */}
           {completion && completion.verificationStatus === 'APPROVED' && !approvedDismissed && (
             <div className="mb-8 overflow-hidden rounded-3xl border border-primary/40 bg-primary/[0.07] p-5 sm:p-6">
               <div className="flex items-start gap-3">
@@ -439,7 +438,7 @@ const TeacherDashboard = () => {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="font-medium">
-                    You&apos;re <span className="font-serif italic">verified</span> — you can now create classes.
+                    You&apos;re <span className="font-serif italic">verified</span> - you can now create classes.
                   </p>
                   <p className="mt-0.5 text-sm text-muted-foreground">
                     Your profile has been approved. Post a class to start getting booked.
@@ -458,7 +457,7 @@ const TeacherDashboard = () => {
             </div>
           )}
 
-          {/* Nudge an approved teacher with a bare public profile — students see an empty page otherwise. */}
+          {/* Nudge an approved teacher with a bare public profile - students see an empty page otherwise. */}
           {completion && completion.verificationStatus === 'APPROVED' && completion.hasBio === false && !profileNudgeDismissed && (
             <div className="mb-8 overflow-hidden rounded-3xl border border-border/70 bg-card p-5 shadow-soft sm:p-6">
               <div className="flex items-start gap-3">
@@ -523,7 +522,7 @@ const TeacherDashboard = () => {
 
           {(show("classes") || showRight) && (
           <div className={`grid gap-6 [&>*]:min-w-0 ${show("classes") && showRight ? "lg:grid-cols-3" : ""}`}>
-            {/* Upcoming classes preview — "View all" opens the My Classes tab */}
+            {/* Upcoming classes preview - "View all" opens the My Classes tab */}
             {show("classes") && (
             <div className={showRight ? "lg:col-span-2" : ""}>
               <MyClasses preview onViewAll={() => goTab("classes")} />
@@ -535,7 +534,7 @@ const TeacherDashboard = () => {
             <div className={`space-y-6 ${show("classes") ? "" : "grid gap-6 space-y-0 lg:grid-cols-2"}`}>
             {/* Recent Inquiries */}
             {show("inquiries") && (
-            <section className="flex flex-col overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
+            <section className="flex flex-col overflow-hidden rounded-[1.5rem] border border-border/70 bg-card/80 shadow-card backdrop-blur-sm">
               <div className="flex items-center justify-between border-b border-border/60 px-6 py-5">
                 <h2 className="type-section">
                   <span className="font-serif italic font-semibold">Inquiries</span>
@@ -564,9 +563,9 @@ const TeacherDashboard = () => {
             </section>
             )}
 
-            {/* Mini calendar — click a date to open the full schedule */}
+            {/* Mini calendar - click a date to open the full schedule */}
             {show("calendar") && (
-            <section className="rounded-3xl border border-border/70 bg-card p-6 shadow-soft">
+            <section className="rounded-[1.5rem] border border-border/70 bg-card/80 p-6 shadow-card backdrop-blur-sm">
               <h3 className="type-eyebrow mb-4">This month</h3>
               <MiniCalendar
                 events={bookings.map((b) => ({ start: b.timeSlot?.startTime })) as any}
@@ -579,7 +578,7 @@ const TeacherDashboard = () => {
           </div>
           )}
 
-          {/* Wallet — ink card */}
+          {/* Wallet - ink card */}
           {show("wallet") && (
           <div className="relative mt-6 overflow-hidden rounded-3xl bg-foreground p-7 text-background shadow-elevated grain sm:p-9">
             <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-primary/20 blur-3xl" />
@@ -632,7 +631,7 @@ const TeacherDashboard = () => {
         </div>
       </main>
 
-      {/* Mobile — bottom dock: Overview, Schedule, More */}
+      {/* Mobile - bottom dock: Overview, Schedule, More */}
       <nav className="fixed inset-x-4 bottom-4 z-50 lg:hidden">
         <div className="flex items-center justify-around gap-1 rounded-full border border-border/70 bg-card/90 px-3 py-2 shadow-elevated backdrop-blur-xl">
           {navItems.filter((i) => i.id === "overview" || i.id === "schedule").map((item) => {

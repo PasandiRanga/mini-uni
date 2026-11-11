@@ -16,7 +16,7 @@ import {
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface MiniCalendarProps {
-  /** Anything with a `start` date — used to mark days that have classes. */
+  /** Anything with a `start` date - used to mark days that have classes. */
   events?: Array<{ start?: string | Date | null }>;
   /** Called when a day is clicked. */
   onSelectDate?: (date: Date) => void;

@@ -18,7 +18,7 @@ import { sendEmail, buildNoticeEmail } from "./email";
  * Students have a wallet too. Theirs holds spendable money rather than
  * earnings: refunds from cancelled classes land there, students can top it up
  * by card, and the balance can be spent on a class instead of paying by card.
- * Both roles share `releasedBalance` — for a teacher it is what they can
+ * Both roles share `releasedBalance` : for a teacher it is what they can
  * withdraw, for a student it is what they can spend.
  */
 
@@ -50,7 +50,7 @@ export async function getWalletForUser(userId: string) {
 
 /**
  * Credits a paid booking into the teacher's pending balance. Safe to call more
- * than once for the same booking — the DEPOSIT entry is unique per booking, so
+ * than once for the same booking : the DEPOSIT entry is unique per booking, so
  * a repeat call is a no-op.
  */
 export async function creditBookingToWallet(bookingId: string) {
@@ -72,7 +72,7 @@ export async function creditBookingToWallet(bookingId: string) {
           type: "DEPOSIT",
           amount,
           status: "COMPLETED",
-          description: "Payment received — held until the class is over",
+          description: "Payment received : held until the class is over",
         },
       }),
       prisma.wallet.update({
@@ -112,7 +112,7 @@ export async function releaseBookingEscrow(bookingId: string) {
           type: "RELEASE",
           amount: deposit.amount,
           status: "COMPLETED",
-          description: "Class completed — earnings available to withdraw",
+          description: "Class completed : earnings available to withdraw",
         },
       }),
       ...(fee.gt(0)
@@ -216,7 +216,7 @@ export async function getPendingHolds(userId: string) {
 /**
  * Debits the released balance and records a withdrawal request. The debit is
  * guarded by the balance itself, so two requests racing for the same money can
- * never overdraw the wallet — the second one finds nothing to take.
+ * never overdraw the wallet : the second one finds nothing to take.
  */
 export async function requestWithdrawal(userId: string, amount: Prisma.Decimal, currency: string) {
   const wallet = await getWalletForUser(userId);
@@ -287,12 +287,12 @@ export async function cancelWithdrawal(userId: string, withdrawalId: string) {
 }
 
 /* -------------------------------------------------------------------------- *
- * Admin — withdrawal payouts
+ * Admin : withdrawal payouts
  *
  * A teacher requests a withdrawal (see requestWithdrawal above), which debits
  * their released balance immediately and creates a PENDING request. An admin
  * then works the queue: PROCESSING while the bank transfer is in flight, PAID
- * once the money is sent, or REJECTED — which puts the debited money back.
+ * once the money is sent, or REJECTED : which puts the debited money back.
  * -------------------------------------------------------------------------- */
 
 /** Withdrawal requests awaiting admin action, newest first, with the teacher attached. */
@@ -339,7 +339,7 @@ export async function getWithdrawalsForAdmin(status?: string) {
 }
 
 /**
- * Moves a still-open withdrawal to PROCESSING — the payout has been started at
+ * Moves a still-open withdrawal to PROCESSING : the payout has been started at
  * the bank but the money hasn't landed yet. Only a PENDING request can enter
  * processing.
  */
@@ -355,7 +355,7 @@ export async function markWithdrawalProcessing(withdrawalId: string) {
 /**
  * Marks a withdrawal PAID and settles its wallet entry. The money already left
  * the released balance when the request was made, so this only records the
- * payout — no balance change.
+ * payout : no balance change.
  */
 export async function markWithdrawalPaid(withdrawalId: string, reference?: string) {
   return prisma.$transaction(async (tx) => {
@@ -378,7 +378,7 @@ export async function markWithdrawalPaid(withdrawalId: string, reference?: strin
 
 /**
  * Rejects an open withdrawal and returns the money to the teacher's released
- * balance — the mirror of cancelWithdrawal, but admin-initiated and with a
+ * balance : the mirror of cancelWithdrawal, but admin-initiated and with a
  * reason recorded.
  */
 export async function rejectWithdrawal(withdrawalId: string, note: string) {
@@ -393,7 +393,7 @@ export async function rejectWithdrawal(withdrawalId: string, note: string) {
 
     await tx.walletTransaction.update({
       where: { id: withdrawal.transactionId },
-      data: { status: "FAILED", description: "Withdrawal rejected — amount returned" },
+      data: { status: "FAILED", description: "Withdrawal rejected : amount returned" },
     });
 
     await tx.wallet.update({
@@ -475,7 +475,7 @@ export async function getWalletSnapshot(userId: string) {
  *
  * A student's wallet holds spendable money: refunds from cancelled classes and
  * card top-ups. It can be spent on a class instead of paying by card. There is
- * no escrow on this side — `releasedBalance` is simply the balance.
+ * no escrow on this side : `releasedBalance` is simply the balance.
  * -------------------------------------------------------------------------- */
 
 /** Smallest amount a student can add in one top-up, per currency. */
@@ -486,7 +486,7 @@ export const minTopUp = (currency?: string) => MIN_TOP_UP[currency || "LKR"] ?? 
 /**
  * Records a top-up a student has deposited for but not had verified yet. It
  * stays PENDING, carrying the bank slip, until an admin checks the amount and
- * approves it — `completeTopUp` is what actually credits the balance.
+ * approves it : `completeTopUp` is what actually credits the balance.
  */
 export async function startTopUp(userId: string, amount: Prisma.Decimal, slipUrl: string) {
   const wallet = await getWalletForUser(userId);
@@ -497,7 +497,7 @@ export async function startTopUp(userId: string, amount: Prisma.Decimal, slipUrl
       type: "TOP_UP",
       amount,
       status: "PENDING",
-      description: "Wallet top-up — awaiting verification",
+      description: "Wallet top-up : awaiting verification",
       slipUrl,
     },
   });
@@ -541,7 +541,7 @@ export async function getTopUpRequestsForAdmin(status = "PENDING") {
 }
 
 /**
- * Credits a paid top-up. Safe to call more than once — the gateway can and does
+ * Credits a paid top-up. Safe to call more than once : the gateway can and does
  * repeat notifications, and only the first call moves money.
  */
 export async function completeTopUp(transactionId: string, gatewayPaymentId?: string) {
@@ -581,7 +581,7 @@ export async function failTopUp(transactionId: string, reason?: string) {
   return { abandoned: updated.count > 0 };
 }
 
-/** Same, but only for the student who owns the top-up — used when they close the checkout. */
+/** Same, but only for the student who owns the top-up : used when they close the checkout. */
 export async function abandonTopUp(transactionId: string, userId: string) {
   const pending = await prisma.walletTransaction.findUnique({
     where: { id: transactionId },
@@ -663,7 +663,7 @@ export async function payBookingFromWallet(userId: string, bookingId: string, or
       });
     });
   } catch (err) {
-    // Someone already paid this booking from the wallet — treat it as done
+    // Someone already paid this booking from the wallet : treat it as done
     // rather than charging again.
     if (isUniqueViolation(err)) throw new Error("ALREADY_PAID");
     throw err;
@@ -683,7 +683,7 @@ export async function payBookingFromWallet(userId: string, bookingId: string, or
     userId: booking.teacherId,
     type: "BOOKING_CONFIRMED",
     title: "New booking confirmed",
-    message: "A student paid for a class — it's now confirmed on your schedule.",
+    message: "A student paid for a class : it's now confirmed on your schedule.",
     metadata: { bookingId: booking.id },
   });
 
@@ -698,7 +698,7 @@ export async function payBookingFromWallet(userId: string, bookingId: string, or
 
 /**
  * Emails the student and teacher that a class is booked and confirmed. Honors
- * each user's email preference and never throws — the booking stands regardless.
+ * each user's email preference and never throws : the booking stands regardless.
  */
 export async function emailBookingConfirmation(bookingId: string, origin?: string) {
   try {
@@ -754,7 +754,7 @@ export async function emailBookingConfirmation(bookingId: string, origin?: strin
 /**
  * Best-effort: puts a confirmed class on the teacher's Google calendar with a
  * Meet link and notifies both sides. A no-op when Google isn't configured, the
- * teacher hasn't connected, or the class already has a link — the booking is
+ * teacher hasn't connected, or the class already has a link : the booking is
  * confirmed either way, so this never throws.
  */
 export async function createMeetLinkForBooking(bookingId: string) {
@@ -804,7 +804,7 @@ export async function createMeetLinkForBooking(bookingId: string) {
       userId: booking.studentId,
       type: "MEETING_LINK_CREATED",
       title: "Class link ready",
-      message: "Your class has a Google Meet link — check your calendar for the invite.",
+      message: "Your class has a Google Meet link : check your calendar for the invite.",
       metadata: { bookingId },
     });
     await createNotification({
@@ -821,7 +821,7 @@ export async function createMeetLinkForBooking(bookingId: string) {
 
 /**
  * Generates Meet links for a user's confirmed, not-yet-ended classes that are
- * missing one — covering classes booked before the teacher connected Google.
+ * missing one : covering classes booked before the teacher connected Google.
  * Idempotent and best-effort, so it's safe to call on every class-list read; it
  * does nothing once the links exist (or when Google isn't set up).
  */
@@ -849,7 +849,7 @@ export async function backfillMeetLinks(where: Prisma.BookingWhereInput) {
  * Returns a cancelled booking's money to the student's wallet and takes the
  * matching escrow back off the teacher.
  *
- * Only money still on hold can be refunded — once a class is over and the
+ * Only money still on hold can be refunded : once a class is over and the
  * teacher's earnings have cleared, the booking is settled and this throws.
  */
 export async function refundBookingToStudent(bookingId: string, reason?: string) {
@@ -859,7 +859,7 @@ export async function refundBookingToStudent(bookingId: string, reason?: string)
   });
   if (!booking) throw new Error("BOOKING_NOT_FOUND");
 
-  // Nothing was ever paid — nothing to give back.
+  // Nothing was ever paid : nothing to give back.
   if (!booking.payment || booking.payment.status !== "COMPLETED") return { refunded: false };
 
   const [deposit, release] = await Promise.all([
@@ -882,7 +882,7 @@ export async function refundBookingToStudent(bookingId: string, reason?: string)
             type: "REVERSAL",
             amount: deposit.amount,
             status: "COMPLETED",
-            description: "Class cancelled — payment returned to the student",
+            description: "Class cancelled : payment returned to the student",
           },
         });
         await tx.wallet.update({
@@ -898,7 +898,7 @@ export async function refundBookingToStudent(bookingId: string, reason?: string)
           type: "REFUND",
           amount,
           status: "COMPLETED",
-          description: reason ? `Class cancelled — ${reason}` : "Class cancelled — refunded to your wallet",
+          description: reason ? `Class cancelled : ${reason}` : "Class cancelled : refunded to your wallet",
         },
       });
 

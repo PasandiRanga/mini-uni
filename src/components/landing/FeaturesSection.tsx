@@ -10,7 +10,7 @@ const features = [
   {
     icon: Calendar,
     title: "Effortless scheduling",
-    description: "Browse real availability, pick a slot, and get instant confirmation — no back-and-forth.",
+    description: "Browse real availability, pick a slot, and get instant confirmation - no back-and-forth.",
   },
   {
     icon: Video,

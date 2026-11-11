@@ -5,9 +5,9 @@
 
 @layer base {
   :root {
-    /* Core — cool near-white canvas, deep plum text */
-    --background: 270 30% 98%;
-    --foreground: 264 28% 13%;
+    /* Core - cool near-white canvas, deep plum text */
+    --background: 270 33% 97%;
+    --foreground: 263 34% 12%;
 
     /* Cards & surfaces */
     --card: 0 0% 100%;
@@ -16,20 +16,20 @@
     --popover: 0 0% 100%;
     --popover-foreground: 264 28% 13%;
 
-    /* Primary — brand purple */
-    --primary: 263 56% 45%;
+    /* Primary - brand purple */
+    --primary: 263 64% 48%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary — lighter violet */
-    --secondary: 272 52% 58%;
+    /* Secondary - lighter violet */
+    --secondary: 272 58% 58%;
     --secondary-foreground: 0 0% 100%;
 
-    /* Muted & subtle — faint lilac grays */
+    /* Muted & subtle - faint lilac grays */
     --muted: 270 24% 95%;
-    --muted-foreground: 264 10% 46%;
+    --muted-foreground: 263 12% 43%;
 
-    /* Accent — vivid violet highlight */
-    --accent: 274 64% 56%;
+    /* Accent - vivid violet highlight */
+    --accent: 16 82% 58%;
     --accent-foreground: 0 0% 100%;
 
     /* Success states (kept functional) */
@@ -44,9 +44,9 @@
     --destructive: 351 70% 52%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 270 22% 90%;
-    --input: 270 22% 88%;
-    --ring: 263 56% 45%;
+    --border: 270 20% 89%;
+    --input: 270 20% 86%;
+    --ring: 263 64% 48%;
 
     --radius: 1rem;
 
@@ -60,17 +60,17 @@
     --sidebar-border: 270 22% 90%;
     --sidebar-ring: 263 56% 45%;
 
-    /* Gradients — purple family */
-    --gradient-hero: linear-gradient(135deg, hsl(263, 56%, 45%) 0%, hsl(275, 60%, 58%) 100%);
+    /* Gradients - purple family */
+    --gradient-hero: linear-gradient(135deg, hsl(263, 64%, 48%) 0%, hsl(280, 68%, 60%) 100%);
     --gradient-warm: linear-gradient(135deg, hsl(272, 56%, 52%) 0%, hsl(286, 58%, 62%) 100%);
     --gradient-surface: linear-gradient(180deg, hsl(0, 0%, 100%) 0%, hsl(270, 24%, 95%) 100%);
     --gradient-card: linear-gradient(135deg, hsl(0, 0%, 100%) 0%, hsl(270, 30%, 98%) 100%);
 
-    /* Shadows — soft, purple-tinted, layered */
+    /* Shadows - soft, purple-tinted, layered */
     --shadow-soft: 0 1px 2px hsl(263 40% 30% / 0.05), 0 2px 8px -2px hsl(263 40% 30% / 0.07);
     --shadow-card: 0 1px 2px hsl(263 40% 30% / 0.04), 0 8px 24px -8px hsl(263 40% 30% / 0.12);
     --shadow-elevated: 0 2px 4px hsl(263 40% 30% / 0.06), 0 20px 48px -12px hsl(263 40% 30% / 0.20);
-    --shadow-glow: 0 0 48px hsl(274 64% 56% / 0.22);
+    --shadow-glow: 0 0 48px hsl(263 64% 48% / 0.22);
   }
 
   .dark {
@@ -83,7 +83,7 @@
     --popover: 264 22% 11%;
     --popover-foreground: 270 30% 95%;
 
-    --primary: 270 70% 72%;
+    --primary: 270 78% 76%;
     --primary-foreground: 264 24% 8%;
 
     --secondary: 276 56% 64%;
@@ -92,7 +92,7 @@
     --muted: 264 16% 17%;
     --muted-foreground: 270 14% 66%;
 
-    --accent: 274 68% 66%;
+    --accent: 16 88% 66%;
     --accent-foreground: 264 24% 8%;
 
     --success: 152 42% 48%;
@@ -106,7 +106,7 @@
 
     --border: 264 16% 19%;
     --input: 264 16% 19%;
-    --ring: 270 70% 72%;
+    --ring: 270 78% 76%;
 
     --sidebar-background: 264 22% 10%;
     --sidebar-foreground: 270 30% 95%;
@@ -117,7 +117,7 @@
     --sidebar-border: 264 16% 19%;
     --sidebar-ring: 270 70% 72%;
 
-    --gradient-hero: linear-gradient(135deg, hsl(270, 70%, 72%) 0%, hsl(263, 56%, 52%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(270, 78%, 76%) 0%, hsl(263, 64%, 58%) 100%);
     --gradient-warm: linear-gradient(135deg, hsl(276, 56%, 64%) 0%, hsl(286, 58%, 66%) 100%);
     --gradient-surface: linear-gradient(180deg, hsl(264, 22%, 11%) 0%, hsl(264, 24%, 8%) 100%);
     --gradient-card: linear-gradient(135deg, hsl(264, 22%, 12%) 0%, hsl(264, 22%, 10%) 100%);
@@ -141,6 +141,9 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family: "Poppins", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background-image:
+      radial-gradient(circle at 8% 12%, hsl(var(--primary) / 0.045), transparent 28rem),
+      radial-gradient(circle at 92% 38%, hsl(var(--accent) / 0.035), transparent 24rem);
   }
 
   h1,
@@ -153,11 +156,16 @@
     letter-spacing: -0.01em;
   }
 
-  /* Display/accent text — still Poppins (formal), kept as a slightly heavier weight */
+  /* Display/accent text - still Poppins (formal), kept as a slightly heavier weight */
   .font-serif {
     font-family: "Poppins", ui-sans-serif, system-ui, sans-serif;
     font-weight: 500;
     letter-spacing: -0.01em;
+  }
+
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 3px;
   }
 
   ::selection {
@@ -174,6 +182,14 @@
  *   type-eyebrow     small uppercase label above a group of fields
  */
 @layer components {
+  .page-container {
+    @apply mx-auto w-full max-w-7xl px-5 sm:px-8 lg:px-10;
+  }
+
+  .page-section {
+    @apply rounded-[1.75rem] border border-border/70 bg-card/80 shadow-card backdrop-blur-xl;
+  }
+
   .type-page-title {
     @apply text-3xl font-normal leading-tight sm:text-4xl;
   }
@@ -261,6 +277,27 @@
   .link-underline:hover::after {
     transform: scaleX(1);
     transform-origin: left;
+  }
+
+  .surface-glass {
+    background: hsl(var(--card) / 0.76);
+    border: 1px solid hsl(var(--border) / 0.75);
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: blur(18px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 
   /* Scroll-reveal (used by <Reveal/>) */
@@ -419,7 +456,7 @@
   }
 }
 
-/* Brand uses upright type only — neutralize the italic utility globally
+/* Brand uses upright type only - neutralize the italic utility globally
    so existing `italic` class usages render normal without touching markup. */
 .italic {
   font-style: normal;

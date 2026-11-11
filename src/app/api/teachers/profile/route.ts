@@ -20,7 +20,7 @@ const EDITABLE_FIELDS = [
 /** Fields an admin checked against the ID; a verified teacher can't change them alone. */
 const VERIFIED_IDENTITY_FIELDS = ["fullName", "nameWithInitials", "idType"] as const;
 
-// GET — current teacher's full profile (+ account email)
+// GET : current teacher's full profile (+ account email)
 export async function GET(request: Request) {
   try {
     const session = await getSessionFromRequest(request);
@@ -74,7 +74,7 @@ export async function GET(request: Request) {
   }
 }
 
-// PUT — save any subset of profile fields (used by every profile section).
+// PUT : save any subset of profile fields (used by every profile section).
 // Field-level requiredness is enforced client-side; overall completeness is
 // reported by /api/teachers/profile-completion.
 export async function PUT(request: Request) {
@@ -91,7 +91,7 @@ export async function PUT(request: Request) {
       if (typeof body[field] === "string") data[field] = body[field].trim();
     }
 
-    // Public profile fields — a short bio, the subjects taught, and years of
+    // Public profile fields : a short bio, the subjects taught, and years of
     // experience. These are shown to students; editable even once approved.
     if (typeof body.bio === "string") data.bio = body.bio.trim().slice(0, 1000) || null;
     if (Array.isArray(body.subjects)) {

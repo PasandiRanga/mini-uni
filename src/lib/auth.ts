@@ -83,7 +83,7 @@ export async function getSessionFromRequest(request: NextRequest | Request) {
     }
 
     if (!token) {
-        // Plain Request objects don't expose .cookies — parse the header directly
+        // Plain Request objects don't expose .cookies : parse the header directly
         const cookieHeader = request.headers.get("cookie");
         if (cookieHeader) {
             const match = cookieHeader.match(/(?:^|;\s*)token=([^;]+)/);

@@ -79,7 +79,7 @@ const BookClassModal = ({ post, open, onOpenChange, onBooked }: BookClassModalPr
       .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
   }, [post, classType, capacity]);
 
-  // Whether the class has any future slot at all — used to explain an empty list:
+  // Whether the class has any future slot at all - used to explain an empty list:
   // for an individual class, "no slots" and "all slots already booked" are different things.
   const anyFutureSlots = useMemo(
     () => (post?.timeSlots || []).some((s) => (s.status ? s.status === "AVAILABLE" : true) && new Date(s.startTime).getTime() > Date.now()),
@@ -208,7 +208,7 @@ const BookClassModal = ({ post, open, onOpenChange, onBooked }: BookClassModalPr
                     >
                       <span>
                         <span className="font-medium">{format(new Date(s.startTime), "EEE, MMM d")}</span>
-                        <span className="text-muted-foreground"> · {format(new Date(s.startTime), "h:mm a")}–{format(new Date(s.endTime), "h:mm a")}</span>
+                        <span className="text-muted-foreground"> · {format(new Date(s.startTime), "h:mm a")}-{format(new Date(s.endTime), "h:mm a")}</span>
                       </span>
                       <span className="flex items-center gap-2">
                         {classType === "GROUP" && (

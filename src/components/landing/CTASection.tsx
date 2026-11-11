@@ -8,7 +8,7 @@ const CTASection = () => {
     <section className="py-28">
       <div className="container mx-auto px-4">
         <div className="grid gap-6 md:grid-cols-2">
-          {/* Students CTA — ivory card */}
+          {/* Students CTA - ivory card */}
           <Reveal className="group relative overflow-hidden rounded-[2rem] border border-border/70 bg-card p-10 lg:p-14 shadow-card transition-shadow duration-500 hover:shadow-elevated grain">
             <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-primary/[0.07] blur-3xl transition-all duration-700 group-hover:bg-primary/[0.12]" />
 
@@ -21,7 +21,7 @@ const CTASection = () => {
               </h3>
 
               <p className="mb-10 max-w-md leading-relaxed text-muted-foreground">
-                Post what you want to learn and get matched with a verified teacher — often within hours.
+                Post what you want to learn and get matched with a verified teacher - often within hours.
               </p>
 
               <Button variant="hero" size="lg" asChild>
@@ -33,7 +33,7 @@ const CTASection = () => {
             </div>
           </Reveal>
 
-          {/* Teachers CTA — ink card */}
+          {/* Teachers CTA - ink card */}
           <Reveal delay={0.12} className="group relative overflow-hidden rounded-[2rem] bg-foreground p-10 lg:p-14 shadow-elevated grain">
             <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-secondary/20 blur-3xl transition-all duration-700 group-hover:bg-secondary/30" />
 

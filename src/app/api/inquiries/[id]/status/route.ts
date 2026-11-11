@@ -66,7 +66,7 @@ export async function PATCH(
             });
         }
 
-        // Tell the sender when the teacher accepts — that's their cue to book.
+        // Tell the sender when the teacher accepts : that's their cue to book.
         if (!isRequestResponse && status === "ACCEPTED") {
             await createNotification({
                 userId: inquiry.senderId,

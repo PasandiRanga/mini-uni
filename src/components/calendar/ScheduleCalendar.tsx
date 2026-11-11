@@ -88,7 +88,7 @@ const ScheduleCalendar = () => {
 
   return (
     <>
-      <section className="flex flex-col overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
+      <section className="flex flex-col overflow-hidden rounded-[1.5rem] border border-border/70 bg-card/80 shadow-card backdrop-blur-sm">
         <div className="flex items-center justify-between border-b border-border/60 px-6 py-5">
           <h2 className="type-section">
             Your <span className="font-serif font-semibold">schedule</span>
@@ -136,7 +136,7 @@ const ScheduleCalendar = () => {
                   <CalendarIcon className="h-4 w-4" /> {format(selected.start, "EEEE, MMM d")}
                 </p>
                 <p className="flex items-center gap-2 text-muted-foreground">
-                  <Clock className="h-4 w-4" /> {format(selected.start, "h:mm a")} – {format(selected.end, "h:mm a")}
+                  <Clock className="h-4 w-4" /> {format(selected.start, "h:mm a")} - {format(selected.end, "h:mm a")}
                 </p>
                 <div className="flex items-center justify-between pt-1">
                   <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">{selected.status}</span>

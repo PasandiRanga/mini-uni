@@ -28,7 +28,7 @@ const StudentRow = ({ s }: { s: StudentSummary }) => {
       <div className="min-w-0 flex-1">
         <p className="truncate font-medium">{name}</p>
         <p className="truncate text-xs text-muted-foreground">
-          {s.subjects.length ? s.subjects.join(", ") : "—"}
+          {s.subjects.length ? s.subjects.join(", ") : "-"}
         </p>
       </div>
       <div className="shrink-0 text-right">

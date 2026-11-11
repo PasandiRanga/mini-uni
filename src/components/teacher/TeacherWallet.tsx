@@ -97,7 +97,7 @@ const TX_LABELS: Record<TxType, string> = {
   PAYMENT: "Class payment",
 };
 
-// Deposits are informational — the money they represent is already counted in
+// Deposits are informational - the money they represent is already counted in
 // the release, so only releases and withdrawals move the withdrawable balance.
 const TX_ICONS: Record<TxType, typeof ArrowDownLeft> = {
   DEPOSIT: Clock,
@@ -126,7 +126,7 @@ const WITHDRAWAL_STATUS_LABELS: Record<Withdrawal["status"], string> = {
   CANCELLED: "Cancelled",
 };
 
-const maskAccount = (n?: string | null) => (n && n.length > 4 ? `•••• ${n.slice(-4)}` : n || "—");
+const maskAccount = (n?: string | null) => (n && n.length > 4 ? `•••• ${n.slice(-4)}` : n || "-");
 
 const FILTERS = [
   { id: "all", label: "All activity" },
@@ -162,7 +162,7 @@ const TeacherWallet: React.FC<TeacherWalletProps> = ({ onOpenSettings }) => {
       const res = await fetch("/api/wallets/me");
       if (res.ok) setWallet(await res.json());
     } catch {
-      /* ignore — the empty state covers it */
+      /* ignore - the empty state covers it */
     } finally {
       setLoading(false);
     }
@@ -254,7 +254,7 @@ const TeacherWallet: React.FC<TeacherWalletProps> = ({ onOpenSettings }) => {
         </Button>
       </div>
 
-      {/* Balances — ink card */}
+      {/* Balances - ink card */}
       <div className="relative overflow-hidden rounded-3xl bg-foreground p-7 text-background shadow-elevated grain sm:p-9">
         <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-primary/20 blur-3xl" />
         <div className="relative flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
@@ -474,7 +474,7 @@ const TeacherWallet: React.FC<TeacherWalletProps> = ({ onOpenSettings }) => {
           <DialogHeader>
             <DialogTitle>Withdraw funds</DialogTitle>
             <DialogDescription>
-              Transfers go to the bank account saved in your settings, and usually take 2–3 working days.
+              Transfers go to the bank account saved in your settings, and usually take 2-3 working days.
             </DialogDescription>
           </DialogHeader>
 

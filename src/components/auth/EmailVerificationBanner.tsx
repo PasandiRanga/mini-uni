@@ -16,7 +16,7 @@ interface EmailVerificationBannerProps {
 
 /**
  * Prompts an unverified user to verify their email. The actual code entry
- * happens on the dedicated /verify-email page — this component only surfaces
+ * happens on the dedicated /verify-email page - this component only surfaces
  * the prompt and links there. Fetches its own status from /api/auth/me, so it
  * can be dropped in anywhere without prop wiring.
  */
@@ -40,7 +40,7 @@ const EmailVerificationBanner = ({ variant = "banner" }: EmailVerificationBanner
     };
   }, []);
 
-  // Still loading status — render nothing yet.
+  // Still loading status - render nothing yet.
   if (verified === null) return null;
 
   // Verified: banner disappears entirely; the settings card shows a confirmation row.

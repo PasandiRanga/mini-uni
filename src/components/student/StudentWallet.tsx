@@ -124,7 +124,7 @@ const StudentWallet: React.FC = () => {
       const res = await fetch("/api/wallets/me");
       if (res.ok) setWallet(await res.json());
     } catch {
-      /* ignore — the empty state covers it */
+      /* ignore - the empty state covers it */
     } finally {
       setLoading(false);
     }
@@ -143,7 +143,7 @@ const StudentWallet: React.FC = () => {
 
   /**
    * Sends the deposit slip and amount for an admin to verify. Nothing is
-   * credited here — the balance updates once the top-up is approved.
+   * credited here - the balance updates once the top-up is approved.
    */
   const topUp = async () => {
     if (!slip) return;
@@ -252,7 +252,7 @@ const StudentWallet: React.FC = () => {
         </div>
       )}
 
-      {/* Balance — ink card */}
+      {/* Balance - ink card */}
       <div className="relative overflow-hidden rounded-3xl bg-foreground p-7 text-background shadow-elevated grain sm:p-9">
         <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-primary/20 blur-3xl" />
         <div className="relative flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
@@ -289,7 +289,7 @@ const StudentWallet: React.FC = () => {
                 <ShieldCheck className="h-3.5 w-3.5" /> Cancellations
               </p>
               <p className="mt-2 text-xs text-background/70">
-                If a class is cancelled before it happens, the full amount comes straight back here — no waiting on a card refund.
+                If a class is cancelled before it happens, the full amount comes straight back here - no waiting on a card refund.
               </p>
             </div>
           </div>

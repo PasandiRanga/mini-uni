@@ -6,8 +6,8 @@ import { computeProfileCompletion } from "@/lib/teacherVerification";
 import { notifyAdminsOfSubmission } from "@/lib/adminAlerts";
 
 /**
- * Sends a rejected teacher profile back for review. Rejection is sticky —
- * editing details doesn't change the status — so the teacher says when
+ * Sends a rejected teacher profile back for review. Rejection is sticky :
+ * editing details doesn't change the status : so the teacher says when
  * they're done, and the profile returns to the admin's PENDING queue.
  */
 export async function POST(request: Request) {

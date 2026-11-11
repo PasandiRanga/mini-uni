@@ -23,11 +23,13 @@ const SignUp = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-4xl">
-        <div className="text-center mb-8">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4 py-12 grain">
+      <div className="pointer-events-none absolute -right-40 -top-40 h-[32rem] w-[32rem] rounded-full bg-primary/[0.08] blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-40 -left-40 h-[28rem] w-[28rem] rounded-full bg-accent/[0.06] blur-3xl" />
+      <div className="relative w-full max-w-4xl">
+        <div className="mb-10 text-center">
           <Link href="/" className="inline-flex items-center gap-2 mb-4">
-            <div className="w-10 h-10 rounded-xl gradient-hero flex items-center justify-center shadow-soft">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl gradient-hero shadow-soft">
               <GraduationCap className="w-5 h-5 text-primary-foreground" />
             </div>
             <span className="text-xl font-bold">MiniUni</span>
@@ -36,11 +38,11 @@ const SignUp = () => {
           <p className="text-muted-foreground">Choose your role to continue</p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid gap-6 md:grid-cols-2">
           {/* Student Option */}
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 hover:border-primary" onClick={() => setSelectedRole("student")}>
+          <Card className="group cursor-pointer border-2 border-border/70 bg-card/85 transition-all hover:-translate-y-1 hover:border-primary/60 hover:shadow-elevated" onClick={() => setSelectedRole("student")}>
             <CardHeader>
-              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 transition-transform duration-300 group-hover:scale-105">
                 <BookOpen className="w-6 h-6 text-primary" />
               </div>
               <CardTitle className="text-2xl">I want to learn</CardTitle>
@@ -71,9 +73,9 @@ const SignUp = () => {
           </Card>
 
           {/* Teacher Option */}
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 hover:border-secondary" onClick={() => setSelectedRole("teacher")}>
+          <Card className="group cursor-pointer border-2 border-border/70 bg-card/85 transition-all hover:-translate-y-1 hover:border-secondary/60 hover:shadow-elevated" onClick={() => setSelectedRole("teacher")}>
             <CardHeader>
-              <div className="w-12 h-12 rounded-xl bg-secondary/10 flex items-center justify-center mb-4">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-secondary/10 transition-transform duration-300 group-hover:scale-105">
                 <Users className="w-6 h-6 text-secondary" />
               </div>
               <CardTitle className="text-2xl">I want to teach</CardTitle>
@@ -121,4 +123,3 @@ const SignUp = () => {
 };
 
 export default SignUp;
-

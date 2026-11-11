@@ -23,7 +23,7 @@ export async function ratingSummaries(teacherIds: string[]): Promise<Map<string,
   return out;
 }
 
-/** "Nimal P." — reviews show who wrote them without a full name. */
+/** "Nimal P." : reviews show who wrote them without a full name. */
 export function reviewerName(firstName: string, lastName: string): string {
   const initial = lastName.trim().charAt(0);
   return initial ? `${firstName} ${initial.toUpperCase()}.` : firstName;

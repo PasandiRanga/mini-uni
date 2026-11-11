@@ -6,7 +6,7 @@ import { getAdminSession } from "@/lib/adminAuth";
 import { computeProfileCompletion } from "@/lib/teacherVerification";
 
 /**
- * Admin review queue. By default returns teacher profiles awaiting review —
+ * Admin review queue. By default returns teacher profiles awaiting review :
  * PENDING and 100% complete, the ones an admin can actually act on. Pass
  * ?status=APPROVED|REJECTED|ALL to review history instead (no completeness
  * filter for those).

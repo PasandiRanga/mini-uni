@@ -23,29 +23,29 @@ const HeroSection = () => {
   const showRating = stats?.averageRating != null && stats.reviewCount >= MIN_REVIEWS_FOR_RATING;
 
   return (
-    <section className="relative min-h-screen flex flex-col justify-center pt-24 overflow-hidden grain">
+    <section className="relative flex min-h-screen flex-col justify-center overflow-hidden pb-0 pt-28 grain">
       {/* Background washes */}
-      <div className="absolute -top-40 right-[-10%] w-[640px] h-[640px] rounded-full bg-primary/[0.06] blur-3xl -z-10" />
-      <div className="absolute bottom-[-20%] left-[-10%] w-[520px] h-[520px] rounded-full bg-secondary/[0.07] blur-3xl -z-10" />
+      <div className="absolute -right-40 -top-40 -z-10 h-[640px] w-[640px] rounded-full bg-primary/[0.08] blur-3xl" />
+      <div className="absolute -bottom-40 -left-40 -z-10 h-[520px] w-[520px] rounded-full bg-accent/[0.06] blur-3xl" />
 
-      <div className="container mx-auto px-4 pb-16">
-        <div className="grid lg:grid-cols-12 gap-12 items-center">
-          {/* Left — editorial display type */}
+      <div className="container mx-auto px-4 pb-20">
+        <div className="grid items-center gap-12 lg:grid-cols-12">
+          {/* Left - editorial display type */}
           <div className="lg:col-span-7 space-y-9">
             <div className="animate-fade-up inline-flex items-center gap-2.5 rounded-full border border-border bg-card/70 px-4 py-1.5 text-xs font-medium tracking-wide text-muted-foreground uppercase backdrop-blur">
               <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse-soft" />
               A quieter way to learn
             </div>
 
-            <h1 className="animate-fade-up text-5xl sm:text-6xl lg:text-[5.25rem] leading-[1.02] font-normal" style={{ animationDelay: "0.1s" }}>
+            <h1 className="animate-fade-up max-w-4xl text-5xl font-medium leading-[1.02] tracking-[-0.045em] sm:text-6xl lg:text-[5.25rem]" style={{ animationDelay: "0.1s" }}>
               Every subject has
               <br />
               <span className="font-serif italic text-gradient font-semibold">its teacher.</span>
             </h1>
 
-            <p className="animate-fade-up max-w-lg text-lg leading-relaxed text-muted-foreground" style={{ animationDelay: "0.2s" }}>
+            <p className="animate-fade-up max-w-xl text-base leading-8 text-muted-foreground sm:text-lg" style={{ animationDelay: "0.2s" }}>
               MiniUni pairs curious students with verified, hand-reviewed teachers.
-              Book a live class in minutes — payments held safely until the lesson is done.
+              Book a live class in minutes - payments held safely until the lesson is done.
             </p>
 
             <div className="animate-fade-up flex flex-wrap items-center gap-4" style={{ animationDelay: "0.3s" }}>
@@ -97,11 +97,11 @@ const HeroSection = () => {
             )}
           </div>
 
-          {/* Right — layered class cards */}
+          {/* Right - layered class cards */}
           <div className="lg:col-span-5 relative hidden lg:block">
             <div className="animate-fade-up relative" style={{ animationDelay: "0.35s" }}>
               {/* Main teacher card */}
-              <div className="relative z-20 rounded-3xl border border-border/70 bg-card p-7 shadow-elevated">
+              <div className="relative z-20 rounded-[2rem] border border-border/70 bg-card p-7 shadow-elevated transition-transform duration-500 hover:-translate-y-1">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-4">
                     <div className="flex h-14 w-14 items-center justify-center rounded-2xl gradient-hero font-serif text-lg italic text-primary-foreground">
@@ -130,7 +130,7 @@ const HeroSection = () => {
               </div>
 
               {/* Student request card, offset */}
-              <div className="relative z-10 -mt-7 ml-12 rounded-3xl border border-border/60 bg-muted/70 p-6 backdrop-blur-sm shadow-card">
+              <div className="relative z-10 -mt-7 ml-12 rounded-[2rem] border border-border/60 bg-muted/70 p-6 shadow-card backdrop-blur-sm">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-semibold">O/L Science: looking for a teacher</p>
@@ -153,7 +153,7 @@ const HeroSection = () => {
       </div>
 
       {/* Subject marquee */}
-      <div className="relative border-y border-border/60 bg-card/50 py-4 backdrop-blur-sm">
+      <div className="relative border-y border-border/60 bg-card/45 py-4 backdrop-blur-sm">
         <div className="flex w-max animate-marquee items-center gap-10 whitespace-nowrap">
           {[...subjects, ...subjects].map((subject, i) => (
             <span key={i} className="flex items-center gap-10 text-sm tracking-wide text-muted-foreground">

@@ -70,7 +70,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, e
   const [slots, setSlots] = useState<PickerSlot[]>([]);
   const [busy, setBusy] = useState<{ start: string; end: string; title?: string }[]>([]);
 
-  // grade/level — required for a student request, optional on a teacher offering
+  // grade/level - required for a student request, optional on a teacher offering
   const [grade, setGrade] = useState('');
   // A/L only: the stream narrows the subject list and is saved as "A/L · <stream>".
   const [stream, setStream] = useState('');
@@ -78,7 +78,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, e
 
   const [submitting, setSubmitting] = useState(false);
 
-  // Google connection — to nudge teachers to connect so classes get Meet links.
+  // Google connection - to nudge teachers to connect so classes get Meet links.
   const [googleStatus, setGoogleStatus] = useState<{ configured: boolean; connected: boolean } | null>(null);
   useEffect(() => {
     if (!open || !isTeacher) return;
@@ -248,7 +248,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, e
           }
         : {
             type: 'STUDENT_REQUEST',
-            title: `Looking for a Teacher — ${subject}`,
+            title: `Looking for a Teacher - ${subject}`,
             subject,
             grade: fullGrade,
             description,
@@ -334,7 +334,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, e
                       : "Our team asked for changes to your profile. Update it and it'll be reviewed again."
                     : teacherStatus.percent < 100
                       ? `Finish your profile (${teacherStatus.percent}% done) so our team can review it. You can post classes once you're approved.`
-                      : "Our team is reviewing your details. You'll be able to post classes as soon as you're approved — we'll email you."}
+                      : "Our team is reviewing your details. You'll be able to post classes as soon as you're approved - we'll email you."}
                 </DialogDescription>
               </DialogHeader>
               <div className="flex flex-wrap justify-center gap-3">

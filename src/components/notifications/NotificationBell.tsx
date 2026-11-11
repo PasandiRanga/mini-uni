@@ -47,7 +47,7 @@ const NotificationBell = () => {
       setItems(data.items || []);
       setUnread(data.unreadCount || 0);
     } catch {
-      /* offline / transient — leave the last known state */
+      /* offline / transient - leave the last known state */
     }
   }, []);
 

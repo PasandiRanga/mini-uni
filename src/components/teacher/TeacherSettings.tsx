@@ -197,14 +197,14 @@ const GoogleCalendarSettings = () => {
 
   useEffect(() => {
     load();
-    // Google redirects back with ?google=connected|error|denied — surface it once.
+    // Google redirects back with ?google=connected|error|denied - surface it once.
     const params = new URLSearchParams(window.location.search);
     const result = params.get("google");
     if (result) {
       const messages: Record<string, { title: string; variant?: "destructive" }> = {
         connected: { title: "Google Calendar connected" },
         denied: { title: "Connection cancelled", variant: "destructive" },
-        error: { title: "Couldn't connect Google — try again", variant: "destructive" },
+        error: { title: "Couldn't connect Google - try again", variant: "destructive" },
       };
       const m = messages[result];
       if (m) toast({ title: m.title, variant: m.variant });
@@ -241,7 +241,7 @@ const GoogleCalendarSettings = () => {
   return (
     <div className="space-y-3">
       <p className="text-sm text-muted-foreground">
-        Connect your Google account and every booked class is added to your calendar with a Google Meet link — the student gets the invite too.
+        Connect your Google account and every booked class is added to your calendar with a Google Meet link - the student gets the invite too.
       </p>
       {state.connected ? (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/[0.06] px-4 py-3 text-sm">
@@ -270,14 +270,14 @@ const TeacherSettings = () => {
           <span className="font-serif text-gradient font-semibold">Settings</span>
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Manage your profile, security, notifications and payouts. You can complete your profile here or in the step-by-step flow — both stay in sync.
+          Manage your profile, security, notifications and payouts. You can complete your profile here or in the step-by-step flow - both stay in sync.
         </p>
       </div>
 
-      {/* Profile — same fields as profile completion, editable and prefilled */}
+      {/* Profile - same fields as profile completion, editable and prefilled */}
       <div className="space-y-4">
         <GroupHeading>Profile</GroupHeading>
-        <Section icon={Sparkles} title="Public profile" description="Your bio and subjects — what students see.">
+        <Section icon={Sparkles} title="Public profile" description="Your bio and subjects - what students see.">
           <PublicProfileForm />
         </Section>
         <Section icon={UserCog} title="Personal details" description="Your name, contacts and address.">

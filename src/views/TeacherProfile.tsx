@@ -149,10 +149,10 @@ const TeacherProfile: React.FC<TeacherProfileProps> = ({ id: propId }) => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 pb-20 pt-28">
         <div className="mx-auto max-w-3xl space-y-6">
           {/* Header */}
-          <section className="rounded-3xl border border-border/70 bg-card p-6 shadow-card sm:p-8">
+          <section className="rounded-[2rem] border border-border/70 bg-card/85 p-6 shadow-elevated backdrop-blur-sm sm:p-8">
             <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
               <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl gradient-hero text-2xl font-semibold text-primary-foreground sm:h-24 sm:w-24">
                 {teacher.firstName.charAt(0)}{teacher.lastName.charAt(0)}

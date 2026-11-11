@@ -52,7 +52,7 @@ const FindTeacher: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
   const router = useRouter();
 
-  // Teachers don't browse for teachers — send them back to their dashboard.
+  // Teachers don't browse for teachers - send them back to their dashboard.
   useEffect(() => {
     if (user?.role === "TEACHER") router.replace("/teacher/dashboard");
   }, [user?.role, router]);
@@ -120,14 +120,14 @@ const FindTeacher: React.FC = () => {
   return (
     <div className="min-h-screen bg-background">
       <DashboardLayout>
-        <main className="container mx-auto px-4 py-8">
-          <div className="max-w-4xl mx-auto text-center mb-6">
+        <main className="page-container pb-20 pt-28">
+          <div className="mx-auto mb-8 max-w-4xl text-center">
             <h1 className="type-page-title">Find <span className="font-serif italic text-gradient font-semibold">teachers</span></h1>
             <p className="text-muted-foreground">Browse verified teachers, compare prices and book classes.</p>
           </div>
 
           <div className={`${viewType === 'grid' ? 'max-w-6xl' : 'max-w-4xl'} mx-auto mb-6`}>
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="surface-glass flex flex-col items-center justify-between gap-4 rounded-[1.5rem] p-3 md:flex-row">
               <div className="flex gap-3 flex-1 w-full">
                 <div className="relative flex-1">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -136,7 +136,7 @@ const FindTeacher: React.FC = () => {
                 <Button variant="outline" onClick={() => setShowFilters(s => !s)} className="gap-2 h-12"><Filter className="w-4 h-4" />Filters</Button>
               </div>
 
-              <div className="flex bg-muted rounded-xl p-1 shrink-0">
+              <div className="flex shrink-0 rounded-xl bg-muted/80 p-1">
                 <button
                   onClick={() => setViewType('grid')}
                   className={`p-2 rounded-lg transition-all ${viewType === 'grid' ? 'bg-card shadow-soft text-primary' : 'text-muted-foreground'}`}
@@ -155,7 +155,7 @@ const FindTeacher: React.FC = () => {
             </div>
 
             {showFilters && (
-              <div className="mt-4 bg-card rounded-xl p-4 border border-border">
+              <div className="mt-4 rounded-2xl border border-border/70 bg-card/85 p-5 shadow-card backdrop-blur-sm">
                 <div className="grid md:grid-cols-3 gap-3">
                   <div>
                     <label className="text-sm font-medium">Subject</label>
@@ -269,7 +269,7 @@ const FindTeacher: React.FC = () => {
                 }
 
                 return (
-                  <div key={t.id} className="bg-card rounded-2xl p-6 shadow-card hover:shadow-elevated transition-all duration-300 border border-border/50 flex flex-col h-full">
+                  <div key={t.id} className="flex h-full flex-col rounded-[1.5rem] border border-border/70 bg-card/85 p-6 shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-elevated">
                     <div className="flex items-start gap-4 mb-4 flex-1">
                       <div className="w-16 h-16 rounded-2xl gradient-hero flex items-center justify-center text-primary-foreground font-bold text-2xl shrink-0">{(t.firstName || '').charAt(0)}{(t.lastName || '').charAt(0)}</div>
                       <div className="min-w-0">
@@ -291,7 +291,7 @@ const FindTeacher: React.FC = () => {
                           <div className="text-[10px] text-muted-foreground uppercase font-medium">Rating</div>
                         </div>
                         <div className="text-center">
-                          <div className="font-bold text-foreground">{t.startingPrice != null ? formatMoneyCompact(t.startingPrice, t.currency) : '—'}</div>
+                          <div className="font-bold text-foreground">{t.startingPrice != null ? formatMoneyCompact(t.startingPrice, t.currency) : '-'}</div>
                           <div className="text-[10px] text-muted-foreground uppercase font-medium">From / class</div>
                         </div>
                       </div>

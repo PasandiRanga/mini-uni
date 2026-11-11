@@ -72,7 +72,7 @@ const VIEWS: {
 interface MyClassesProps {
   /** Compact overview tile: upcoming only, no filters, capped at PREVIEW_COUNT. */
   preview?: boolean;
-  /** "View all" handler for preview mode — usually switches the dashboard to the classes tab. */
+  /** "View all" handler for preview mode - usually switches the dashboard to the classes tab. */
   onViewAll?: () => void;
 }
 
@@ -227,8 +227,8 @@ const MyClasses: React.FC<MyClassesProps> = ({ preview = false, onViewAll }) => 
                 <User className="h-3 w-3" /> {otherName || (user?.role === 'STUDENT' ? 'Teacher' : 'Student')}
               </p>
               <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{start ? format(start, 'EEE, MMM d') : '—'}</span>
-                <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{start ? format(start, 'h:mm a') : '—'} · {duration || '—'}</span>
+                <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{start ? format(start, 'EEE, MMM d') : '-'}</span>
+                <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{start ? format(start, 'h:mm a') : '-'} · {duration || '-'}</span>
                 {b.fee !== undefined && b.fee !== null && <span className="font-medium text-foreground">{formatMoney(b.fee, currency)}</span>}
               </div>
             </div>
@@ -284,7 +284,7 @@ const MyClasses: React.FC<MyClassesProps> = ({ preview = false, onViewAll }) => 
   const EmptyIcon = activeView.emptyIcon;
 
   return (
-    <section className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
+    <section className="overflow-hidden rounded-[1.5rem] border border-border/70 bg-card/80 shadow-card backdrop-blur-sm">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-6 py-5">
         <h2 className="type-section">
           {preview ? 'Upcoming' : 'My'} <span className="font-serif font-semibold">classes</span>

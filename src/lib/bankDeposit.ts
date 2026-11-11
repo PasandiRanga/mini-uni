@@ -1,7 +1,7 @@
 /**
  * Where students send a bank transfer to top up their wallet.
  *
- * Mock details for now — swap these for the real MiniUni account before going
+ * Mock details for now : swap these for the real MiniUni account before going
  * live. A student deposits to this account, then uploads the slip; an admin
  * checks the amount and approves, which credits the wallet.
  */
