@@ -43,31 +43,35 @@ export async function POST(
             data: updateData,
         });
 
-        if (updated.studentConfirmed && updated.teacherConfirmed && updated.status !== "COMPLETED") {
-            const completedBooking = await prisma.booking.update({
-                where: { id: bookingId },
-                data: {
-                    status: "COMPLETED",
-                    completedAt: new Date(),
-                },
-            });
-
-            // Both sides agree the class happened : clear the escrow now rather
-            // than waiting for the slot's end time to pass.
-            await releaseBookingEscrow(completedBooking.id);
-
-            // Let both sides know the class is marked complete.
-            for (const uid of [booking.studentId, booking.teacherId]) {
-                await createNotification({
-                    userId: uid,
-                    type: "CLASS_COMPLETION",
-                    title: "Class completed",
-                    message: "Your class is marked complete. Teacher earnings have been released from escrow.",
-                    metadata: { bookingId },
+        if (updated.studentConfirmed && updated.teacherConfirmed) {
+            // Both sides agree the class happened. Mark it complete if a finished
+            // class hasn't already been auto-completed, then clear the escrow now
+            // rather than waiting out the report window. releaseBookingEscrow is
+            // idempotent, so confirming an already-paid class does nothing.
+            if (updated.status !== "COMPLETED") {
+                await prisma.booking.update({
+                    where: { id: bookingId },
+                    data: { status: "COMPLETED", completedAt: new Date() },
                 });
             }
 
-            return NextResponse.json(completedBooking);
+            const release = await releaseBookingEscrow(bookingId);
+
+            // Notify both sides only on the run that actually releases the money,
+            // so the message is sent once.
+            if (release.released) {
+                for (const uid of [booking.studentId, booking.teacherId]) {
+                    await createNotification({
+                        userId: uid,
+                        type: "CLASS_COMPLETION",
+                        title: "Class confirmed",
+                        message: "You both confirmed the class happened, so the teacher's earnings have been released from escrow.",
+                        metadata: { bookingId },
+                    });
+                }
+            }
+
+            return NextResponse.json({ ...updated, status: "COMPLETED" });
         }
 
         return NextResponse.json(updated);

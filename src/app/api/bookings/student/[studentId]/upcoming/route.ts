@@ -51,6 +51,14 @@ export async function GET(
                     REPORTABLE.includes(b.status) &&
                     walletTransactions.length === 0 &&
                     withinDisputeWindow(b.timeSlot.startTime, b.timeSlot.endTime),
+                // The student can confirm a class that has ended, isn't disputed or
+                // cancelled, hasn't paid out yet, and that they haven't confirmed.
+                canConfirm:
+                    !b.dispute &&
+                    b.status !== "CANCELLED" &&
+                    walletTransactions.length === 0 &&
+                    b.timeSlot.endTime.getTime() <= Date.now() &&
+                    !b.studentConfirmed,
             }))
         );
     } catch (error) {

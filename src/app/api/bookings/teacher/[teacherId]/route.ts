@@ -25,12 +25,26 @@ export async function GET(
                 timeSlot: { select: { startTime: true, endTime: true } },
                 inquiry: { include: { post: { select: { title: true, subject: true } } } },
                 dispute: { select: { reason: true, details: true, status: true, teacherResponse: true, resolutionNote: true, createdAt: true } },
+                // Only to tell whether the teacher has been paid yet.
+                walletTransactions: { where: { type: "RELEASE" }, select: { id: true } },
             },
             orderBy: { createdAt: "desc" },
             take: 50,
         });
 
-        return NextResponse.json(bookings);
+        return NextResponse.json(
+            bookings.map(({ walletTransactions, ...b }) => ({
+                ...b,
+                // The teacher can confirm a class that has ended, isn't disputed or
+                // cancelled, hasn't paid out yet, and that they haven't confirmed.
+                canConfirm:
+                    !b.dispute &&
+                    b.status !== "CANCELLED" &&
+                    walletTransactions.length === 0 &&
+                    b.timeSlot.endTime.getTime() <= Date.now() &&
+                    !b.teacherConfirmed,
+            }))
+        );
     } catch (error) {
         console.error("Error fetching teacher bookings:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
