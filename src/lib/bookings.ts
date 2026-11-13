@@ -74,7 +74,7 @@ export async function settleFinishedBookings(who: { teacherId: string } | { stud
           userId: b.studentId,
           type: "CLASS_COMPLETION",
           title: "How was your class?",
-          message: `Rate your class with ${b.teacher.firstName} from My Classes → Completed.`,
+          message: `Confirm your class with ${b.teacher.firstName} happened, or report a problem within 48 hours if it did not. Find it in My Classes.`,
           metadata: { bookingId: b.id },
         });
       }

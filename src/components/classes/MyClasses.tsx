@@ -33,6 +33,9 @@ interface Booking {
   review?: Review | null; // students only: their rating of a completed class
   dispute?: BookingDispute | null;
   canReport?: boolean; // students only: the class can still be reported
+  canConfirm?: boolean; // the viewer can confirm this class happened
+  studentConfirmed?: boolean;
+  teacherConfirmed?: boolean;
 }
 
 type ViewId = 'upcoming' | 'completed' | 'cancelled';
@@ -188,6 +191,36 @@ const MyClasses: React.FC<MyClassesProps> = ({ preview = false, onViewAll }) => 
     }
   };
 
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+
+  const handleConfirm = async (b: Booking) => {
+    setConfirmingId(b.id);
+    try {
+      const res = await fetch(`/api/bookings/${b.id}/confirm`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Could not confirm the class');
+
+      const bothConfirmed = data?.studentConfirmed && data?.teacherConfirmed;
+      toast({
+        title: 'Thanks for confirming',
+        description: bothConfirmed
+          ? isStudent
+            ? "You both confirmed. Your teacher's payment has been released."
+            : 'You both confirmed. Your earnings have been released from escrow.'
+          : "We've recorded your confirmation. Waiting for the other side to confirm.",
+      });
+      fetchBookings();
+    } catch (err: any) {
+      toast({ title: "Couldn't confirm", description: err?.message || 'Try again', variant: 'destructive' });
+    } finally {
+      setConfirmingId(null);
+    }
+  };
+
   const statusClasses = (status: string) => {
     switch ((status || '').toUpperCase()) {
       case 'COMPLETED': return 'bg-success/10 text-success';
@@ -212,6 +245,9 @@ const MyClasses: React.FC<MyClassesProps> = ({ preview = false, onViewAll }) => 
     const isFuture = start ? start > new Date() : false;
     const canRate = isStudent && !preview && (b.status || '').toUpperCase() === 'COMPLETED';
     const canReport = isStudent && !preview && b.canReport;
+    const canConfirm = !preview && b.canConfirm && (b.status || '').toUpperCase() !== 'DISPUTED';
+    const iConfirmed = isStudent ? b.studentConfirmed : b.teacherConfirmed;
+    const otherConfirmed = isStudent ? b.teacherConfirmed : b.studentConfirmed;
     const canAnswer = !isStudent && !preview && b.dispute?.status === 'OPEN';
 
     return (
@@ -264,6 +300,18 @@ const MyClasses: React.FC<MyClassesProps> = ({ preview = false, onViewAll }) => 
                 <Star className="h-3.5 w-3.5" /> Rate
               </Button>
             ))}
+            {canConfirm && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8"
+                disabled={confirmingId === b.id}
+                onClick={() => handleConfirm(b)}
+              >
+                {confirmingId === b.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle className="h-3.5 w-3.5" />}
+                It happened
+              </Button>
+            )}
             {canReport && (
               <Button size="sm" variant="ghost" className="h-8 text-muted-foreground" onClick={() => setToReport(b)}>
                 <Flag className="h-3.5 w-3.5" /> Report a problem
@@ -276,6 +324,15 @@ const MyClasses: React.FC<MyClassesProps> = ({ preview = false, onViewAll }) => 
             )}
           </div>
         </div>
+        {!preview && !b.dispute && (canConfirm || (iConfirmed && !otherConfirmed)) && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            {iConfirmed && !otherConfirmed
+              ? `You confirmed this class. Waiting for the ${isStudent ? 'teacher' : 'student'} to confirm.`
+              : isStudent
+                ? 'Confirm if the class went ahead, or report a problem if the teacher did not show. You have up to 48 hours after the class.'
+                : 'Confirm if the class went ahead. Confirming on both sides releases your payment right away.'}
+          </p>
+        )}
         {b.dispute && !preview && <DisputeSummary dispute={b.dispute} viewer={isStudent ? 'student' : 'teacher'} />}
       </div>
     );
