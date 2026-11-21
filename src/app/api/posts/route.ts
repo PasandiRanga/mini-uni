@@ -111,6 +111,10 @@ async function createPost(request: Request) {
         if (inferredType === "STUDENT_REQUEST") {
             payload.grade = data.grade || null;
             payload.syllabus = data.syllabus || null;
+            // The student's willing hourly rate, shown to teachers as a guide.
+            payload.ratePerHour = data.ratePerHour != null ? Number(data.ratePerHour) : null;
+            const student = await prisma.user.findUnique({ where: { id: userId }, select: { currency: true } });
+            payload.currency = student?.currency || "LKR";
         } else {
             payload.grade = data.grade || null;
             payload.fee = data.fee != null ? Number(data.fee) : null;

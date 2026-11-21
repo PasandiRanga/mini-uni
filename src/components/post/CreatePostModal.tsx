@@ -252,6 +252,8 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, e
             subject,
             grade: fullGrade,
             description,
+            // The per-hour rate the student is willing to pay (shown to teachers).
+            ratePerHour: budget !== '' ? Number(budget) : null,
             syllabus: JSON.stringify({ budget }),
           };
 
@@ -567,8 +569,9 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, e
                 </>
               ) : (
                 <div className="space-y-1.5">
-                  <Label htmlFor="budget">Budget per class</Label>
-                  <Input id="budget" type="number" value={budget} onChange={(e) => setBudget(e.target.value ? Number(e.target.value) : '')} className="max-w-[200px]" />
+                  <Label htmlFor="budget">Rate you&apos;re willing to pay / hour</Label>
+                  <Input id="budget" type="number" min={0} value={budget} onChange={(e) => setBudget(e.target.value ? Number(e.target.value) : '')} className="max-w-[200px]" placeholder="e.g. 1500" />
+                  <p className="text-xs text-muted-foreground">Teachers see this as a guide. They&apos;ll reply with their own rate and a time.</p>
                 </div>
               )}
 
