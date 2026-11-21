@@ -11,8 +11,13 @@
  * redirect URI (/api/auth/google/callback) registered in the Cloud Console.
  */
 
+import { createRemoteJWKSet, jwtVerify } from "jose";
+
 const CLIENT_ID = process.env.GOOGLE_OAUTH_CLIENT_ID || "";
 const CLIENT_SECRET = process.env.GOOGLE_OAUTH_CLIENT_SECRET || "";
+
+/** The OAuth client id is public (it ships to the browser for One Tap). */
+export const googleClientId = () => CLIENT_ID;
 
 const LOGIN_SCOPES = ["openid", "email", "profile"].join(" ");
 
@@ -73,5 +78,28 @@ export async function exchangeCodeForProfile(code: string, origin: string): Prom
     emailVerified: Boolean(info.verified_email ?? info.email_verified ?? true),
     firstName: info.given_name || (info.name ? String(info.name).split(" ")[0] : "") || "Student",
     lastName: info.family_name || "",
+  };
+}
+
+// Google's public keys for verifying One Tap ID tokens. jose caches and refreshes this.
+const GOOGLE_JWKS = createRemoteJWKSet(new URL("https://www.googleapis.com/oauth2/v3/certs"));
+
+/**
+ * Verifies a Google One Tap credential (a signed ID token) and returns the
+ * profile. The signature, issuer and audience are all checked, so a token
+ * minted for another app or by anyone but Google is rejected.
+ */
+export async function verifyGoogleIdToken(credential: string): Promise<GoogleProfile> {
+  const { payload } = await jwtVerify(credential, GOOGLE_JWKS, {
+    issuer: ["https://accounts.google.com", "accounts.google.com"],
+    audience: CLIENT_ID,
+  });
+  if (!payload.email) throw new Error("No email in Google token");
+  const name = typeof payload.name === "string" ? payload.name : "";
+  return {
+    email: String(payload.email).toLowerCase(),
+    emailVerified: Boolean((payload as any).email_verified ?? true),
+    firstName: (payload as any).given_name || (name ? name.split(" ")[0] : "") || "User",
+    lastName: (payload as any).family_name || "",
   };
 }
