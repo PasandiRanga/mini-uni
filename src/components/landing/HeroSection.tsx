@@ -3,9 +3,6 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowRight, ArrowUpRight, Star, ShieldCheck, CalendarDays } from "lucide-react";
-import { POPULAR_SUBJECTS } from "@/lib/classLevels";
-
-const subjects = POPULAR_SUBJECTS;
 
 /** Real platform numbers from /api/stats. */
 type Stats = { teachers: number; teacherInitials: string[]; students: number; reviewCount: number; averageRating: number | null };
@@ -152,17 +149,6 @@ const HeroSection = () => {
         </div>
       </div>
 
-      {/* Subject marquee */}
-      <div className="relative border-y border-border/60 bg-card/45 py-4 backdrop-blur-sm">
-        <div className="flex w-max animate-marquee items-center gap-10 whitespace-nowrap">
-          {[...subjects, ...subjects].map((subject, i) => (
-            <span key={i} className="flex items-center gap-10 text-sm tracking-wide text-muted-foreground">
-              <span className="font-serif text-base italic">{subject}</span>
-              <span className="h-1 w-1 rounded-full bg-accent" />
-            </span>
-          ))}
-        </div>
-      </div>
     </section>
   );
 };

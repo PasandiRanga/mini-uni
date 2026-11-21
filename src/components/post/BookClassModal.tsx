@@ -79,12 +79,26 @@ const BookClassModal = ({ post, open, onOpenChange, onBooked }: BookClassModalPr
       .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
   }, [post, classType, capacity]);
 
-  // Whether the class has any future slot at all - used to explain an empty list:
-  // for an individual class, "no slots" and "all slots already booked" are different things.
-  const anyFutureSlots = useMemo(
-    () => (post?.timeSlots || []).some((s) => (s.status ? s.status === "AVAILABLE" : true) && new Date(s.startTime).getTime() > Date.now()),
+  // Does the class have any upcoming time at all, booked or not? Judged by time
+  // only - a fully booked slot turns BOOKED, so filtering on status would hide it
+  // and make a full class look like one with no times. This is what tells "fully
+  // booked" apart from "nothing scheduled".
+  const hasFutureSlots = useMemo(
+    () => (post?.timeSlots || []).some((s) => new Date(s.startTime).getTime() > Date.now()),
     [post]
   );
+
+  // Is there an upcoming slot a group seat could still join? Used to nudge an
+  // individual booker whose times are all taken toward a shared class.
+  const groupSeatOpen = useMemo(() => {
+    if (!offered.includes("GROUP")) return false;
+    const now = Date.now();
+    return (post?.timeSlots || []).some((s) => {
+      if (new Date(s.startTime).getTime() <= now) return false;
+      const taken = seatsTaken(s);
+      return (taken === 0 || s.bookedAs === "GROUP") && taken < capacity;
+    });
+  }, [post, offered, capacity]);
 
   useEffect(() => {
     if (open) setClassType(offered[0]);
@@ -188,13 +202,31 @@ const BookClassModal = ({ post, open, onOpenChange, onBooked }: BookClassModalPr
           <div className="space-y-2">
             <p className="flex items-center gap-1.5 text-sm font-medium"><CalendarClock className="h-4 w-4 text-primary" /> Choose a time</p>
             {slots.length === 0 ? (
-              <p className="rounded-xl border border-border/70 bg-muted/40 p-4 text-sm text-muted-foreground">
-                {classType === "INDIVIDUAL" && anyFutureSlots
-                  ? offered.includes("GROUP")
-                    ? "All individual times are already booked. Switch to a group seat above to join a shared class."
-                    : "All individual times for this class are already booked."
-                  : "No available times right now."}
-              </p>
+              <div className="flex items-start gap-3 rounded-xl border border-border/70 bg-muted/40 p-4 text-sm">
+                {hasFutureSlots ? (
+                  <Users className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+                ) : (
+                  <CalendarClock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                )}
+                <div className="space-y-0.5">
+                  {!hasFutureSlots ? (
+                    <>
+                      <p className="font-medium text-foreground">No times scheduled yet</p>
+                      <p className="text-muted-foreground">Check back soon — the teacher hasn&apos;t added upcoming availability.</p>
+                    </>
+                  ) : classType === "INDIVIDUAL" && groupSeatOpen ? (
+                    <>
+                      <p className="font-medium text-foreground">All one-to-one times are booked</p>
+                      <p className="text-muted-foreground">Switch to a group seat above to join a shared class.</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="font-medium text-foreground">This class is fully booked</p>
+                      <p className="text-muted-foreground">Every scheduled time has been taken. Check back later in case a seat frees up.</p>
+                    </>
+                  )}
+                </div>
+              </div>
             ) : (
               <div className="max-h-52 space-y-2 overflow-auto pr-1">
                 {slots.map((s) => {

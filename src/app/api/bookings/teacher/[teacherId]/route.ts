@@ -33,17 +33,20 @@ export async function GET(
         });
 
         return NextResponse.json(
-            bookings.map(({ walletTransactions, ...b }) => ({
-                ...b,
-                // The teacher can confirm a class that has ended, isn't disputed or
-                // cancelled, hasn't paid out yet, and that they haven't confirmed.
-                canConfirm:
+            bookings.map(({ walletTransactions, ...b }) => {
+                // Window is open: class ended, not disputed/cancelled, not paid out.
+                const open =
                     !b.dispute &&
                     b.status !== "CANCELLED" &&
                     walletTransactions.length === 0 &&
-                    b.timeSlot.endTime.getTime() <= Date.now() &&
-                    !b.teacherConfirmed,
-            }))
+                    b.timeSlot.endTime.getTime() <= Date.now();
+                return {
+                    ...b,
+                    canConfirm: open && !b.teacherConfirmed,
+                    // The teacher can report the student didn't show, unless they've confirmed it happened.
+                    canMarkAbsent: open && !b.teacherConfirmed && !b.teacherMarkedAbsent,
+                };
+            })
         );
     } catch (error) {
         console.error("Error fetching teacher bookings:", error);

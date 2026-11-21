@@ -11,7 +11,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Calendar, Clock, Video, User, CheckCircle, XCircle, ChevronRight, RefreshCw, Loader2, Star, Flag, MessageSquareReply } from 'lucide-react';
+import { Calendar, Clock, Video, User, CheckCircle, XCircle, ChevronRight, RefreshCw, Loader2, Star, Flag, MessageSquareReply, UserX } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { formatMoney } from '@/lib/currency';
@@ -34,8 +34,11 @@ interface Booking {
   dispute?: BookingDispute | null;
   canReport?: boolean; // students only: the class can still be reported
   canConfirm?: boolean; // the viewer can confirm this class happened
+  canMarkAbsent?: boolean; // teachers only: report the student didn't show
   studentConfirmed?: boolean;
   teacherConfirmed?: boolean;
+  teacherMarkedAbsent?: boolean;
+  settlementOutcome?: string | null; // COMPLETED | STUDENT_NO_SHOW | TEACHER_NO_SHOW | BOTH_NO_SHOW
 }
 
 type ViewId = 'upcoming' | 'completed' | 'cancelled';
@@ -221,6 +224,29 @@ const MyClasses: React.FC<MyClassesProps> = ({ preview = false, onViewAll }) => 
     }
   };
 
+  const [absentId, setAbsentId] = useState<string | null>(null);
+  const [toMarkAbsent, setToMarkAbsent] = useState<Booking | null>(null);
+
+  const handleMarkAbsent = async (b: Booking) => {
+    setAbsentId(b.id);
+    try {
+      const res = await fetch(`/api/bookings/${b.id}/no-show`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Could not report the no-show');
+      toast({ title: 'Marked as a no-show', description: 'The student has a short window to contest before the class is settled.' });
+      setToMarkAbsent(null);
+      fetchBookings();
+    } catch (err: any) {
+      toast({ title: "Couldn't report", description: err?.message || 'Try again', variant: 'destructive' });
+    } finally {
+      setAbsentId(null);
+    }
+  };
+
   const statusClasses = (status: string) => {
     switch ((status || '').toUpperCase()) {
       case 'COMPLETED': return 'bg-success/10 text-success';
@@ -246,37 +272,45 @@ const MyClasses: React.FC<MyClassesProps> = ({ preview = false, onViewAll }) => 
     const canRate = isStudent && !preview && (b.status || '').toUpperCase() === 'COMPLETED';
     const canReport = isStudent && !preview && b.canReport;
     const canConfirm = !preview && b.canConfirm && (b.status || '').toUpperCase() !== 'DISPUTED';
+    const canMarkAbsent = !isStudent && !preview && b.canMarkAbsent && (b.status || '').toUpperCase() !== 'DISPUTED';
     const iConfirmed = isStudent ? b.studentConfirmed : b.teacherConfirmed;
     const otherConfirmed = isStudent ? b.teacherConfirmed : b.studentConfirmed;
     const canAnswer = !isStudent && !preview && b.dispute?.status === 'OPEN';
+    const status = (b.status || '').toUpperCase();
+    const canJoin = isFuture && !!b.googleMeetLink;
+    const canCancel = isFuture && !preview && ['CONFIRMED', 'PAYMENT_COMPLETED', 'PENDING_PAYMENT'].includes(status);
+    const hasActions = canJoin || canCancel || canRate || canConfirm || canMarkAbsent || canReport || canAnswer;
 
     return (
       <div key={b.id} className="rounded-2xl border border-border/70 bg-background/40 p-4 transition-colors hover:bg-muted/40">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex min-w-0 items-start gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl gradient-hero text-sm font-semibold text-primary-foreground">
-              {initials}
+        <div className="flex items-start gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl gradient-hero text-sm font-semibold text-primary-foreground">
+            {initials}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-start justify-between gap-2">
+              <p className="min-w-0 flex-1 truncate font-medium">{title}</p>
+              <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-medium ${statusClasses(b.status)}`}>{statusLabel(b)}</span>
             </div>
-            <div className="min-w-0">
-              <p className="truncate font-medium">{title}</p>
-              <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
-                <User className="h-3 w-3" /> {otherName || (user?.role === 'STUDENT' ? 'Teacher' : 'Student')}
-              </p>
-              <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{start ? format(start, 'EEE, MMM d') : '-'}</span>
-                <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{start ? format(start, 'h:mm a') : '-'} · {duration || '-'}</span>
-                {b.fee !== undefined && b.fee !== null && <span className="font-medium text-foreground">{formatMoney(b.fee, currency)}</span>}
-              </div>
+            <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+              <User className="h-3 w-3 shrink-0" /> <span className="truncate">{otherName || (isStudent ? 'Teacher' : 'Student')}</span>
+            </p>
+            <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1"><Calendar className="h-3 w-3 shrink-0" />{start ? format(start, 'EEE, MMM d') : '-'}</span>
+              <span className="flex items-center gap-1"><Clock className="h-3 w-3 shrink-0" />{start ? format(start, 'h:mm a') : '-'} · {duration || '-'}</span>
+              {b.fee !== undefined && b.fee !== null && <span className="font-medium text-foreground">{formatMoney(b.fee, currency)}</span>}
             </div>
           </div>
-          <div className="flex shrink-0 flex-col items-end gap-2">
-            <span className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${statusClasses(b.status)}`}>{statusLabel(b)}</span>
-            {isFuture && b.googleMeetLink && (
+        </div>
+
+        {hasActions && (
+          <div className="mt-3 flex flex-wrap items-center gap-2 sm:justify-end">
+            {canJoin && (
               <Button size="sm" variant="hero" className="h-8" onClick={() => handleJoin(b.googleMeetLink)}>
                 <Video className="h-3.5 w-3.5" /> Join
               </Button>
             )}
-            {isFuture && !preview && ['CONFIRMED', 'PAYMENT_COMPLETED', 'PENDING_PAYMENT'].includes((b.status || '').toUpperCase()) && (
+            {canCancel && (
               <Button
                 size="sm"
                 variant="ghost"
@@ -312,6 +346,18 @@ const MyClasses: React.FC<MyClassesProps> = ({ preview = false, onViewAll }) => 
                 It happened
               </Button>
             )}
+            {canMarkAbsent && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-8 text-muted-foreground"
+                disabled={absentId === b.id}
+                onClick={() => setToMarkAbsent(b)}
+              >
+                {absentId === b.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UserX className="h-3.5 w-3.5" />}
+                Student didn&apos;t show
+              </Button>
+            )}
             {canReport && (
               <Button size="sm" variant="ghost" className="h-8 text-muted-foreground" onClick={() => setToReport(b)}>
                 <Flag className="h-3.5 w-3.5" /> Report a problem
@@ -323,14 +369,21 @@ const MyClasses: React.FC<MyClassesProps> = ({ preview = false, onViewAll }) => 
               </Button>
             )}
           </div>
-        </div>
-        {!preview && !b.dispute && (canConfirm || (iConfirmed && !otherConfirmed)) && (
+        )}
+        {!preview && !b.dispute && !b.settlementOutcome && (!isStudent && b.teacherMarkedAbsent) && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            You reported the student didn&apos;t show. If they don&apos;t contest within the window, this class won&apos;t be paid.
+          </p>
+        )}
+        {!preview && !b.dispute && !(!isStudent && b.teacherMarkedAbsent) && (canConfirm || canMarkAbsent || (iConfirmed && !otherConfirmed)) && (
           <p className="mt-2 text-xs text-muted-foreground">
             {iConfirmed && !otherConfirmed
               ? `You confirmed this class. Waiting for the ${isStudent ? 'teacher' : 'student'} to confirm.`
               : isStudent
-                ? 'Confirm if the class went ahead, or report a problem if the teacher did not show. You have up to 48 hours after the class.'
-                : 'Confirm if the class went ahead. Confirming on both sides releases your payment right away.'}
+                ? (b.teacherMarkedAbsent
+                    ? 'Your teacher marked you as not attending. If that is wrong, confirm the class or report a problem to contest within 12 hours.'
+                    : 'Confirm if the class went ahead, or report a problem if the teacher did not show. You have up to 12 hours after the class.')
+                : 'Confirm if the class went ahead, or mark the student as a no-show if they did not join. You have 12 hours.'}
           </p>
         )}
         {b.dispute && !preview && <DisputeSummary dispute={b.dispute} viewer={isStudent ? 'student' : 'teacher'} />}
@@ -426,6 +479,28 @@ const MyClasses: React.FC<MyClassesProps> = ({ preview = false, onViewAll }) => 
           setBookings((prev) => prev.map((x) => (x.id === id && x.dispute ? { ...x, dispute: { ...x.dispute, teacherResponse } } : x)))
         }
       />
+
+      <AlertDialog open={!!toMarkAbsent} onOpenChange={(o) => { if (!o && !absentId) setToMarkAbsent(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Report the student didn&apos;t show?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Only do this if the student didn&apos;t join the class. They&apos;ll be told and have a short window to contest.
+              If they don&apos;t, a 10% absence fee is kept and the rest refunded to them, and this class won&apos;t be paid.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={!!absentId}>Back</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); if (toMarkAbsent) handleMarkAbsent(toMarkAbsent); }}
+              disabled={!!absentId}
+            >
+              {absentId && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Report no-show
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={!!toCancel} onOpenChange={(o) => { if (!o && !cancelling) setToCancel(null); }}>
         <AlertDialogContent>

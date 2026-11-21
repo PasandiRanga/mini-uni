@@ -5,10 +5,14 @@ import { resolveDispute } from "@/lib/disputes";
 
 /**
  * Admin settles one dispute.
- * Body: { action: "refund" | "release", note? }.
- *   - refund  → money back to the student's wallet; the booking is cancelled (note required)
- *   - release → the teacher is paid as normal
+ * Body: { action, note? }.
+ *   - refund          → full refund to the student's wallet; booking cancelled, no fault (note required)
+ *   - release         → the teacher is paid as normal
+ *   - student_no_show → student refunded less a 10% absence fee; teacher not paid
+ *   - teacher_no_show → student fully refunded; teacher charged a 10% penalty
  */
+const ACTIONS = ["refund", "release", "student_no_show", "teacher_no_show"] as const;
+type Action = (typeof ACTIONS)[number];
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   const session = await getAdminSession(request);
   if (!session) {
@@ -16,13 +20,13 @@ export async function POST(request: Request, { params }: { params: { id: string 
   }
 
   const body = await request.json().catch(() => ({}));
-  const action = String(body?.action || "").toLowerCase();
+  const action = String(body?.action || "").toLowerCase() as Action;
   const note = typeof body?.note === "string" ? body.note.trim().slice(0, 1000) : "";
-  if (action !== "refund" && action !== "release") {
+  if (!ACTIONS.includes(action)) {
     return NextResponse.json({ error: "Unknown action" }, { status: 400 });
   }
-  if (action === "refund" && !note) {
-    return NextResponse.json({ error: "Add a short note explaining the refund" }, { status: 400 });
+  if (action !== "release" && !note) {
+    return NextResponse.json({ error: "Add a short note explaining the decision" }, { status: 400 });
   }
 
   try {

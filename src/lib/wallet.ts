@@ -148,33 +148,185 @@ export async function releaseBookingEscrow(bookingId: string) {
 /** When a class's money clears to the teacher, given when it ends. */
 export const escrowReleasesAt = (endTime: Date) => new Date(endTime.getTime() + DISPUTE_WINDOW_MS);
 
+export type NoShowOutcome = "STUDENT_NO_SHOW" | "TEACHER_NO_SHOW" | "BOTH_NO_SHOW";
+
+const noShowReason = (outcome: NoShowOutcome) =>
+  outcome === "STUDENT_NO_SHOW"
+    ? "The student didn't join the class"
+    : outcome === "TEACHER_NO_SHOW"
+      ? "The teacher didn't join the class"
+      : "Neither side joined the class";
+
 /**
- * Releases the held money of every completed class (for one teacher or
- * student) whose report window has closed. A DISPUTED booking isn't
- * COMPLETED, so it stays on hold until an admin settles it. Called whenever
- * classes or wallets are read, which keeps balances right without a
- * background job.
+ * Settles a class that didn't take place, moving money per the no-show policy.
+ * The platform's normal service fee is NOT taken (the class never completed);
+ * instead the side at fault forfeits a 10% fee:
+ *
+ * - STUDENT_NO_SHOW: student refunded the fee less a 10% absence fee; teacher paid nothing.
+ * - TEACHER_NO_SHOW: student refunded in full; teacher charged a 10% penalty.
+ * - BOTH_NO_SHOW:    student refunded less the 10% absence fee AND teacher charged 10%.
+ *
+ * Idempotent: each wallet entry is unique per booking and settlementOutcome
+ * guards re-entry, so a repeat call is a no-op.
  */
-export async function releaseClearedEscrow(who: { teacherId: string } | { studentId: string }) {
+export async function settleNoShowBooking(bookingId: string, outcome: NoShowOutcome) {
+  const booking = await prisma.booking.findUnique({ where: { id: bookingId }, include: { payment: true } });
+  if (!booking) throw new Error("BOOKING_NOT_FOUND");
+  if (booking.settlementOutcome) return { settled: false as const }; // already settled
+
+  const [deposit, release] = await Promise.all([
+    prisma.walletTransaction.findFirst({ where: { bookingId, type: "DEPOSIT" } }),
+    prisma.walletTransaction.findFirst({ where: { bookingId, type: "RELEASE" } }),
+  ]);
+  if (release) throw new Error("ESCROW_RELEASED"); // already paid out to the teacher
+
+  // Nothing was ever escrowed (unpaid): just record the outcome.
+  if (!deposit || deposit.status !== "COMPLETED" || booking.payment?.status !== "COMPLETED") {
+    await prisma.booking.update({
+      where: { id: bookingId },
+      data: { settlementOutcome: outcome, status: "CANCELLED", cancelledAt: new Date(), cancellationReason: noShowReason(outcome) },
+    });
+    return { settled: true as const, moved: false };
+  }
+
+  const gross = new Prisma.Decimal(deposit.amount);
+  const { fee } = splitCommission(gross); // 10%
+  const teacherWalletId = deposit.walletId;
+  const studentWallet = await getWalletForUser(booking.studentId);
+  const studentAbsence = outcome === "TEACHER_NO_SHOW" ? new Prisma.Decimal(0) : fee;
+  const teacherPenalty = outcome === "TEACHER_NO_SHOW" || outcome === "BOTH_NO_SHOW" ? fee : new Prisma.Decimal(0);
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      // 1) Take the escrow back off the teacher's pending balance.
+      await tx.walletTransaction.create({
+        data: { walletId: teacherWalletId, bookingId, type: "REVERSAL", amount: gross, status: "COMPLETED", description: "Class didn't take place : escrow returned" },
+      });
+      await tx.wallet.update({ where: { id: teacherWalletId }, data: { pendingBalance: { decrement: gross } } });
+
+      // 2) Refund the student the full fee first...
+      await tx.walletTransaction.create({
+        data: { walletId: studentWallet.id, bookingId, type: "REFUND", amount: gross, status: "COMPLETED", description: `${noShowReason(outcome)} : refunded to your wallet` },
+      });
+      await tx.wallet.update({ where: { id: studentWallet.id }, data: { releasedBalance: { increment: gross } } });
+
+      // 3) ...then keep the student's 10% absence fee when the student was at fault.
+      if (studentAbsence.gt(0)) {
+        await tx.walletTransaction.create({
+          data: { walletId: studentWallet.id, bookingId, type: "ABSENCE_FEE", amount: studentAbsence, status: "COMPLETED", description: `No-show absence fee (${commissionPercent()}%)` },
+        });
+        await tx.wallet.update({ where: { id: studentWallet.id }, data: { releasedBalance: { decrement: studentAbsence } } });
+      }
+
+      // 4) Charge the teacher a 10% penalty when the teacher was at fault.
+      if (teacherPenalty.gt(0)) {
+        await tx.walletTransaction.create({
+          data: { walletId: teacherWalletId, bookingId, type: "PENALTY", amount: teacherPenalty, status: "COMPLETED", description: `No-show penalty (${commissionPercent()}%)` },
+        });
+        await tx.wallet.update({ where: { id: teacherWalletId }, data: { releasedBalance: { decrement: teacherPenalty } } });
+      }
+
+      // 5) Mark the payment refunded and record the outcome.
+      await tx.payment.update({ where: { id: booking.payment!.id }, data: { status: "REFUNDED" } });
+      await tx.booking.update({
+        where: { id: bookingId },
+        data: { settlementOutcome: outcome, status: "CANCELLED", cancelledAt: new Date(), cancellationReason: noShowReason(outcome) },
+      });
+    });
+    return { settled: true as const, moved: true, gross, studentAbsence, teacherPenalty };
+  } catch (err) {
+    if (isUniqueViolation(err)) return { settled: false as const }; // settled concurrently
+    throw err;
+  }
+}
+
+/** Notifies both sides when a class is settled (completed or a no-show). */
+async function notifyBoth(studentId: string, teacherId: string, bookingId: string, student: { title: string; message: string }, teacher: { title: string; message: string }) {
+  await createNotification({ userId: studentId, type: "CLASS_COMPLETION", title: student.title, message: student.message, metadata: { bookingId } });
+  await createNotification({ userId: teacherId, type: "CLASS_COMPLETION", title: teacher.title, message: teacher.message, metadata: { bookingId } });
+}
+
+/** Raises a conflict for an admin: teacher says the student was absent, student says it happened. */
+async function raiseNoShowConflict(bookingId: string, teacherId: string, studentId: string, title: string) {
+  await prisma.$transaction(async (tx) => {
+    const existing = await tx.dispute.findUnique({ where: { bookingId }, select: { id: true } });
+    if (existing) return;
+    await tx.booking.update({ where: { id: bookingId }, data: { status: "DISPUTED" } });
+    await tx.dispute.create({
+      data: {
+        bookingId,
+        reportedById: teacherId,
+        reason: "STUDENT_NO_SHOW",
+        details: "The teacher reported that the student didn't join, but the student marked the class as completed. Please review (check the Google Meet history or screenshot).",
+      },
+    });
+  });
+  const admins = await prisma.user.findMany({ where: { role: "ADMIN", isActive: true }, select: { id: true } });
+  for (const a of admins) {
+    await createNotification({ userId: a.id, type: "CLASS_COMPLETION", title: "A no-show needs review", message: `Teacher and student disagree on "${title}". Review who attended.`, metadata: { bookingId } });
+  }
+}
+
+/**
+ * Settles every class (for one teacher or student) whose report window has
+ * closed and that hasn't been settled yet, deciding the outcome from who
+ * confirmed or reported:
+ * - either side confirmed it happened (and nobody reported)  -> pay the teacher
+ * - teacher reported the student absent, student stayed quiet -> student no-show
+ * - nobody confirmed or reported                             -> both no-show
+ * - teacher reported absent but the student confirmed         -> admin review
+ * A booking with an open dispute is left for an admin. Called whenever classes
+ * or wallets are read, so balances stay right without a background job.
+ */
+export async function settleDueBookings(who: { teacherId: string } | { studentId: string }) {
+  const windowAgo = new Date(Date.now() - DISPUTE_WINDOW_MS);
   const due = await prisma.booking.findMany({
     where: {
       ...who,
       status: "COMPLETED",
-      timeSlot: { endTime: { lte: new Date(Date.now() - DISPUTE_WINDOW_MS) } },
-      walletTransactions: {
-        some: { type: "DEPOSIT", status: "COMPLETED" },
-        none: { type: "RELEASE" },
-      },
+      settlementOutcome: null,
+      dispute: { is: null },
+      timeSlot: { endTime: { lte: windowAgo } },
+      walletTransactions: { some: { type: "DEPOSIT", status: "COMPLETED" }, none: { type: "RELEASE" } },
     },
-    select: { id: true },
+    select: {
+      id: true, studentId: true, teacherId: true,
+      studentConfirmed: true, teacherConfirmed: true, teacherMarkedAbsent: true,
+      inquiry: { select: { post: { select: { title: true, subject: true } } } },
+    },
   });
 
-  let released = 0;
+  let settled = 0;
   for (const b of due) {
-    const res = await releaseBookingEscrow(b.id);
-    if (res.released) released += 1;
+    const title = b.inquiry?.post?.title || b.inquiry?.post?.subject || "your class";
+    try {
+      if (b.teacherMarkedAbsent && b.studentConfirmed) {
+        await raiseNoShowConflict(b.id, b.teacherId, b.studentId, title);
+      } else if (b.teacherConfirmed || b.studentConfirmed) {
+        const r = await releaseBookingEscrow(b.id);
+        await prisma.booking.update({ where: { id: b.id }, data: { settlementOutcome: "COMPLETED" } });
+        if (r.released) {
+          await notifyBoth(b.studentId, b.teacherId, b.id,
+            { title: "Class complete", message: `"${title}" is complete and settled.` },
+            { title: "Earnings released", message: `Your earnings for "${title}" have been released from escrow.` });
+        }
+      } else if (b.teacherMarkedAbsent) {
+        await settleNoShowBooking(b.id, "STUDENT_NO_SHOW");
+        await notifyBoth(b.studentId, b.teacherId, b.id,
+          { title: "Marked as a no-show", message: `You didn't join "${title}". A ${commissionPercent()}% absence fee was kept and the rest refunded to your wallet.` },
+          { title: "Student didn't join", message: `The student didn't join "${title}", so this class wasn't paid.` });
+      } else {
+        await settleNoShowBooking(b.id, "BOTH_NO_SHOW");
+        await notifyBoth(b.studentId, b.teacherId, b.id,
+          { title: "Marked as a no-show", message: `Neither side joined "${title}". A ${commissionPercent()}% absence fee was kept and the rest refunded to your wallet.` },
+          { title: "Marked as a no-show", message: `Neither side joined "${title}". A ${commissionPercent()}% no-show penalty was applied.` });
+      }
+      settled += 1;
+    } catch (err) {
+      console.error(`Couldn't settle booking ${b.id}:`, err);
+    }
   }
-  return released;
+  return settled;
 }
 
 /** Bookings still on hold, with the moment each one clears. */
@@ -410,7 +562,7 @@ export async function rejectWithdrawal(withdrawalId: string, note: string) {
  * hold, withdrawal history, and whether payouts are set up.
  */
 export async function getWalletSnapshot(userId: string) {
-  await releaseClearedEscrow({ teacherId: userId });
+  await settleDueBookings({ teacherId: userId });
 
   const wallet = await getWalletForUser(userId);
 

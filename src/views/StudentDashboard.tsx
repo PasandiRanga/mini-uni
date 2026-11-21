@@ -1,5 +1,6 @@
 'use client';
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -31,7 +32,7 @@ const STUDENT_WIDGETS: WidgetDef[] = [
 // update remounted the whole tab, replaying the tile animations and
 // refetching every child.
 const DashboardContent = () => {
-  const { activeTab } = useDashboard();
+  const { activeTab, setActiveTab } = useDashboard();
   const {
     upcomingClasses,
     recentTeachers,
@@ -96,11 +97,11 @@ const DashboardContent = () => {
   // Until the first load lands, show a dash rather than a misleading 0.
   const pending = (v: string | number) => (statsLoading ? "-" : v);
   const stats = [
-    { icon: Calendar, label: "Classes completed", value: pending(completedCount) },
-    { icon: CalendarClock, label: "Upcoming classes", value: pending(upcomingClasses.length) },
-    { icon: Wallet, label: "Wallet balance", value: pending(formatMoneyCompact((wallet as any)?.releasedBalance, currency)) },
+    { icon: Calendar, label: "Classes completed", value: pending(completedCount), tab: "classes" },
+    { icon: CalendarClock, label: "Upcoming classes", value: pending(upcomingClasses.length), tab: "classes" },
+    { icon: Wallet, label: "Wallet balance", value: pending(formatMoneyCompact((wallet as any)?.releasedBalance, currency)), tab: "wallet" },
     // Paid for classes still to come (or under review); see StudentWallet.
-    { icon: Clock, label: "On hold", value: pending(formatMoneyCompact((wallet as any)?.heldAmount ?? 0, currency)) },
+    { icon: Clock, label: "On hold", value: pending(formatMoneyCompact((wallet as any)?.heldAmount ?? 0, currency)), tab: "wallet" },
   ];
 
   return (
@@ -115,9 +116,12 @@ const DashboardContent = () => {
         {stats.map((stat, i) => {
           const featured = i === 0;
           return (
-            <div
+            <button
               key={stat.label}
-              className={`group flex h-full flex-col rounded-3xl border p-5 shadow-soft transition-all duration-300 hover:-translate-y-0.5 hover:shadow-card sm:p-6 ${featured
+              type="button"
+              onClick={() => setActiveTab(stat.tab)}
+              aria-label={`${stat.label}: ${stat.value}. View details`}
+              className={`group flex h-full flex-col rounded-3xl border p-5 text-left shadow-soft transition-all duration-300 hover:-translate-y-0.5 hover:shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:p-6 ${featured
                 ? "border-transparent gradient-hero text-primary-foreground"
                 : "border-border/70 bg-card"
                 }`}
@@ -133,7 +137,7 @@ const DashboardContent = () => {
               </div>
               <p className={`mt-auto truncate font-serif leading-none tabular-nums ${String(stat.value).length > 7 ? "text-xl sm:text-2xl xl:text-[1.75rem]" : "text-2xl sm:text-[1.75rem] xl:text-3xl"}`} title={String(stat.value)}>{stat.value}</p>
               <p className={`mt-2 min-h-[2rem] text-xs uppercase leading-tight tracking-[0.14em] ${featured ? "text-primary-foreground/70" : "text-muted-foreground"}`}>{stat.label}</p>
-            </div>
+            </button>
           );
         })}
       </div>
@@ -219,6 +223,12 @@ const DashboardContent = () => {
 };
 
 const StudentDashboard = () => {
+  // Paint the whole student experience (incl. portaled dialogs/toasts) blue.
+  useEffect(() => {
+    document.documentElement.setAttribute("data-role", "student");
+    return () => document.documentElement.removeAttribute("data-role");
+  }, []);
+
   return (
     <DashboardLayout>
       <div className="px-5 py-8 sm:px-8 lg:px-10">
