@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { BookOpen, Users, ArrowRight, GraduationCap } from "lucide-react";
 import StudentSignUp from "@/components/auth/StudentSignUp";
 import TeacherSignUp from "@/components/auth/TeacherSignUp";
+import { GoogleButton } from "@/components/auth/GoogleButton";
 
 type UserRole = "student" | "teacher" | null;
 
@@ -104,6 +105,15 @@ const SignUp = () => {
               </Button>
             </CardContent>
           </Card>
+        </div>
+
+        <div className="mx-auto mt-6 max-w-sm">
+          <div className="mb-4 flex items-center gap-3">
+            <span className="h-px flex-1 bg-border" />
+            <span className="text-xs text-muted-foreground">or continue with</span>
+            <span className="h-px flex-1 bg-border" />
+          </div>
+          <GoogleButton />
         </div>
 
         <div className="text-center mt-6">

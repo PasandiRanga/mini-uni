@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { GraduationCap, Mail, Lock, User, ArrowRight, Eye, EyeOff, BookOpen, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { GoogleButton } from "@/components/auth/GoogleButton";
 
 type AuthMode = "login" | "signup";
 type UserRole = "student" | "teacher";
@@ -37,7 +38,27 @@ const Auth = () => {
     password: "",
   });
 
-  const { login, register } = useAuth();
+  const { login, register, user, logout } = useAuth();
+
+  const dashFor = (r?: string) =>
+    r === "TEACHER" ? "/teacher/dashboard" : r === "ADMIN" ? "/admin" : "/student/dashboard";
+
+  // Surface a friendly message when Google sign-in bounces back with an error.
+  useEffect(() => {
+    const err = searchParams?.get("error");
+    if (!err) return;
+    const messages: Record<string, string> = {
+      google_denied: "Google sign-in was cancelled.",
+      google_unavailable: "Google sign-in isn't set up yet.",
+      google_unverified: "Your Google email isn't verified.",
+      account_inactive: "This account has been deactivated.",
+      google_error: "Google sign-in didn't work. Please try again.",
+    };
+    toast({ title: "Couldn't sign in with Google", description: messages[err] || messages.google_error, variant: "destructive" });
+    // Drop the error from the URL so it doesn't repeat on refresh.
+    router.replace("/auth");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,7 +139,22 @@ const Auth = () => {
             </p>
           </div>
 
-          {/* Signup role selection removed - all signups handled on the /signup page */}
+          {/* Already signed in: offer a one-tap continue. */}
+          {user && (
+            <div className="mb-6 rounded-[1.5rem] border border-border/70 bg-card/80 p-5 shadow-card backdrop-blur-xl">
+              <p className="text-sm text-muted-foreground">You're already signed in as</p>
+              <p className="mt-0.5 font-medium">{`${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email}</p>
+              <div className="mt-4 flex flex-col gap-2">
+                <Button variant="hero" size="lg" className="w-full" onClick={() => router.replace(dashFor(user.role))}>
+                  Continue as {user.firstName || "me"}
+                  <ArrowRight className="ml-1 h-5 w-5" />
+                </Button>
+                <Button variant="ghost" size="sm" className="w-full text-muted-foreground" onClick={() => logout()}>
+                  Use another account
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* Form */}
           {notRegistered && (
@@ -204,6 +240,14 @@ const Auth = () => {
                 </>
               )}
             </Button>
+
+            <div className="flex items-center gap-3">
+              <span className="h-px flex-1 bg-border" />
+              <span className="text-xs text-muted-foreground">or</span>
+              <span className="h-px flex-1 bg-border" />
+            </div>
+
+            <GoogleButton />
             </div>
           </form>
 
