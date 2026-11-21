@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     }
 
     try {
-        const { postId, message: rawMessage, timeSlotId } = await request.json();
+        const { postId, message: rawMessage, timeSlotId, proposedRate, proposedStartTime, proposedDurationMins } = await request.json();
         const senderId = session.sub;
         const message = typeof rawMessage === "string" ? rawMessage.trim() : "";
 
@@ -76,6 +76,27 @@ export async function POST(request: Request) {
             }
         }
 
+        // A teacher's reply to a student request is a priced offer: validate the
+        // rate, start time and duration so accepting it can book and charge.
+        let offer: { proposedRate: number; proposedStartTime: Date; proposedEndTime: Date; proposedFee: number } | null = null;
+        if (isRequestResponse) {
+            const rate = Number(proposedRate);
+            const mins = Number(proposedDurationMins);
+            const start = proposedStartTime ? new Date(proposedStartTime) : null;
+            if (!Number.isFinite(rate) || rate <= 0) {
+                return NextResponse.json({ error: "Add your hourly rate" }, { status: 400 });
+            }
+            if (!start || isNaN(start.getTime()) || start.getTime() <= Date.now()) {
+                return NextResponse.json({ error: "Pick a class date and time in the future" }, { status: 400 });
+            }
+            if (!Number.isFinite(mins) || mins < 15) {
+                return NextResponse.json({ error: "Pick how long the class will be" }, { status: 400 });
+            }
+            const end = new Date(start.getTime() + mins * 60 * 1000);
+            const fee = Math.round(rate * (mins / 60) * 100) / 100;
+            offer = { proposedRate: rate, proposedStartTime: start, proposedEndTime: end, proposedFee: fee };
+        }
+
         const inquiry = await prisma.inquiry.create({
             data: {
                 postId,
@@ -83,6 +104,12 @@ export async function POST(request: Request) {
                 receiverId: post.userId,
                 message,
                 status: "PENDING",
+                ...(offer && {
+                    proposedRate: offer.proposedRate,
+                    proposedStartTime: offer.proposedStartTime,
+                    proposedEndTime: offer.proposedEndTime,
+                    proposedFee: offer.proposedFee,
+                }),
                 ...(timeSlotId && {
                     timeSlots: {
                         connect: { id: timeSlotId },
@@ -97,7 +124,7 @@ export async function POST(request: Request) {
             type: "INQUIRY_RECEIVED",
             title: isRequestResponse ? `${senderName} responded to your request` : "New inquiry",
             message: isRequestResponse
-                ? `${senderName} can help with "${post.title}". Open Inquiries to read their message.`
+                ? `${senderName} sent an offer for "${post.title}". Open Inquiries to see the price and time, and book.`
                 : `You have a new inquiry on "${post.title}".`,
             metadata: { inquiryId: inquiry.id, postId },
         });

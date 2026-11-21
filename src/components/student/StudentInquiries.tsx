@@ -7,13 +7,19 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
-import { Inbox, Send, MessageSquare, RefreshCw, Check, X, Loader2, GraduationCap } from "lucide-react";
+import { Inbox, Send, MessageSquare, RefreshCw, Check, X, Loader2, GraduationCap, Calendar, Clock, Wallet } from "lucide-react";
+import { formatMoney } from "@/lib/currency";
+import { format } from "date-fns";
 
 interface Inquiry {
   id: string;
   message?: string;
   status?: string;
   createdAt: string;
+  proposedRate?: number | string | null;
+  proposedStartTime?: string | null;
+  proposedEndTime?: string | null;
+  proposedFee?: number | string | null;
   sender?: { id?: string; firstName?: string; lastName?: string };
   receiver?: { id?: string; firstName?: string; lastName?: string };
   post?: { id?: string; title?: string; subject?: string; type?: string };
@@ -106,6 +112,36 @@ const StudentInquiries = () => {
     }
   };
 
+  // Accept a teacher's offer: this pays from the wallet and books the class.
+  const acceptOffer = async (id: string) => {
+    setBusyId(id);
+    try {
+      const res = await fetch(`/api/inquiries/${id}/accept`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        if (data.code === "INSUFFICIENT_FUNDS") {
+          toast({
+            title: "Not enough in your wallet",
+            description: "Top up your wallet, then accept again.",
+            variant: "destructive",
+          });
+          return;
+        }
+        throw new Error(data.error || "Couldn't accept the offer");
+      }
+      toast({ title: "Class booked", description: "It's paid and in My Classes." });
+      load();
+    } catch (e: any) {
+      toast({ title: "Couldn't accept", description: e?.message || "Try again", variant: "destructive" });
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   // A response the teacher withdrew is no longer the student's to act on.
   const visibleReceived = received.filter(
     (i) => !(i.post?.type === "STUDENT_REQUEST" && (i.status || "").toUpperCase() === "CANCELLED")
@@ -175,6 +211,8 @@ const StudentInquiries = () => {
               // A teacher answering this student's "looking for a teacher" request.
               const isTeacherResponse = isReceived && inq.post?.type === "STUDENT_REQUEST";
               const teacherHref = inq.sender?.id ? `/teachers/${inq.sender.id}` : null;
+              const hasOffer = isTeacherResponse && inq.proposedFee != null && !!inq.proposedStartTime;
+              const offerStart = inq.proposedStartTime ? new Date(inq.proposedStartTime) : null;
               return (
                 <div key={inq.id} className="flex items-start gap-4 rounded-2xl border border-border/70 bg-background/40 p-4">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full gradient-hero text-sm font-semibold text-primary-foreground">
@@ -203,8 +241,26 @@ const StudentInquiries = () => {
                       {inq.createdAt ? formatDistanceToNow(new Date(inq.createdAt), { addSuffix: true }) : ""}
                     </p>
 
-                    {/* Interested in a teacher's response → book one of their classes */}
-                    {isTeacherResponse && status === "ACCEPTED" && teacherHref && (
+                    {/* The teacher's priced, timed offer */}
+                    {hasOffer && offerStart && (
+                      <div className="mt-3 rounded-xl border border-border/70 bg-muted/30 p-3 text-sm">
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                          <span className="flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5 text-primary" />{format(offerStart, "EEE, MMM d")}</span>
+                          <span className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5 text-primary" />{format(offerStart, "h:mm a")}{inq.proposedEndTime ? `–${format(new Date(inq.proposedEndTime), "h:mm a")}` : ""}</span>
+                          <span className="font-semibold">{formatMoney(Number(inq.proposedFee), user?.currency)}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Accepted a priced offer → it's booked and paid */}
+                    {hasOffer && status === "ACCEPTED" && (
+                      <div className="mt-3 flex flex-wrap items-center gap-3">
+                        <p className="text-sm text-success">Booked and paid. Find it in My Classes.</p>
+                      </div>
+                    )}
+
+                    {/* Legacy teacher response with no offer → book from their classes */}
+                    {isTeacherResponse && !hasOffer && status === "ACCEPTED" && teacherHref && (
                       <div className="mt-3 flex flex-wrap items-center gap-3">
                         <p className="text-sm text-success">You&apos;re interested. Book one of {name}&apos;s classes to get started.</p>
                         <Button size="sm" variant="hero" asChild>
@@ -223,15 +279,24 @@ const StudentInquiries = () => {
                       <div className="mt-3 flex flex-wrap gap-2">
                         {isReceived ? (
                           <>
-                            {isTeacherResponse && teacherHref && (
-                              <Button size="sm" variant="outline" asChild>
-                                <Link href={teacherHref}>View classes</Link>
+                            {hasOffer ? (
+                              <Button size="sm" variant="hero" onClick={() => acceptOffer(inq.id)} disabled={busyId === inq.id} className="gap-1.5">
+                                {busyId === inq.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wallet className="h-4 w-4" />}
+                                Pay {formatMoney(Number(inq.proposedFee), user?.currency)} &amp; book
                               </Button>
+                            ) : (
+                              <>
+                                {isTeacherResponse && teacherHref && (
+                                  <Button size="sm" variant="outline" asChild>
+                                    <Link href={teacherHref}>View classes</Link>
+                                  </Button>
+                                )}
+                                <Button size="sm" onClick={() => setStatus(inq.id, "ACCEPTED")} disabled={busyId === inq.id} className="gap-1.5">
+                                  {busyId === inq.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                                  {isTeacherResponse ? "I'm interested" : "Accept"}
+                                </Button>
+                              </>
                             )}
-                            <Button size="sm" onClick={() => setStatus(inq.id, "ACCEPTED")} disabled={busyId === inq.id} className="gap-1.5">
-                              {busyId === inq.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                              {isTeacherResponse ? "I'm interested" : "Accept"}
-                            </Button>
                             <Button size="sm" variant="outline" onClick={() => setStatus(inq.id, "REJECTED")} disabled={busyId === inq.id} className="gap-1.5 text-destructive">
                               <X className="h-4 w-4" /> {isTeacherResponse ? "Not interested" : "Decline"}
                             </Button>

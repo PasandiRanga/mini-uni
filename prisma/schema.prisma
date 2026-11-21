@@ -311,6 +311,12 @@ model Inquiry {
   receiverId  String
   message     String        @db.Text
   status      InquiryStatus @default(PENDING)
+  // A teacher's reply to a student request is a priced, timed offer: accepting it
+  // charges the student and books the class, like booking a teacher's offering.
+  proposedRate      Decimal?  @db.Decimal(10, 2) // teacher's hourly rate
+  proposedStartTime DateTime? // proposed class start
+  proposedEndTime   DateTime? // proposed class end
+  proposedFee       Decimal?  @db.Decimal(10, 2) // total to pay = rate x hours
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
