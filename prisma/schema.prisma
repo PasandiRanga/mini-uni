@@ -105,7 +105,7 @@ enum NotificationType {
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
-  password      String
+  password      String?   // null for accounts created via Google sign-in (no password)
   firstName     String
   lastName      String
   phone         String?
