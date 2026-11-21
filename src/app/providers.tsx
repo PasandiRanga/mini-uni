@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CreatePostModalProvider } from "@/contexts/CreatePostModalContext";
+import GoogleOneTap from "@/components/auth/GoogleOneTap";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "next-themes";
 import { useState } from "react";
@@ -17,6 +18,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
                     <CreatePostModalProvider>
                         <TooltipProvider>
                             {children}
+                            <GoogleOneTap />
                         </TooltipProvider>
                     </CreatePostModalProvider>
                 </AuthProvider>
