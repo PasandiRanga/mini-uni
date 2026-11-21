@@ -1,7 +1,8 @@
 import prisma from "./prisma";
-import { refundBookingToStudent, releaseClearedEscrow } from "./wallet";
+import { refundBookingToStudent, settleDueBookings } from "./wallet";
 import { releaseSeat } from "./seats";
 import { createNotification } from "./notifications";
+import { DISPUTE_WINDOW_HOURS } from "./disputeReasons";
 
 /** Bookings that still hold a seat and haven't happened yet. */
 export const OPEN_BOOKING_STATUSES = ["PENDING_PAYMENT", "PAYMENT_COMPLETED", "CONFIRMED"] as const;
@@ -48,7 +49,7 @@ export async function cancelBooking(bookingId: string, reason?: string) {
 /**
  * Closes out classes whose time has passed, for one teacher or student:
  * a paid class that has ended becomes COMPLETED, its earnings are released
- * once the report window has closed (see releaseClearedEscrow), and a booking
+ * once the report window has closed (see settleDueBookings), and a booking
  * still unpaid when its class started is cancelled.
  *
  * Runs whenever classes or wallets are loaded, so statuses and balances are
@@ -60,7 +61,7 @@ export async function settleFinishedBookings(who: { teacherId: string } | { stud
 
   const finished = await prisma.booking.findMany({
     where: { ...who, status: { in: [...PAID_BOOKING_STATUSES] }, timeSlot: { endTime: { lte: now } } },
-    select: { id: true, studentId: true, teacher: { select: { firstName: true } } },
+    select: { id: true, studentId: true, teacherId: true, teacher: { select: { firstName: true } } },
   });
   for (const b of finished) {
     try {
@@ -68,13 +69,20 @@ export async function settleFinishedBookings(who: { teacherId: string } | { stud
         where: { id: b.id, status: { in: [...PAID_BOOKING_STATUSES] } },
         data: { status: "COMPLETED", completedAt: now },
       });
-      // Only the run that completed it asks for a rating, so it's asked once.
+      // Only the run that completed it prompts both sides, so it's asked once.
       if (count === 1) {
         await createNotification({
           userId: b.studentId,
           type: "CLASS_COMPLETION",
-          title: "How was your class?",
-          message: `Confirm your class with ${b.teacher.firstName} happened, or report a problem within 48 hours if it did not. Find it in My Classes.`,
+          title: "Did your class happen?",
+          message: `Confirm your class with ${b.teacher.firstName} went ahead, or report a problem if it did not. You have ${DISPUTE_WINDOW_HOURS} hours. Find it in My Classes.`,
+          metadata: { bookingId: b.id },
+        });
+        await createNotification({
+          userId: b.teacherId,
+          type: "CLASS_COMPLETION",
+          title: "Did your class happen?",
+          message: `Confirm your class went ahead, or mark the student as a no-show if they didn't join. You have ${DISPUTE_WINDOW_HOURS} hours. Find it in My Classes.`,
           metadata: { bookingId: b.id },
         });
       }
@@ -84,9 +92,10 @@ export async function settleFinishedBookings(who: { teacherId: string } | { stud
   }
 
   try {
-    await releaseClearedEscrow(who);
+    // Window closed: pay out, apply no-show fees, or send conflicts to an admin.
+    await settleDueBookings(who);
   } catch (err) {
-    console.error("Couldn't release cleared escrow:", err);
+    console.error("Couldn't settle due bookings:", err);
   }
 
   // Never paid and the class has started: nothing to refund, nothing to teach.

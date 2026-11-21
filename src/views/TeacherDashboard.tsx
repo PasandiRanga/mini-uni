@@ -67,6 +67,11 @@ const TEACHER_WIDGETS: WidgetDef[] = [
 ];
 
 const TeacherDashboard = () => {
+  // Teacher keeps the default purple theme; set it explicitly so the role is deterministic.
+  useEffect(() => {
+    document.documentElement.setAttribute("data-role", "teacher");
+    return () => document.documentElement.removeAttribute("data-role");
+  }, []);
   const [activeTab, setActiveTab] = useState("overview");
   // Links such as /teacher/dashboard?tab=inquiries open that tab.
   const searchParams = useSearchParams();
@@ -208,10 +213,10 @@ const TeacherDashboard = () => {
   const currency = user?.currency;
 
   const stats = [
-    { icon: Wallet, label: "Available balance", value: formatMoneyCompact(wallet?.releasedBalance, currency) },
-    { icon: GraduationCap, label: "Classes completed", value: completedCount },
-    { icon: DollarSign, label: "Total earnings", value: formatMoneyCompact(wallet?.totalEarnings, currency) },
-    { icon: Clock, label: "On hold", value: formatMoneyCompact(wallet?.pendingBalance, currency) },
+    { icon: Wallet, label: "Available balance", value: formatMoneyCompact(wallet?.releasedBalance, currency), tab: "wallet" },
+    { icon: GraduationCap, label: "Classes completed", value: completedCount, tab: "classes" },
+    { icon: DollarSign, label: "Total earnings", value: formatMoneyCompact(wallet?.totalEarnings, currency), tab: "wallet" },
+    { icon: Clock, label: "On hold", value: formatMoneyCompact(wallet?.pendingBalance, currency), tab: "wallet" },
   ];
 
   return (
@@ -496,9 +501,12 @@ const TeacherDashboard = () => {
             {stats.map((stat, i) => {
               const featured = i === 0;
               return (
-                <div
+                <button
                   key={stat.label}
-                  className={`group flex h-full flex-col rounded-3xl border p-5 shadow-soft transition-all duration-300 hover:-translate-y-0.5 hover:shadow-card sm:p-6 ${featured
+                  type="button"
+                  onClick={() => goTab(stat.tab)}
+                  aria-label={`${stat.label}: ${stat.value}. View details`}
+                  className={`group flex h-full flex-col rounded-3xl border p-5 text-left shadow-soft transition-all duration-300 hover:-translate-y-0.5 hover:shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:p-6 ${featured
                     ? "border-transparent gradient-hero text-primary-foreground"
                     : "border-border/70 bg-card"
                     }`}
@@ -514,7 +522,7 @@ const TeacherDashboard = () => {
                   </div>
                   <p className={`mt-auto truncate font-serif leading-none tabular-nums ${String(stat.value).length > 7 ? "text-xl sm:text-2xl xl:text-[1.75rem]" : "text-2xl sm:text-[1.75rem] xl:text-3xl"}`} title={String(stat.value)}>{stat.value}</p>
                   <p className={`mt-2 min-h-[2rem] text-xs uppercase leading-tight tracking-[0.14em] ${featured ? "text-primary-foreground/70" : "text-muted-foreground"}`}>{stat.label}</p>
-                </div>
+                </button>
               );
             })}
           </div>

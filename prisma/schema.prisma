@@ -77,6 +77,8 @@ enum WalletTransactionType {
   PAYMENT    // student: wallet balance spent on a class
   REFUND     // student: a cancelled booking's money returned to the wallet
   COMMISSION // teacher: platform fee kept back when escrow releases
+  ABSENCE_FEE // student: 10% kept by the platform when the student no-shows
+  PENALTY    // teacher: 10% charged for a no-show (teacher didn't show, or both didn't)
 }
 
 enum WithdrawalStatus {
@@ -359,6 +361,8 @@ model Booking {
   googleMeetLink    String?
   studentConfirmed  Boolean       @default(false)
   teacherConfirmed  Boolean       @default(false)
+  teacherMarkedAbsent Boolean     @default(false) // teacher reported the student didn't show
+  settlementOutcome String?       // once settled: COMPLETED | STUDENT_NO_SHOW | TEACHER_NO_SHOW | BOTH_NO_SHOW
   completedAt       DateTime?
   cancelledAt       DateTime?
   cancellationReason String?      @db.Text

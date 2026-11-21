@@ -4,7 +4,7 @@
  */
 
 /** How long after a class ends the student can still report a problem. The teacher's payout waits this long. */
-export const DISPUTE_WINDOW_HOURS = 48;
+export const DISPUTE_WINDOW_HOURS = 12;
 export const DISPUTE_WINDOW_MS = DISPUTE_WINDOW_HOURS * 60 * 60 * 1000;
 
 export const DISPUTE_REASONS = {

@@ -32,7 +32,11 @@ export async function POST(
 
         const updateData: any = {};
         if (booking.studentId === userId) updateData.studentConfirmed = true;
-        if (booking.teacherId === userId) updateData.teacherConfirmed = true;
+        if (booking.teacherId === userId) {
+            updateData.teacherConfirmed = true;
+            // Confirming overrides an earlier "student didn't show" from the teacher.
+            updateData.teacherMarkedAbsent = false;
+        }
 
         if (!updateData.studentConfirmed && !updateData.teacherConfirmed) {
             return NextResponse.json({ error: "Not authorized to confirm this booking" }, { status: 403 });
@@ -48,12 +52,13 @@ export async function POST(
             // class hasn't already been auto-completed, then clear the escrow now
             // rather than waiting out the report window. releaseBookingEscrow is
             // idempotent, so confirming an already-paid class does nothing.
-            if (updated.status !== "COMPLETED") {
-                await prisma.booking.update({
-                    where: { id: bookingId },
-                    data: { status: "COMPLETED", completedAt: new Date() },
-                });
-            }
+            await prisma.booking.update({
+                where: { id: bookingId },
+                data: {
+                    ...(updated.status !== "COMPLETED" ? { status: "COMPLETED", completedAt: new Date() } : {}),
+                    settlementOutcome: "COMPLETED",
+                },
+            });
 
             const release = await releaseBookingEscrow(bookingId);
 

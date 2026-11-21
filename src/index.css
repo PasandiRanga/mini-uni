@@ -127,6 +127,66 @@
     --shadow-elevated: 0 12px 40px -8px hsl(0 0% 0% / 0.6);
     --shadow-glow: 0 0 48px hsl(270 70% 72% / 0.25);
   }
+
+  /* Student role - blue family (teacher keeps the default purple above). */
+  :root[data-role="student"] {
+    --primary: 214 84% 48%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 72% 56%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 214 24% 95%;
+    --muted-foreground: 214 14% 42%;
+
+    --border: 214 22% 89%;
+    --input: 214 22% 86%;
+    --ring: 214 84% 48%;
+
+    --sidebar-background: 214 30% 97%;
+    --sidebar-primary: 214 78% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 214 26% 93%;
+    --sidebar-border: 214 24% 90%;
+    --sidebar-ring: 214 78% 45%;
+
+    --gradient-hero: linear-gradient(135deg, hsl(214, 84%, 48%) 0%, hsl(224, 78%, 62%) 100%);
+    --gradient-warm: linear-gradient(135deg, hsl(212, 70%, 52%) 0%, hsl(226, 70%, 62%) 100%);
+    --gradient-surface: linear-gradient(180deg, hsl(0, 0%, 100%) 0%, hsl(214, 28%, 95%) 100%);
+    --gradient-card: linear-gradient(135deg, hsl(0, 0%, 100%) 0%, hsl(214, 34%, 98%) 100%);
+
+    --shadow-soft: 0 1px 2px hsl(214 40% 30% / 0.05), 0 2px 8px -2px hsl(214 40% 30% / 0.07);
+    --shadow-card: 0 1px 2px hsl(214 40% 30% / 0.04), 0 8px 24px -8px hsl(214 40% 30% / 0.12);
+    --shadow-elevated: 0 2px 4px hsl(214 40% 30% / 0.06), 0 20px 48px -12px hsl(214 40% 30% / 0.20);
+    --shadow-glow: 0 0 48px hsl(214 84% 48% / 0.22);
+  }
+
+  .dark[data-role="student"] {
+    --primary: 214 86% 72%;
+    --primary-foreground: 214 40% 10%;
+    --secondary: 210 62% 66%;
+    --secondary-foreground: 214 40% 10%;
+
+    --muted: 214 16% 17%;
+    --muted-foreground: 214 14% 66%;
+
+    --border: 214 16% 19%;
+    --input: 214 16% 19%;
+    --ring: 214 86% 72%;
+
+    --sidebar-background: 214 22% 10%;
+    --sidebar-primary: 214 72% 68%;
+    --sidebar-primary-foreground: 214 40% 10%;
+    --sidebar-accent: 214 16% 17%;
+    --sidebar-border: 214 16% 19%;
+    --sidebar-ring: 214 72% 68%;
+
+    --gradient-hero: linear-gradient(135deg, hsl(214, 86%, 72%) 0%, hsl(222, 72%, 56%) 100%);
+    --gradient-warm: linear-gradient(135deg, hsl(212, 56%, 64%) 0%, hsl(226, 58%, 64%) 100%);
+    --gradient-surface: linear-gradient(180deg, hsl(214, 22%, 11%) 0%, hsl(214, 24%, 8%) 100%);
+    --gradient-card: linear-gradient(135deg, hsl(214, 22%, 12%) 0%, hsl(214, 22%, 10%) 100%);
+
+    --shadow-glow: 0 0 48px hsl(214 72% 68% / 0.25);
+  }
 }
 
 @layer base {

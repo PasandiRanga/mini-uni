@@ -36,6 +36,7 @@ import {
   ExternalLink,
   Ban,
   RotateCcw,
+  UserX,
   Flag,
   Banknote,
 } from "lucide-react";
@@ -1057,7 +1058,7 @@ const DisputeReview = ({ toast, onChanged }: { toast: any; onChanged: () => void
   const [failed, setFailed] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   // The decision being confirmed, with the admin's note.
-  const [deciding, setDeciding] = useState<{ id: string; action: "refund" | "release" } | null>(null);
+  const [deciding, setDeciding] = useState<{ id: string; action: "refund" | "release" | "student_no_show" | "teacher_no_show" } | null>(null);
   const [note, setNote] = useState("");
 
   const load = useCallback(async () => {
@@ -1092,10 +1093,13 @@ const DisputeReview = ({ toast, onChanged }: { toast: any; onChanged: () => void
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || "Action failed");
       }
-      toast({
-        title: deciding.action === "refund" ? "Student refunded" : "Teacher paid",
-        description: "Both sides have been notified.",
-      });
+      const titleByAction: Record<string, string> = {
+        refund: "Student refunded",
+        release: "Teacher paid",
+        student_no_show: "Settled as student no-show",
+        teacher_no_show: "Settled as teacher no-show",
+      };
+      toast({ title: titleByAction[deciding.action] ?? "Report settled", description: "Both sides have been notified." });
       setDeciding(null);
       setNote("");
       load();
@@ -1148,7 +1152,7 @@ const DisputeReview = ({ toast, onChanged }: { toast: any; onChanged: () => void
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-semibold">{DISPUTE_REASONS[d.reason as DisputeReason] ?? d.reason}</p>
+                    <p className="font-semibold">{DISPUTE_REASONS[d.reason as DisputeReason] ?? (d.reason === "STUDENT_NO_SHOW" ? "Teacher reports student no-show" : d.reason)}</p>
                     <StatusBadge status={d.status} />
                   </div>
                   <p className="text-sm text-muted-foreground">
@@ -1190,9 +1194,9 @@ const DisputeReview = ({ toast, onChanged }: { toast: any; onChanged: () => void
                         onChange={(e) => setNote(e.target.value)}
                         rows={2}
                         placeholder={
-                          deciding?.action === "refund"
-                            ? "Why the student is refunded (both sides see this)"
-                            : "Optional note for both sides"
+                          deciding?.action === "release"
+                            ? "Optional note for both sides"
+                            : "Why you decided this (both sides see this)"
                         }
                       />
                       <div className="flex justify-end gap-2">
@@ -1200,26 +1204,36 @@ const DisputeReview = ({ toast, onChanged }: { toast: any; onChanged: () => void
                           Cancel
                         </Button>
                         <Button
-                          variant={deciding?.action === "refund" ? "destructive" : "default"}
+                          variant={deciding?.action === "release" ? "default" : "destructive"}
                           size="sm"
                           onClick={decide}
-                          disabled={busyId === d.id || (deciding?.action === "refund" && !note.trim())}
+                          disabled={busyId === d.id || (deciding?.action !== "release" && !note.trim())}
                           className="gap-2"
                         >
                           {busyId === d.id && <Loader2 className="h-4 w-4 animate-spin" />}
-                          {deciding?.action === "refund"
-                            ? `Refund ${formatMoney(d.amount, d.currency)} to student`
-                            : "Pay the teacher"}
+                          {deciding?.action === "release"
+                            ? "Pay the teacher in full"
+                            : deciding?.action === "refund"
+                              ? `Refund ${formatMoney(d.amount, d.currency)} in full`
+                              : deciding?.action === "student_no_show"
+                                ? "Charge the student 10%, refund the rest"
+                                : "Refund student, charge teacher 10%"}
                         </Button>
                       </div>
                     </div>
                   ) : (
                     <div className="flex flex-wrap justify-end gap-2">
                       <Button variant="outline" size="sm" className="gap-2" onClick={() => setDeciding({ id: d.id, action: "release" })}>
-                        <CheckCircle2 className="h-4 w-4" /> Pay the teacher
+                        <CheckCircle2 className="h-4 w-4" /> Class happened — pay teacher
+                      </Button>
+                      <Button variant="outline" size="sm" className="gap-2" onClick={() => setDeciding({ id: d.id, action: "student_no_show" })}>
+                        <UserX className="h-4 w-4" /> Student no-show
+                      </Button>
+                      <Button variant="outline" size="sm" className="gap-2 text-destructive" onClick={() => setDeciding({ id: d.id, action: "teacher_no_show" })}>
+                        <UserX className="h-4 w-4" /> Teacher no-show
                       </Button>
                       <Button variant="outline" size="sm" className="gap-2 text-destructive" onClick={() => setDeciding({ id: d.id, action: "refund" })}>
-                        <RotateCcw className="h-4 w-4" /> Refund the student
+                        <RotateCcw className="h-4 w-4" /> Full refund (no fault)
                       </Button>
                     </div>
                   )}

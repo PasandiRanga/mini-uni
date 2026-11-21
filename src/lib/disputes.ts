@@ -1,7 +1,7 @@
 import prisma from "./prisma";
 import { createNotification } from "./notifications";
 import { buildNoticeEmail, sendEmail } from "./email";
-import { refundBookingToStudent, releaseBookingEscrow } from "./wallet";
+import { refundBookingToStudent, releaseBookingEscrow, settleNoShowBooking } from "./wallet";
 import { DISPUTE_REASONS, type DisputeReason, withinDisputeWindow } from "./disputeReasons";
 
 /** Booking states a student can report from: paid, and not already settled. */
@@ -134,8 +134,13 @@ export async function respondToDispute(bookingId: string, teacherId: string, res
  * Admin settles a dispute: "refund" returns the money to the student's wallet
  * and cancels the booking; "release" pays the teacher as normal.
  */
-export async function resolveDispute(disputeId: string, action: "refund" | "release", note: string, origin: string) {
-  const status = action === "refund" ? "REFUNDED" : "RELEASED";
+export async function resolveDispute(
+  disputeId: string,
+  action: "refund" | "release" | "student_no_show" | "teacher_no_show",
+  note: string,
+  origin: string
+) {
+  const status = action === "release" ? "RELEASED" : "REFUNDED";
 
   // Claim it first, so two admins clicking at once can't both act.
   const { count } = await prisma.dispute.updateMany({
@@ -160,15 +165,20 @@ export async function resolveDispute(disputeId: string, action: "refund" | "rele
   const { bookingId, booking } = dispute;
 
   try {
-    if (action === "refund") {
+    if (action === "release") {
+      await prisma.booking.update({ where: { id: bookingId }, data: { status: "COMPLETED", completedAt: new Date(), settlementOutcome: "COMPLETED" } });
+      await releaseBookingEscrow(bookingId);
+    } else if (action === "student_no_show") {
+      await settleNoShowBooking(bookingId, "STUDENT_NO_SHOW");
+    } else if (action === "teacher_no_show") {
+      await settleNoShowBooking(bookingId, "TEACHER_NO_SHOW");
+    } else {
+      // Full refund, no fault assigned.
       await refundBookingToStudent(bookingId, "refunded after a reported problem");
       await prisma.booking.update({
         where: { id: bookingId },
         data: { status: "CANCELLED", cancelledAt: new Date(), cancellationReason: "Refunded after a reported problem" },
       });
-    } else {
-      await prisma.booking.update({ where: { id: bookingId }, data: { status: "COMPLETED", completedAt: new Date() } });
-      await releaseBookingEscrow(bookingId);
     }
   } catch (err) {
     // Put it back in the queue so it can be retried.
@@ -178,16 +188,25 @@ export async function resolveDispute(disputeId: string, action: "refund" | "rele
 
   const title = classTitle(booking);
   const noteLine = note ? `\n\nNote from MiniUni: ${note}` : "";
-  const outcomes =
-    action === "refund"
-      ? {
-          student: { title: "You've been refunded", message: `We reviewed your report on "${title}" and refunded the class to your wallet.` },
-          teacher: { title: "Report upheld", message: `We reviewed the report on "${title}" and refunded the student. This class won't be paid.` },
-        }
-      : {
-          student: { title: "Report reviewed", message: `We reviewed your report on "${title}" and found the class went ahead, so the teacher has been paid.` },
-          teacher: { title: "Payment released", message: `We reviewed the report on "${title}" and released your payment.` },
-        };
+  const outcomesByAction = {
+    refund: {
+      student: { title: "You've been refunded", message: `We reviewed your report on "${title}" and refunded the class to your wallet.` },
+      teacher: { title: "Report upheld", message: `We reviewed the report on "${title}" and refunded the student. This class won't be paid.` },
+    },
+    release: {
+      student: { title: "Report reviewed", message: `We reviewed your report on "${title}" and found the class went ahead, so the teacher has been paid.` },
+      teacher: { title: "Payment released", message: `We reviewed the report on "${title}" and released your payment.` },
+    },
+    student_no_show: {
+      student: { title: "Marked as a no-show", message: `We reviewed "${title}" and found you didn't join. A 10% absence fee was kept and the rest refunded to your wallet.` },
+      teacher: { title: "Student no-show confirmed", message: `We reviewed "${title}" and confirmed the student didn't join. This class won't be paid.` },
+    },
+    teacher_no_show: {
+      student: { title: "You've been refunded in full", message: `We reviewed "${title}" and found the teacher didn't join, so you were fully refunded.` },
+      teacher: { title: "No-show penalty applied", message: `We reviewed "${title}" and found you didn't join. A 10% no-show penalty was applied.` },
+    },
+  } as const;
+  const outcomes = outcomesByAction[action];
 
   for (const [userId, o, path] of [
     [booking.studentId, outcomes.student, "/student/dashboard"],
