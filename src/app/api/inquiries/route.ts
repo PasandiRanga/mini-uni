@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     }
 
     try {
-        const { postId, message: rawMessage, timeSlotId, proposedRate, proposedStartTime, proposedDurationMins } = await request.json();
+        const { postId, message: rawMessage, timeSlotId, proposedRate } = await request.json();
         const senderId = session.sub;
         const message = typeof rawMessage === "string" ? rawMessage.trim() : "";
 
@@ -76,25 +76,31 @@ export async function POST(request: Request) {
             }
         }
 
-        // A teacher's reply to a student request is a priced offer: validate the
-        // rate, start time and duration so accepting it can book and charge.
+        // A teacher's reply to a student request is a priced offer on one of the
+        // student's listed times: validate the rate and the chosen slot, then
+        // derive the duration and total fee from that slot.
         let offer: { proposedRate: number; proposedStartTime: Date; proposedEndTime: Date; proposedFee: number } | null = null;
         if (isRequestResponse) {
             const rate = Number(proposedRate);
-            const mins = Number(proposedDurationMins);
-            const start = proposedStartTime ? new Date(proposedStartTime) : null;
             if (!Number.isFinite(rate) || rate <= 0) {
                 return NextResponse.json({ error: "Add your hourly rate" }, { status: 400 });
             }
-            if (!start || isNaN(start.getTime()) || start.getTime() <= Date.now()) {
-                return NextResponse.json({ error: "Pick a class date and time in the future" }, { status: 400 });
+            if (!timeSlotId) {
+                return NextResponse.json({ error: "Pick one of the student's available times" }, { status: 400 });
             }
-            if (!Number.isFinite(mins) || mins < 15) {
-                return NextResponse.json({ error: "Pick how long the class will be" }, { status: 400 });
+            const slot = await prisma.timeSlot.findUnique({
+                where: { id: timeSlotId },
+                select: { id: true, postId: true, startTime: true, endTime: true },
+            });
+            if (!slot || slot.postId !== postId) {
+                return NextResponse.json({ error: "That time isn't on this request" }, { status: 400 });
             }
-            const end = new Date(start.getTime() + mins * 60 * 1000);
+            if (slot.startTime.getTime() <= Date.now()) {
+                return NextResponse.json({ error: "That time has already passed" }, { status: 400 });
+            }
+            const mins = Math.round((slot.endTime.getTime() - slot.startTime.getTime()) / 60000);
             const fee = Math.round(rate * (mins / 60) * 100) / 100;
-            offer = { proposedRate: rate, proposedStartTime: start, proposedEndTime: end, proposedFee: fee };
+            offer = { proposedRate: rate, proposedStartTime: slot.startTime, proposedEndTime: slot.endTime, proposedFee: fee };
         }
 
         const inquiry = await prisma.inquiry.create({
@@ -110,7 +116,10 @@ export async function POST(request: Request) {
                     proposedEndTime: offer.proposedEndTime,
                     proposedFee: offer.proposedFee,
                 }),
-                ...(timeSlotId && {
+                // Only connect a slot for a question on a teacher's class. A request
+                // offer copies the chosen time into the proposed fields instead, since
+                // several teachers may pick the same student slot (one inquiry per slot).
+                ...(timeSlotId && !isRequestResponse && {
                     timeSlots: {
                         connect: { id: timeSlotId },
                     },

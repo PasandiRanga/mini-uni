@@ -134,8 +134,10 @@ async function createPost(request: Request) {
 
         const post = await prisma.post.create({ data: payload });
 
-        // Handle timeslots
-        if (inferredType === "TEACHER_OFFERING" && data.availabilitySlots && Array.isArray(data.availabilitySlots)) {
+        // Handle timeslots. A teacher offering's slots are bookable classes; a
+        // student request's slots are the times the student is available, which a
+        // teacher picks one of when replying.
+        if (Array.isArray(data.availabilitySlots)) {
             for (const slot of data.availabilitySlots) {
                 if (slot.start && slot.end) {
                     await prisma.timeSlot.create({

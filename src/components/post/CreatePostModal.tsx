@@ -145,7 +145,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, e
   const streamOk = !isAL || stream !== '';
   const canSubmit = !streamOk ? false : isTeacher
     ? subject.trim() !== '' && description.trim() !== '' && classTypes.length > 0 && ratePerHour !== '' && Number(ratePerHour) > 0 && groupRateOk && slots.length > 0 && (!groupSelected || (maxStudents !== '' && Number(maxStudents) >= 2))
-    : subject.trim() !== '' && description.trim() !== '' && grade.trim() !== '';
+    : subject.trim() !== '' && description.trim() !== '' && grade.trim() !== '' && slots.length >= 3;
 
   // Clear every field back to its default.
   const resetForm = () => {
@@ -226,6 +226,8 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, e
       if (ratePerHour === '' || Number(ratePerHour) <= 0) { toast({ title: 'Enter an hourly rate', variant: 'destructive' }); return; }
       if (classTypes.includes('GROUP') && (maxStudents === '' || Number(maxStudents) < 2)) { toast({ title: 'Set max students for the group', variant: 'destructive' }); return; }
       if (!groupRateOk) { toast({ title: 'Enter a group rate per student', variant: 'destructive' }); return; }
+    } else {
+      if (slots.length < 3) { toast({ title: 'Add at least 3 time slots', description: 'Teachers pick one of these times in their reply.', variant: 'destructive' }); return; }
     }
     setSubmitting(true);
     try {
@@ -255,6 +257,8 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, e
             // The per-hour rate the student is willing to pay (shown to teachers).
             ratePerHour: budget !== '' ? Number(budget) : null,
             syllabus: JSON.stringify({ budget }),
+            // The times the student is available; a teacher picks one in their reply.
+            availabilitySlots: slots.map((s) => ({ start: s.start.toISOString(), end: s.end.toISOString() })),
           };
 
       const res = await fetch(`/api/posts${editId ? `/${editId}` : ''}`, {
@@ -568,11 +572,27 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, e
                   </div>
                 </>
               ) : (
-                <div className="space-y-1.5">
-                  <Label htmlFor="budget">Rate you&apos;re willing to pay / hour</Label>
-                  <Input id="budget" type="number" min={0} value={budget} onChange={(e) => setBudget(e.target.value ? Number(e.target.value) : '')} className="max-w-[200px]" placeholder="e.g. 1500" />
-                  <p className="text-xs text-muted-foreground">Teachers see this as a guide. They&apos;ll reply with their own rate and a time.</p>
-                </div>
+                <>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="budget">Rate you&apos;re willing to pay / hour</Label>
+                    <Input id="budget" type="number" min={0} value={budget} onChange={(e) => setBudget(e.target.value ? Number(e.target.value) : '')} className="max-w-[200px]" placeholder="e.g. 1500" />
+                    <p className="text-xs text-muted-foreground">Teachers see this as a guide. They&apos;ll reply with their own rate and pick one of your times.</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Your available times<Req /></Label>
+                    <p className="text-xs text-muted-foreground">
+                      Add at least 3 times that suit you. A teacher picks one when they reply. {slots.length} selected.
+                    </p>
+                    <SlotPickerCalendar
+                      selected={slots}
+                      onChange={setSlots}
+                      busy={[]}
+                      durationMin={durationMin}
+                      onDurationChange={(m) => setDurationMin(m)}
+                    />
+                  </div>
+                </>
               )}
 
               <div className="flex items-center justify-between gap-3 pt-2">

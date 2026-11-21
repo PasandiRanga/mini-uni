@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from "react";
-import { Check, ChevronsUpDown, Lock, Plus } from "lucide-react";
+import { Check, ChevronsUpDown, Lock, Plus, X } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
@@ -48,6 +48,11 @@ export function SuggestInput({
     setQuery("");
   };
 
+  const clear = () => {
+    onChange("");
+    setQuery("");
+  };
+
   if (locked) {
     return (
       <div
@@ -62,18 +67,39 @@ export function SuggestInput({
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button
-          id={id}
-          type="button"
-          role="combobox"
-          aria-expanded={open}
-          className="flex h-11 w-full items-center justify-between rounded-xl border border-input bg-card px-4 py-2 text-left text-base shadow-soft transition-all duration-200 hover:border-foreground/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:border-ring md:text-sm"
-        >
-          <span className={cn("truncate", !value && "text-muted-foreground/70")}>{value || placeholder}</span>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </button>
-      </PopoverTrigger>
+      <div className="relative">
+        <PopoverTrigger asChild>
+          <button
+            id={id}
+            type="button"
+            role="combobox"
+            aria-expanded={open}
+            onKeyDown={(event) => {
+              if (value && (event.key === "Backspace" || event.key === "Delete")) {
+                event.preventDefault();
+                clear();
+              }
+            }}
+            className={cn(
+              "flex h-11 w-full items-center justify-between rounded-xl border border-input bg-card px-4 py-2 text-left text-base shadow-soft transition-all duration-200 hover:border-foreground/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:border-ring md:text-sm",
+              value && "pr-16",
+            )}
+          >
+            <span className={cn("truncate", !value && "text-muted-foreground/70")}>{value || placeholder}</span>
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </button>
+        </PopoverTrigger>
+        {value && (
+          <button
+            type="button"
+            aria-label={`Clear ${value}`}
+            onClick={clear}
+            className="absolute right-9 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
       <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
         {/* Plain "contains" matching (it still finds "SLIIT" in "… (SLIIT)") and list
             order is kept, so loose fuzzy hits don't crowd out the obvious match. */}
@@ -81,7 +107,17 @@ export function SuggestInput({
           shouldFilter
           filter={(itemValue, search) => (itemValue.toLowerCase().includes(search.trim().toLowerCase()) ? 1 : 0)}
         >
-          <CommandInput placeholder={searchPlaceholder} value={query} onValueChange={setQuery} />
+          <CommandInput
+            placeholder={searchPlaceholder}
+            value={query}
+            onValueChange={setQuery}
+            onKeyDown={(event) => {
+              if (!query && value && (event.key === "Backspace" || event.key === "Delete")) {
+                event.preventDefault();
+                clear();
+              }
+            }}
+          />
           <CommandList>
             <CommandEmpty>Type to add your own.</CommandEmpty>
             {sections.map((group) => (
