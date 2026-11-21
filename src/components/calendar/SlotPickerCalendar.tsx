@@ -16,7 +16,7 @@ import {
   format,
 } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, X } from "lucide-react";
 
 export interface PickerSlot {
   start: Date;
@@ -42,6 +42,8 @@ interface SlotPickerCalendarProps {
   dayStart?: number;
   dayEnd?: number;
   hourHeight?: number;
+  /** Compact date/time rows for forms that don't need the full calendar grid. */
+  compact?: boolean;
 }
 
 const SNAP_MIN = 15; // snap selections to 15-minute increments
@@ -133,6 +135,7 @@ const SlotPickerCalendar = ({
   dayStart = 0,
   dayEnd = 24,
   hourHeight = 52,
+  compact = false,
 }: SlotPickerCalendarProps) => {
   // Two-step flow: pick a date from the month grid, then pick a time on that date.
   const [pickedDay, setPickedDay] = useState<Date | null>(() => (selected[0] ? new Date(selected[0].start) : null));
@@ -188,6 +191,43 @@ const SlotPickerCalendar = ({
   };
 
   const removeSlot = (idx: number) => onChange(selected.filter((_, i) => i !== idx));
+
+  const updateCompactSlot = (idx: number, date: string, startTime: string, endTime: string) => {
+    if (!date || !startTime || !endTime) return;
+    const [year, monthNum, day] = date.split("-").map(Number);
+    const [startHour, startMinute] = startTime.split(":").map(Number);
+    const [endHour, endMinute] = endTime.split(":").map(Number);
+    const start = new Date(year, monthNum - 1, day, startHour, startMinute, 0, 0);
+    const end = new Date(year, monthNum - 1, day, endHour, endMinute, 0, 0);
+    if (end <= start || start.getTime() < earliestStartMs()) return;
+    const next = [...selected];
+    next[idx] = { start, end };
+    onChange(next.sort((a, b) => a.start.getTime() - b.start.getTime()));
+  };
+
+  const addCompactSlot = () => {
+    const latest = selected[selected.length - 1];
+    let start: Date;
+    if (latest) {
+      start = new Date(latest.end.getTime() + GAP_MIN * 60000);
+    } else {
+      start = new Date(earliestStartMs());
+    }
+    if (start.getHours() >= dayEnd) {
+      start.setDate(start.getDate() + 1);
+      start.setHours(Math.max(dayStart, 9), 0, 0, 0);
+    }
+    const end = new Date(start.getTime() + durationMin * 60000);
+    addSlot(start, end);
+  };
+
+  useEffect(() => {
+    if (!compact || single || selected.length > 0) return;
+    const start = new Date(earliestStartMs());
+    const end = new Date(start.getTime() + durationMin * 60000);
+    onChange([{ start, end }]);
+    // eslint-disable-next-line react-hooks-exhaustive-deps
+  }, [compact, single]);
 
   // Build a Date on the picked day from an "HH:mm" string.
   const timeToDate = (hm: string) => {
@@ -302,6 +342,87 @@ const SlotPickerCalendar = ({
     const height = Math.max(20, ((end.getTime() - start.getTime()) / 3600000) * hourHeight - 2);
     return { top, height };
   };
+
+  if (compact) {
+    return (
+      <div className="space-y-3">
+        {selected.map((slot, idx) => (
+          <div key={`${slot.start.toISOString()}-${idx}`} className="rounded-xl border border-border/70 bg-card p-3">
+            <div className="flex flex-wrap items-end gap-2">
+              <div className="min-w-[150px] flex-1 space-y-1">
+                <span className="block text-[11px] font-medium text-muted-foreground">Date</span>
+                <input
+                  type="date"
+                  min={format(new Date(), "yyyy-MM-dd")}
+                  value={format(slot.start, "yyyy-MM-dd")}
+                  onChange={(event) =>
+                    updateCompactSlot(
+                      idx,
+                      event.target.value,
+                      format(slot.start, "HH:mm"),
+                      format(slot.end, "HH:mm"),
+                    )
+                  }
+                  className="h-9 w-full rounded-lg border border-input bg-card px-3 text-sm shadow-soft focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                  aria-label={`Time slot ${idx + 1} date`}
+                />
+              </div>
+              <div className="space-y-1">
+                <span className="block text-[11px] font-medium text-muted-foreground">Start</span>
+                <input
+                  type="time"
+                  step="900"
+                  value={format(slot.start, "HH:mm")}
+                  onChange={(event) =>
+                    updateCompactSlot(
+                      idx,
+                      format(slot.start, "yyyy-MM-dd"),
+                      event.target.value,
+                      format(slot.end, "HH:mm"),
+                    )
+                  }
+                  className="h-9 w-36 rounded-lg border border-input bg-card px-3 text-sm shadow-soft focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                  aria-label={`Time slot ${idx + 1} start time`}
+                />
+              </div>
+              <div className="space-y-1">
+                <span className="block text-[11px] font-medium text-muted-foreground">End</span>
+                <input
+                  type="time"
+                  step="900"
+                  value={format(slot.end, "HH:mm")}
+                  onChange={(event) =>
+                    updateCompactSlot(
+                      idx,
+                      format(slot.start, "yyyy-MM-dd"),
+                      format(slot.start, "HH:mm"),
+                      event.target.value,
+                    )
+                  }
+                  className="h-9 w-36 rounded-lg border border-input bg-card px-3 text-sm shadow-soft focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                  aria-label={`Time slot ${idx + 1} end time`}
+                />
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 rounded-full text-muted-foreground hover:text-destructive"
+                onClick={() => removeSlot(idx)}
+                aria-label={`Remove time slot ${idx + 1}`}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        ))}
+        <Button type="button" variant="outline" className="w-full gap-2 rounded-xl" onClick={addCompactSlot}>
+          <Plus className="h-4 w-4" />
+          Add another time slot
+        </Button>
+      </div>
+    );
+  }
 
   // ── Month view ─────────────────────────────────────────────────────────────
   if (!pickedDay) {

@@ -11,8 +11,13 @@ export async function POST(request: Request) {
   }
 
   try {
+    const type = new URL(request.url).searchParams.get("type");
     const result = await prisma.notification.updateMany({
-      where: { userId: session.sub, isRead: false },
+      where: {
+        userId: session.sub,
+        isRead: false,
+        ...(type ? { type: type as "INQUIRY_RECEIVED" } : {}),
+      },
       data: { isRead: true },
     });
     return NextResponse.json({ ok: true, updated: result.count });

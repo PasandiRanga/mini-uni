@@ -86,6 +86,7 @@ const TeacherDashboard = () => {
   const [completion, setCompletion] = useState<{ percent: number; verificationStatus?: string; rejectionReason?: string | null; suspensionReason?: string | null; hasBio?: boolean; hasSubjects?: boolean } | null>(null);
   const [bookings, setBookings] = useState<any[]>([]);
   const [inquiries, setInquiries] = useState<any[]>([]);
+  const [inquiryUnreadCount, setInquiryUnreadCount] = useState(0);
   const [wallet, setWallet] = useState<any>(null);
   const [googleStatus, setGoogleStatus] = useState<{ configured: boolean; connected: boolean } | null>(null);
   const [googleNudgeDismissed, setGoogleNudgeDismissed] = useState(false);
@@ -158,6 +159,36 @@ const TeacherDashboard = () => {
     return () => document.removeEventListener("visibilitychange", recheck);
   }, []);
 
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const loadInquiryUnread = async () => {
+      try {
+        const res = await fetch("/api/notifications");
+        if (!res.ok) return;
+        const data = await res.json();
+        setInquiryUnreadCount(
+          (data.items || []).filter(
+            (item: { type: string; isRead: boolean }) =>
+              item.type === "INQUIRY_RECEIVED" && !item.isRead
+          ).length
+        );
+      } catch {
+        // Offline/transient: keep the last known badge.
+      }
+    };
+
+    loadInquiryUnread();
+    const timer = window.setInterval(loadInquiryUnread, 60_000);
+    return () => window.clearInterval(timer);
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (activeTab !== "inquiries" || inquiryUnreadCount === 0) return;
+    setInquiryUnreadCount(0);
+    fetch("/api/notifications/read-all?type=INQUIRY_RECEIVED", { method: "POST" }).catch(() => {});
+  }, [activeTab, inquiryUnreadCount]);
+
   const verificationStatus = completion?.verificationStatus;
 
   const handleLogout = async () => {
@@ -193,7 +224,7 @@ const TeacherDashboard = () => {
     setActiveTab(id);
   };
 
-  const unreadCount = inquiries.filter(i => !i.read).length;
+  const unreadCount = inquiryUnreadCount;
 
   // Overview widgets the teacher can switch on and off.
   const widgetPrefs = useWidgetPrefs("miniuni.widgets.teacher");
@@ -663,7 +694,14 @@ const TeacherDashboard = () => {
                 className={`flex flex-col items-center gap-0.5 rounded-full px-4 py-1.5 transition-all duration-300 ${!["overview", "schedule"].includes(activeTab) ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
                 aria-label="More"
               >
-                <MoreHorizontal className="h-5 w-5" strokeWidth={1.75} />
+                <span className="relative">
+                  <MoreHorizontal className="h-5 w-5" strokeWidth={1.75} />
+                  {unreadCount > 0 && (
+                    <span className="absolute -right-2 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-secondary px-1 text-[9px] font-semibold text-secondary-foreground">
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  )}
+                </span>
                 <span className="text-[9px] font-medium">More</span>
               </button>
             </SheetTrigger>
@@ -680,7 +718,14 @@ const TeacherDashboard = () => {
                       onClick={() => { goTab(item.id); setMoreOpen(false); }}
                       className={`flex flex-col items-center gap-2 rounded-2xl border p-4 transition-colors ${active ? "border-primary bg-primary/[0.06] text-primary" : "border-border/70 text-foreground hover:bg-muted/50"}`}
                     >
-                      <item.icon className="h-5 w-5" strokeWidth={1.75} />
+                      <span className="relative">
+                        <item.icon className="h-5 w-5" strokeWidth={1.75} />
+                        {item.id === "inquiries" && unreadCount > 0 && (
+                          <span className="absolute -right-2 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-semibold text-primary-foreground">
+                            {unreadCount > 9 ? "9+" : unreadCount}
+                          </span>
+                        )}
+                      </span>
                       <span className="text-xs font-medium">{item.label}</span>
                     </button>
                   );

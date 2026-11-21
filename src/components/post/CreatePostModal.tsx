@@ -585,6 +585,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onOpenChange, e
                       Add at least 3 times that suit you. A teacher picks one when they reply. {slots.length} selected.
                     </p>
                     <SlotPickerCalendar
+                      compact
                       selected={slots}
                       onChange={setSlots}
                       busy={[]}
