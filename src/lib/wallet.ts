@@ -1004,7 +1004,11 @@ export async function backfillMeetLinks(where: Prisma.BookingWhereInput) {
  * Only money still on hold can be refunded : once a class is over and the
  * teacher's earnings have cleared, the booking is settled and this throws.
  */
-export async function refundBookingToStudent(bookingId: string, reason?: string) {
+export async function refundBookingToStudent(
+  bookingId: string,
+  reason?: string,
+  cancelledByUserId?: string,
+) {
   const booking = await prisma.booking.findUnique({
     where: { id: bookingId },
     include: { payment: true },
@@ -1020,7 +1024,17 @@ export async function refundBookingToStudent(bookingId: string, reason?: string)
   ]);
   if (release) throw new Error("ESCROW_RELEASED");
 
-  const amount = new Prisma.Decimal(booking.payment.amount);
+  const gross = new Prisma.Decimal(booking.payment.amount);
+  const { fee: cancellationFee } =
+    cancelledByUserId === booking.studentId
+      ? splitCommission(gross, 10)
+      : { fee: new Prisma.Decimal(0) };
+  const { fee: teacherCancellationFee } =
+    cancelledByUserId === booking.teacherId
+      ? splitCommission(gross, 10)
+      : { fee: new Prisma.Decimal(0) };
+  const amount = gross.sub(cancellationFee);
+  const refundedAmount = cancelledByUserId === booking.studentId ? amount : gross;
   const studentWallet = await getWalletForUser(booking.studentId);
 
   try {
@@ -1048,16 +1062,49 @@ export async function refundBookingToStudent(bookingId: string, reason?: string)
           walletId: studentWallet.id,
           bookingId,
           type: "REFUND",
-          amount,
+          amount: refundedAmount,
           status: "COMPLETED",
-          description: reason ? `Class cancelled : ${reason}` : "Class cancelled : refunded to your wallet",
+          description: cancellationFee.gt(0)
+            ? `Class cancelled : 10% cancellation fee kept; ${reason ?? "rest refunded"}`
+            : reason ? `Class cancelled : ${reason}` : "Class cancelled : refunded to your wallet",
         },
       });
 
       await tx.wallet.update({
         where: { id: studentWallet.id },
-        data: { releasedBalance: { increment: amount } },
+        data: { releasedBalance: { increment: refundedAmount } },
       });
+
+      if (cancellationFee.gt(0)) {
+        await tx.walletTransaction.create({
+          data: {
+            walletId: studentWallet.id,
+            bookingId,
+            type: "ABSENCE_FEE",
+            amount: cancellationFee,
+            status: "COMPLETED",
+            description: "Student cancellation fee (10%)",
+          },
+        });
+      }
+
+      if (teacherCancellationFee.gt(0)) {
+        const teacherWallet = await getWalletForUser(booking.teacherId);
+        await tx.walletTransaction.create({
+          data: {
+            walletId: teacherWallet.id,
+            bookingId,
+            type: "PENALTY",
+            amount: teacherCancellationFee,
+            status: "COMPLETED",
+            description: "Teacher cancellation fee (10%)",
+          },
+        });
+        await tx.wallet.update({
+          where: { id: teacherWallet.id },
+          data: { releasedBalance: { decrement: teacherCancellationFee } },
+        });
+      }
 
       // Wallet-funded bookings never really left the platform, but marking the
       // payment refunded keeps both routes reading the same way.
@@ -1071,7 +1118,11 @@ export async function refundBookingToStudent(bookingId: string, reason?: string)
     throw err;
   }
 
-  return { refunded: true, amount };
+  return {
+    refunded: true,
+    amount: refundedAmount,
+    cancellationFee: cancellationFee.plus(teacherCancellationFee),
+  };
 }
 
 /**

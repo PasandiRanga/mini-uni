@@ -40,7 +40,7 @@ export async function POST(
         const body = await request.json().catch(() => ({}));
         const reason: string | undefined = body?.reason?.toString().trim() || undefined;
 
-        const { booking: cancelled, refunded } = await cancelBooking(bookingId, reason);
+        const { booking: cancelled, refunded, cancellationFee } = await cancelBooking(bookingId, reason, userId);
 
         // Notify whoever didn't press cancel.
         const otherPartyId = userId === booking.studentId ? booking.teacherId : booking.studentId;
@@ -51,11 +51,17 @@ export async function POST(
             message: reason
                 ? `A booked class was cancelled: ${reason}`
                 : "A booked class was cancelled.",
-            metadata: { bookingId, refunded },
+            metadata: { bookingId, refunded, cancellationFee },
         });
 
-        return NextResponse.json({ ...cancelled, refunded });
+        return NextResponse.json({ ...cancelled, refunded, cancellationFee });
     } catch (error: any) {
+        if (error?.message === "TOO_LATE_TO_CANCEL") {
+            return NextResponse.json(
+                { error: "Cancellation closes 1 hour before the class starts", code: "TOO_LATE_TO_CANCEL" },
+                { status: 400 }
+            );
+        }
         if (error?.message === "CLASS_STARTED") {
             return NextResponse.json(
                 { error: "This class has already started, so it can't be cancelled", code: "CLASS_STARTED" },
