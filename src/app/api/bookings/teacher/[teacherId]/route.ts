@@ -24,7 +24,7 @@ export async function GET(
                 student: { select: { id: true, firstName: true, lastName: true } },
                 timeSlot: { select: { startTime: true, endTime: true } },
                 inquiry: { include: { post: { select: { title: true, subject: true } } } },
-                dispute: { select: { reason: true, details: true, status: true, teacherResponse: true, resolutionNote: true, createdAt: true } },
+                dispute: { select: { reason: true, details: true, evidenceUrls: true, status: true, teacherResponse: true, resolutionNote: true, createdAt: true } },
                 // Only to tell whether the teacher has been paid yet.
                 walletTransactions: { where: { type: "RELEASE" }, select: { id: true } },
             },

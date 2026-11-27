@@ -50,7 +50,10 @@ const Terms = () => {
         </p>
         <ul>
           <li>Payment for a booking is held securely and released to the teacher once the class is complete.</li>
-          <li>If a class is cancelled or a dispute is upheld under our policies, the held amount is refunded to your wallet.</li>
+          <li>A class can be cancelled only until 1 hour before its start time.</li>
+          <li>A student cancellation keeps a 10% fee and refunds the remaining held amount to the student's wallet.</li>
+          <li>A teacher cancellation refunds the student in full and deducts a 10% fee from the teacher's wallet.</li>
+          <li>If a dispute is upheld under our policies, the held amount is refunded or settled according to the displayed outcome.</li>
           <li>Commission, payouts, and dispute outcomes follow the rules shown in the app at the time of booking.</li>
         </ul>
       </LegalSection>

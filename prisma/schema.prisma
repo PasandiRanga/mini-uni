@@ -533,6 +533,7 @@ model Dispute {
   reportedById    String
   reason          String    // NO_SHOW | ENDED_EARLY | QUALITY | TECHNICAL | OTHER
   details         String    @db.Text
+  evidenceUrls    String[]  @default([]) // optional evidence the student uploaded (images, PDFs, recordings)
   teacherResponse String?   @db.Text // the teacher's side, added while OPEN
   status          String    @default("OPEN") // OPEN | REFUNDED | RELEASED
   resolutionNote  String?   @db.Text // admin's note, shown to both sides

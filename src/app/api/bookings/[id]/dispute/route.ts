@@ -28,12 +28,20 @@ export async function POST(request: Request, { params }: { params: { id: string 
         return NextResponse.json({ error: "Tell us a little more about what happened" }, { status: 400 });
     }
 
+    // Optional evidence: URLs the browser already uploaded to Vercel Blob.
+    const evidenceUrls: string[] = Array.isArray(body?.evidenceUrls)
+        ? body.evidenceUrls
+            .filter((u: unknown): u is string => typeof u === "string" && /^https:\/\/[^/]+\.blob\.vercel-storage\.com\//.test(u))
+            .slice(0, 5)
+        : [];
+
     try {
         const dispute = await openDispute({
             bookingId: params.id,
             studentId: session.sub,
             reason: body.reason,
             details: details.slice(0, MAX_DISPUTE_TEXT),
+            evidenceUrls,
             origin: new URL(request.url).origin,
         });
         return NextResponse.json({ id: dispute.id, status: dispute.status, reason: dispute.reason });

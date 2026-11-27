@@ -16,17 +16,18 @@ const PAID_BOOKING_STATUSES = ["PAYMENT_COMPLETED", "CONFIRMED", "IN_PROGRESS"] 
  * has begun (a finished class can't be refunded), and ESCROW_RELEASED when
  * the money has already been paid out to the teacher.
  */
-export async function cancelBooking(bookingId: string, reason?: string) {
+export async function cancelBooking(bookingId: string, reason?: string, cancelledByUserId?: string) {
   const booking = await prisma.booking.findUnique({
     where: { id: bookingId },
     include: { timeSlot: { select: { startTime: true } } },
   });
   if (!booking) throw new Error("NOT_FOUND");
-  if (booking.timeSlot.startTime.getTime() <= Date.now()) throw new Error("CLASS_STARTED");
+  const cutoff = booking.timeSlot.startTime.getTime() - (60 * 60 * 1000);
+  if (Date.now() > cutoff) throw new Error("TOO_LATE_TO_CANCEL");
 
   // Refund first: if the money has already cleared into the teacher's
   // earnings there is nothing to reverse, and the booking stays as it is.
-  const refund = await refundBookingToStudent(bookingId, reason);
+  const refund = await refundBookingToStudent(bookingId, reason, cancelledByUserId);
 
   // Cancel and give the seat back together, so a group slot's seat count
   // never disagrees with its bookings.
@@ -43,7 +44,11 @@ export async function cancelBooking(bookingId: string, reason?: string) {
     return updated;
   });
 
-  return { booking: cancelled, refunded: refund.refunded };
+  return {
+    booking: cancelled,
+    refunded: refund.refunded,
+    cancellationFee: refund.cancellationFee,
+  };
 }
 
 /**

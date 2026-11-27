@@ -179,11 +179,16 @@ const MyClasses: React.FC<MyClassesProps> = ({ preview = false, onViewAll }) => 
 
       toast({
         title: 'Class cancelled',
-        description: data?.refunded
-          ? user?.role === 'STUDENT'
-            ? 'The amount you paid is back in your wallet.'
-            : "The student has been refunded to their wallet."
-          : 'The time slot is free again.',
+        description:
+          data?.cancellationFee != null
+            ? user?.role === 'STUDENT'
+              ? `A 10% cancellation fee was kept. ${formatMoney(Number(data.cancellationFee), currency)} was charged.`
+              : `A 10% cancellation fee was charged to your wallet.`
+            : data?.refunded
+              ? user?.role === 'STUDENT'
+                ? 'The amount you paid is back in your wallet.'
+                : "The student has been refunded to their wallet."
+              : 'The time slot is free again.',
       });
       setToCancel(null);
       fetchBookings();
@@ -278,7 +283,12 @@ const MyClasses: React.FC<MyClassesProps> = ({ preview = false, onViewAll }) => 
     const canAnswer = !isStudent && !preview && b.dispute?.status === 'OPEN';
     const status = (b.status || '').toUpperCase();
     const canJoin = isFuture && !!b.googleMeetLink;
-    const canCancel = isFuture && !preview && ['CONFIRMED', 'PAYMENT_COMPLETED', 'PENDING_PAYMENT'].includes(status);
+    const cancellationCutoff = start ? new Date(start.getTime() - 60 * 60 * 1000) : null;
+    const canCancel = isFuture
+      && !!cancellationCutoff
+      && cancellationCutoff.getTime() > Date.now()
+      && !preview
+      && ['CONFIRMED', 'PAYMENT_COMPLETED', 'PENDING_PAYMENT'].includes(status);
     const hasActions = canJoin || canCancel || canRate || canConfirm || canMarkAbsent || canReport || canAnswer;
 
     return (
@@ -509,8 +519,8 @@ const MyClasses: React.FC<MyClassesProps> = ({ preview = false, onViewAll }) => 
             <AlertDialogDescription>
               The time slot is freed up straight away
               {user?.role === 'STUDENT'
-                ? ", and anything you've already paid goes back to your wallet, ready to spend on another class."
-                : ', and anything the student paid is refunded to their wallet.'}
+                ? `. A 10% cancellation fee (${toCancel?.fee != null ? formatMoney(Number(toCancel.fee) * 0.1, currency) : '10%'}) is kept, and the remaining amount goes back to your wallet.`
+                : `. The student is refunded in full, and a 10% cancellation fee (${toCancel?.fee != null ? formatMoney(Number(toCancel.fee) * 0.1, currency) : '10%'}) is deducted from your wallet.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

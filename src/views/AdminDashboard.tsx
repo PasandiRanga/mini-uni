@@ -37,6 +37,7 @@ import {
   Ban,
   RotateCcw,
   UserX,
+  Paperclip,
   Flag,
   Banknote,
 } from "lucide-react";
@@ -1170,6 +1171,15 @@ const DisputeReview = ({ toast, onChanged }: { toast: any; onChanged: () => void
                   </p>
                   <p className="mt-0.5 text-xs text-muted-foreground">{d.student.email}</p>
                   <p className="mt-2 whitespace-pre-line">{d.details}</p>
+                  {Array.isArray(d.evidenceUrls) && d.evidenceUrls.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {d.evidenceUrls.map((url: string, i: number) => (
+                        <a key={url} href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-md border border-border/70 bg-card px-2 py-1 text-[11px] text-foreground hover:bg-muted">
+                          <Paperclip className="h-3 w-3" /> Evidence {i + 1}
+                        </a>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div className="rounded-xl border border-border/60 bg-muted/30 p-3 text-sm">
                   <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">

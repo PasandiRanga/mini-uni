@@ -47,7 +47,7 @@ export async function canReportBooking(bookingId: string, studentId: string) {
 }
 
 /** Student reports a problem. The booking becomes DISPUTED, which holds the teacher's payout. */
-export async function openDispute(opts: { bookingId: string; studentId: string; reason: DisputeReason; details: string; origin: string }) {
+export async function openDispute(opts: { bookingId: string; studentId: string; reason: DisputeReason; details: string; evidenceUrls?: string[]; origin: string }) {
   const check = await canReportBooking(opts.bookingId, opts.studentId);
   if (!check.ok) throw new Error(check.error);
 
@@ -59,7 +59,7 @@ export async function openDispute(opts: { bookingId: string; studentId: string; 
     });
     if (count !== 1) throw new Error("NOT_REPORTABLE");
     return tx.dispute.create({
-      data: { bookingId: opts.bookingId, reportedById: opts.studentId, reason: opts.reason, details: opts.details },
+      data: { bookingId: opts.bookingId, reportedById: opts.studentId, reason: opts.reason, details: opts.details, evidenceUrls: opts.evidenceUrls ?? [] },
     });
   });
 
@@ -233,6 +233,7 @@ export async function getDisputesForAdmin(scope: "open" | "resolved") {
       id: true,
       reason: true,
       details: true,
+      evidenceUrls: true,
       teacherResponse: true,
       status: true,
       resolutionNote: true,
